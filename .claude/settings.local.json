@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.specify/scripts/bash/create-new-feature.sh:*)",
+      "mcp__chat-prd__search_documents",
+      "mcp__chat-prd__list_documents",
+      "mcp__chat-prd__get_document",
+      "Bash(.specify/scripts/bash/setup-plan.sh:*)",
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "mcp__ref-tools__ref_search_documentation",
+      "mcp__ref-tools__ref_read_url"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "ref-tools",
+    "container-use",
+    "chat-prd"
+  ]
+}
