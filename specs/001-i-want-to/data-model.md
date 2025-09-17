@@ -536,9 +536,11 @@ class FileOperation(Enum):
 - Agent uses CLI tools (d2, mmdc, plantuml) for generation
 
 ### ClaudeAgent → MCPServer (N:1)
-- All Claude agents use MCP server for file operations
-- MCP provides read/write/validate capabilities
-- Eliminates need for Python YAML parsing code
+- Transform agent uses MCP to read user recipes (recipe.yaml)
+- Orchestrator uses MCP to read processed recipes (recipe.t2d.yaml)
+- MCP provides YAML validation with Pydantic
+- Generator and content agents use their own Write/Read tools directly
+- Build steps use Bash tool to run CLI commands
 
 ### DiagramSpecification → FrameworkMapping (N:1)
 - Each diagram type maps to a primary framework
@@ -637,35 +639,62 @@ These modify all agent prompts:
 
 The orchestrator processes recipes in this order:
 
-1. **Generate all diagrams first** (parallel execution by generator agents)
+1. **Generate diagram source files** (parallel execution by generator agents)
    - Each generator agent receives the `instructions` prompt
-   - Agent writes the appropriate .d2/.mmd/.puml file
-   - Agent runs the CLI tool (d2, mmdc, plantuml) to render the diagram
-   - Output files are saved to the specified paths
+   - Agent interprets the prompt and creates the diagram syntax
+   - Agent writes the .d2/.mmd/.puml file directly using Write tool
+   - Example: t2d-d2-generator writes "architecture.d2"
 
-2. **Collect diagram outputs** (file paths, titles, types)
-   - Orchestrator gathers all generated diagram information
+2. **Build diagram assets** (orchestrator or build agent runs CLI tools)
+   - The orchestrator (or a dedicated build agent) uses Bash tool to run CLI commands:
+     - `d2 diagram.d2 diagram.svg` for D2 files
+     - `mmdc -i diagram.mmd -o diagram.svg` for Mermaid files
+     - `java -jar plantuml.jar diagram.puml` for PlantUML files
+   - Collects paths to all generated assets (SVG, PNG files)
    - Creates DiagramReference objects for each completed diagram
 
-3. **Create content files** with diagram context (markdown agents have access to completed diagrams)
-   - Content agents receive prompts with diagram information
-   - Agents can embed diagrams knowing the exact file paths
+3. **Create content files** with diagram context (content agents write markdown)
+   - Content agents receive prompts with paths to the built diagram assets
+   - Agents write markdown files directly using Write tool
+   - Markdown files reference the generated SVG/PNG files
+   - Example: markdown_maintainer writes "content/overview.md"
 
-#### Example: D2 Generator Agent Workflow
+#### Example: Complete Diagram Workflow
 ```
-Input:
-  instructions: "Create a C4 Container diagram showing microservices..."
-  output_file: "docs/assets/system.d2"
+Step 1 - Generator Agent (t2d-d2-generator):
+  Input:
+    instructions: "Create a C4 Container diagram showing microservices..."
+    output_file: "docs/assets/system.d2"
 
-Agent (t2d-d2-generator):
-  1. Interprets the instructions
-  2. Writes D2 syntax to system.d2
-  3. Runs: d2 system.d2 system.svg
-  4. Reports completion
+  Agent Actions:
+    1. Interprets the instructions
+    2. Creates D2 syntax in memory
+    3. Uses Write tool: Write("docs/assets/system.d2", d2_content)
 
-Output:
-  source_file: "docs/assets/system.d2"
-  rendered_files: {"svg": "docs/assets/system.svg"}
+  Output:
+    File written: "docs/assets/system.d2"
+
+Step 2 - Build Step (orchestrator or build agent):
+  Uses Bash tool: Bash("d2 docs/assets/system.d2 docs/assets/system.svg")
+
+  Output:
+    File created by d2 CLI: "docs/assets/system.svg"
+
+Step 3 - Content Generation (markdown_maintainer):
+  Input:
+    agent_prompt: "Create documentation..."
+    diagram_context: [{
+      id: "system-architecture",
+      file_path: "docs/assets/system.svg"
+    }]
+
+  Agent Actions:
+    1. Creates markdown content
+    2. Embeds diagram: ![Architecture](docs/assets/system.svg)
+    3. Uses Write tool: Write("content/overview.md", markdown_content)
+
+  Output:
+    File written: "content/overview.md"
 ```
 
 ## Validation Rules

@@ -403,37 +403,53 @@ recipe:
 # Behind the scenes:
 # 1. Claude Desktop uses Desktop Commander to execute the orchestrator
 # 2. Claude orchestrator reads recipe.t2d.yaml using MCP tools
-# 3. Orchestrator invokes diagram generator agents
-# 4. Generator agents use CLI tools (d2, mmdc, plantuml)
-# 5. Content maintainer agents create markdown
-# 6. All outputs saved to filesystem via MCP
+# 3. Orchestrator invokes diagram generator agents (parallel)
+# 4. Generator agents write source files directly (.d2, .mmd, .puml)
+# 5. Orchestrator or a build agent runs CLI tools to compile diagrams
+# 6. Content maintainer agents write markdown files directly
+# 7. All agents use their Write tool to save files
 
 # Output:
 # ✓ Processing recipe: E-Commerce Platform
 # ✓ Source recipe: recipe.yaml
 # ✓ Generated at: 2025-01-17T10:30:00Z
 #
-# Diagrams processed (4):
-# ✓ system-architecture → D2 framework
-# ✓ shopping-flow → Mermaid framework
-# ✓ database-erd → Mermaid framework
-# ✓ deployment-architecture → D2 framework
+# Step 1: Diagram source generation (4 agents in parallel):
+# ✓ t2d-d2-generator → system-architecture.d2
+# ✓ t2d-mermaid-generator → shopping-flow.mmd
+# ✓ t2d-mermaid-generator → database-erd.mmd
+# ✓ t2d-d2-generator → deployment-architecture.d2
 #
-# Content files created (4):
+# Step 2: Building diagram assets:
+# ✓ d2 system-architecture.d2 system-architecture.svg
+# ✓ mmdc -i shopping-flow.mmd -o shopping-flow.svg
+# ✓ mmdc -i database-erd.mmd -o database-erd.svg
+# ✓ d2 deployment-architecture.d2 deployment-architecture.svg
+#
+# Step 3: Content generation (4 agents in parallel):
 # ✓ content/overview.md (markdown_maintainer)
 # ✓ content/architecture.md (mkdocs_formatter)
 # ✓ content/api-docs.md (markdown_maintainer)
 # ✓ content/slides.md (marp_slides)
 #
-# Assets generated:
-#   - docs/assets/system-architecture.d2
-#   - docs/assets/system-architecture.svg
-#   - docs/assets/shopping-flow.mmd
-#   - docs/assets/shopping-flow.svg
-#   - docs/assets/database-erd.mmd
-#   - docs/assets/database-erd.svg
-#   - docs/assets/deployment-architecture.d2
-#   - docs/assets/deployment-architecture.svg
+# Final assets:
+#   Source files:
+#     - docs/assets/system-architecture.d2
+#     - docs/assets/shopping-flow.mmd
+#     - docs/assets/database-erd.mmd
+#     - docs/assets/deployment-architecture.d2
+#
+#   Built diagrams:
+#     - docs/assets/system-architecture.svg
+#     - docs/assets/shopping-flow.svg
+#     - docs/assets/database-erd.svg
+#     - docs/assets/deployment-architecture.svg
+#
+#   Content:
+#     - content/overview.md
+#     - content/architecture.md
+#     - content/api-docs.md
+#     - content/slides.md
 #
 # Configurations created:
 #   - mkdocs.yml
