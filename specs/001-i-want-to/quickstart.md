@@ -294,103 +294,77 @@ recipe:
         Emphasize: Scalability to 1M users, Security compliance, Time to market advantages
         Style: Executive summary level, avoid technical jargon
 
-  # Agent-generated detailed diagram specs
+  # Agent-generated detailed diagram specs with prompts
   diagram_specs:
     - id: system-architecture
       type: c4_container
-      framework: d2  # Auto-selected by agent
+      framework: d2  # Auto-selected by transform agent
       title: "E-Commerce Microservices Architecture"
+      output_file: "docs/assets/system-architecture.d2"
       instructions: |
-        title: E-Commerce Platform - Container Diagram
-
-        User -> "Web Application": Uses [HTTPS]
-        User -> "Mobile App": Uses [HTTPS]
-
-        "Web Application" -> "API Gateway": Makes API calls [HTTPS/JSON]
-        "Mobile App" -> "API Gateway": Makes API calls [HTTPS/JSON]
-
-        "API Gateway" -> "Auth Service": Authenticates [gRPC]
-        "API Gateway" -> "Product Service": Queries products [gRPC]
-        "API Gateway" -> "Cart Service": Manages cart [gRPC]
-        "API Gateway" -> "Order Service": Places orders [gRPC]
-
-        "Product Service" -> "PostgreSQL": Reads/Writes [SQL]
-        "Product Service" -> "Redis Cache": Caches [Redis Protocol]
-
-        "Order Service" -> "PostgreSQL": Reads/Writes [SQL]
-        "Order Service" -> "Payment Service": Processes payment [gRPC]
-        "Order Service" -> "Notification Service": Sends notifications [AMQP]
-
-        "Payment Service" -> "Stripe API": Processes [HTTPS]
+        Create a C4 Container diagram showing the e-commerce platform architecture.
+        Based on the PRD, include:
+        - User-facing applications (Web and Mobile)
+        - API Gateway as the central entry point
+        - Microservices: Auth Service, Product Service, Cart Service, Order Service, Payment Service, Notification Service
+        - Data stores: PostgreSQL for persistent data, Redis for caching
+        - External integration: Stripe API for payments
+        - Show all connections with appropriate protocols (HTTPS, gRPC, SQL, AMQP)
+        - Use proper C4 notation with clear labels
 
     - id: shopping-flow
       type: sequence
-      framework: mermaid  # Auto-selected by agent
+      framework: mermaid  # Auto-selected by transform agent
       title: "User Shopping Flow"
+      output_file: "docs/assets/shopping-flow.mmd"
       instructions: |
-        User -> Frontend: Browse Products
-        Frontend -> API Gateway: GET /products
-        API Gateway -> Product Service: GetProducts()
-        Product Service -> PostgreSQL: SELECT * FROM products
-        PostgreSQL -> Product Service: Product data
-        Product Service -> API Gateway: Product list
-        API Gateway -> Frontend: JSON response
-        Frontend -> User: Display products
-
-        User -> Frontend: Add to Cart
-        Frontend -> API Gateway: POST /cart/items
-        API Gateway -> Cart Service: AddItem()
-        Cart Service -> Redis: HSET cart:{userId}
-        Redis -> Cart Service: OK
-        Cart Service -> API Gateway: Cart updated
-        API Gateway -> Frontend: Success
-        Frontend -> User: Cart badge updated
+        Create a sequence diagram showing the complete user shopping flow.
+        Based on the PRD, show the flow from browse to purchase:
+        1. User browsing products (interaction with Product Service)
+        2. Adding items to cart (Cart Service with Redis)
+        3. Proceeding to checkout
+        4. Payment processing (Payment Service with Stripe)
+        5. Order confirmation (Order Service)
+        6. Notification sending (Notification Service)
+        Show all API calls, service interactions, and data operations.
+        Include error handling paths for payment failures.
 
     - id: database-erd
       type: erd
-      framework: mermaid  # Auto-selected by agent
+      framework: mermaid  # Auto-selected by transform agent
       title: "E-Commerce Database Schema"
+      output_file: "docs/assets/database-erd.mmd"
       instructions: |
-        Users ||--o{ Orders : places
-        Users ||--|| Profiles : has
-        Users ||--o{ Sessions : has
-        Products ||--o{ OrderItems : contains
-        Orders ||--o{ OrderItems : includes
-        Orders ||--|| Payments : has
-        Categories ||--o{ Products : contains
-
-        Users {
-          uuid id PK
-          string email UK
-          string password_hash
-          timestamp created_at
-          timestamp updated_at
-        }
-
-        Products {
-          uuid id PK
-          string name
-          text description
-          decimal price
-          integer stock
-          uuid category_id FK
-        }
-
-        Orders {
-          uuid id PK
-          uuid user_id FK
-          string status
-          decimal total
-          timestamp created_at
-        }
+        Create an Entity Relationship Diagram for the e-commerce database.
+        Based on the PRD, include these entities and relationships:
+        - Users (with email, password_hash, timestamps)
+        - Profiles (user profiles with name, avatar, bio)
+        - Products (with name, description, price, stock)
+        - Categories (for organizing products)
+        - Orders (with user reference, status, total, timestamps)
+        - OrderItems (linking orders to products with quantity and price)
+        - Payments (payment records with method, amount, status)
+        - Sessions (for user authentication tokens)
+        Show all primary keys, foreign keys, and cardinality of relationships.
+        Use standard ERD notation with proper relationship labels.
 
     - id: deployment-architecture
       type: architecture
-      framework: d2  # Auto-selected by agent
+      framework: d2  # Auto-selected by transform agent
       title: "Kubernetes Deployment"
+      output_file: "docs/assets/deployment-architecture.d2"
       instructions: |
-        # Kubernetes cluster architecture
-        # Details generated from PRD requirements...
+        Create a deployment architecture diagram showing the Kubernetes setup.
+        Based on the PRD requirements for scalability and high availability:
+        - Show multiple Kubernetes clusters (production and staging)
+        - Include node pools with auto-scaling capabilities
+        - Show ingress controllers and load balancers
+        - Depict microservice deployments with replica sets
+        - Include persistent volume claims for databases
+        - Show ConfigMaps and Secrets management
+        - Include monitoring stack (Prometheus, Grafana)
+        - Show CI/CD pipeline integration points
+        Emphasize horizontal scaling and high availability features.
 
   outputs:
     assets_dir: docs/assets
