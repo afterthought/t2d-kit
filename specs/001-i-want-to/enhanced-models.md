@@ -10,10 +10,11 @@
 
 ```python
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing import Annotated, Optional, List, Dict, Any
+from typing import Annotated, Optional, List, Dict, Any, Literal
 from datetime import datetime
 from enum import Enum
 import re
+import json
 from pathlib import Path
 
 class T2DBaseModel(BaseModel):
@@ -294,7 +295,7 @@ class DiagramSpecification(T2DBaseModel):
     instructions: InstructionsField
     output_file: PathField
     output_formats: List['OutputFormat'] = Field(min_length=1)
-    options: Optional[Dict[str, Any]] = None
+    options: Optional[Union[MermaidConfig, D2Options, MarpConfig, Dict[str, Any]]] = None
 
     @field_validator('instructions')
     @classmethod
@@ -354,6 +355,30 @@ class DiagramSpecification(T2DBaseModel):
 
         return self
 
+    @model_validator(mode='after')
+    def validate_framework_options(self) -> 'DiagramSpecification':
+        """Validate framework-specific options."""
+        if self.framework and self.options:
+            if self.framework == FrameworkType.MERMAID:
+                if isinstance(self.options, dict):
+                    # Convert dict to MermaidConfig for validation
+                    try:
+                        MermaidConfig.model_validate(self.options)
+                    except ValueError as e:
+                        raise ValueError(f"Invalid Mermaid configuration: {e}")
+                elif not isinstance(self.options, MermaidConfig):
+                    raise ValueError("Mermaid framework requires MermaidConfig options")
+            elif self.framework == FrameworkType.D2:
+                if isinstance(self.options, dict):
+                    # Convert dict to D2Options for validation
+                    try:
+                        D2Options.model_validate(self.options)
+                    except ValueError as e:
+                        raise ValueError(f"Invalid D2 configuration: {e}")
+                elif not isinstance(self.options, D2Options):
+                    raise ValueError("D2 framework requires D2Options")
+        return self
+
 class ContentFile(T2DBaseModel):
     """Markdown files maintained by Claude Code agents."""
 
@@ -387,6 +412,957 @@ class ContentFile(T2DBaseModel):
         if v not in valid_agents:
             raise ValueError(f'Agent must be one of: {valid_agents}')
         return v
+```
+
+## Framework-Specific Options
+
+### D2Options with Advanced Configuration
+
+```python
+from typing import Literal, List, Optional
+import warnings
+import os
+
+class D2Options(T2DBaseModel):
+    """Advanced D2 diagram configuration options."""
+
+    # Layout engines
+    layout_engine: Literal["dagre", "elk", "tala"] = Field(
+        default="dagre",
+        description="D2 layout engine to use"
+    )
+
+    # Themes
+    theme: Optional[Literal[
+        "neutral-default", "neutral-grey",
+        "flagship-terrastruct", "cool-classics",
+        "mixed-berry-blue", "grape-soda",
+        "aubergine", "colorblind-clear",
+        "vanilla-nitro-cola", "orange-creamsicle",
+        "shirley-temple", "earth-tones",
+        "everglade", "buttered-toast"
+    ]] = Field(
+        default="neutral-default",
+        description="D2 theme to apply"
+    )
+
+    # Rendering options
+    sketch: bool = Field(
+        default=False,
+        description="Enable hand-drawn sketch mode"
+    )
+
+    pad: int = Field(
+        default=100,
+        ge=0,
+        description="Padding around the diagram in pixels"
+    )
+
+    # Animation options
+    animate_interval: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Animation interval in milliseconds for multi-board diagrams"
+    )
+
+    # Size constraints
+    width: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Target width in pixels"
+    )
+
+    height: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Target height in pixels"
+    )
+
+    # Export options
+    scale: float = Field(
+        default=1.0,
+        gt=0,
+        le=4,
+        description="Scale factor for output (0.5 = 50%, 2 = 200%)"
+    )
+
+    # Advanced layout options
+    direction: Literal["up", "down", "right", "left"] = Field(
+        default="down",
+        description="Primary direction for layout flow"
+    )
+
+    # Font configuration
+    font_family: Optional[str] = Field(
+        default=None,
+        description="Override default font family"
+    )
+
+    font_size: Optional[int] = Field(
+        default=None,
+        ge=8,
+        le=72,
+        description="Base font size in points"
+    )
+
+    # Connection styling
+    stroke_width: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=10,
+        description="Default stroke width for connections"
+    )
+
+    # Multi-board options
+    board_index: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Specific board index to render from multi-board diagram"
+    )
+
+    # Compiler options
+    force_appendix: bool = Field(
+        default=False,
+        description="Force rendering of appendix elements"
+    )
+
+    center: bool = Field(
+        default=False,
+        description="Center the diagram in the viewport"
+    )
+
+    @field_validator('layout_engine')
+    @classmethod
+    def validate_tala_license(cls, v: str) -> str:
+        """Warn if Tala is selected without license."""
+        if v == "tala":
+            # In real implementation, check for TALA_LICENSE_KEY env var
+            import os
+            if not os.environ.get("TALA_LICENSE_KEY"):
+                warnings.warn(
+                    "Tala layout engine requires a license key. "
+                    "Set TALA_LICENSE_KEY environment variable.",
+                    UserWarning
+                )
+        return v
+
+    def to_cli_args(self) -> List[str]:
+        """Convert options to D2 CLI arguments."""
+        args = []
+
+        # Add layout engine
+        args.extend(["--layout", self.layout_engine])
+
+        # Add theme if specified
+        if self.theme:
+            args.extend(["--theme", self.theme])
+
+        # Add sketch mode
+        if self.sketch:
+            args.append("--sketch")
+
+        # Add padding
+        args.extend(["--pad", str(self.pad)])
+
+        # Add dimensions if specified
+        if self.width:
+            args.extend(["--width", str(self.width)])
+        if self.height:
+            args.extend(["--height", str(self.height)])
+
+        # Add scale
+        if self.scale != 1.0:
+            args.extend(["--scale", str(self.scale)])
+
+        # Add animation interval for multi-board
+        if self.animate_interval:
+            args.extend(["--animate-interval", str(self.animate_interval)])
+
+        # Add direction
+        args.extend(["--direction", self.direction])
+
+        # Add board index if specified
+        if self.board_index is not None:
+            args.extend(["--board", str(self.board_index)])
+
+        # Add force appendix
+        if self.force_appendix:
+            args.append("--force-appendix")
+
+        # Add center
+        if self.center:
+            args.append("--center")
+
+        return args
+
+    def to_style_string(self) -> str:
+        """Generate D2 style configuration string."""
+        styles = []
+
+        if self.font_family:
+            styles.append(f"font: {self.font_family}")
+
+        if self.font_size:
+            styles.append(f"font-size: {self.font_size}")
+
+        if self.stroke_width:
+            styles.append(f"stroke-width: {self.stroke_width}")
+
+        if styles:
+            return f"style: {{\n  {chr(10).join(styles)}\n}}"
+        return ""
+```
+
+### D2Options Usage Example
+
+```python
+# Example usage in diagram specification
+diagram_spec = DiagramSpecification(
+    id="architecture",
+    type=DiagramType.C4_CONTAINER,
+    framework=DiagramFramework.D2,
+    title="System Architecture",
+    instructions="...",
+    options=D2Options(
+        layout_engine="elk",
+        theme="cool-classics",
+        sketch=True,
+        width=1920,
+        height=1080,
+        direction="right"
+    )
+)
+
+# Generate CLI command
+cli_args = diagram_spec.options.to_cli_args()
+# Results in: ["--layout", "elk", "--theme", "cool-classics", "--sketch", "--width", "1920", "--height", "1080", "--direction", "right", ...]
+```
+
+### MermaidConfig Model
+
+```python
+from typing import Union
+
+class MermaidConfig(T2DBaseModel):
+    """Advanced Mermaid diagram configuration options."""
+
+    # Theme configuration
+    theme: Literal[
+        "default", "dark", "forest", "neutral",
+        "base", "minimal", "neo", "future", "vintage"
+    ] = Field(
+        default="default",
+        description="Mermaid theme to apply"
+    )
+
+    # Custom theme variables
+    theme_variables: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Custom theme CSS variables",
+        example={
+            "primaryColor": "#ff0000",
+            "primaryTextColor": "#fff",
+            "primaryBorderColor": "#ff0000",
+            "lineColor": "#ffcc00",
+            "secondaryColor": "#006400",
+            "tertiaryColor": "#fff"
+        }
+    )
+
+    # Layout configuration
+    look_and_feel: Literal["classic", "handDrawn"] = Field(
+        default="classic",
+        description="Visual style of the diagram"
+    )
+
+    # Security level
+    security_level: Literal["strict", "loose", "antiscript"] = Field(
+        default="strict",
+        description="Security level for rendering"
+    )
+
+    # Diagram-specific settings
+    flowchart_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Flowchart-specific configuration",
+        example={
+            "curve": "linear",  # or "basis", "cardinal", "step"
+            "padding": 10,
+            "nodeSpacing": 50,
+            "rankSpacing": 50,
+            "diagramPadding": 8,
+            "useMaxWidth": True,
+            "htmlLabels": True
+        }
+    )
+
+    sequence_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Sequence diagram configuration",
+        example={
+            "diagramMarginX": 50,
+            "diagramMarginY": 10,
+            "actorMargin": 50,
+            "width": 150,
+            "height": 65,
+            "boxMargin": 10,
+            "boxTextMargin": 5,
+            "noteMargin": 10,
+            "messageMargin": 35,
+            "mirrorActors": True,
+            "bottomMarginAdj": 1,
+            "useMaxWidth": True,
+            "rightAngles": False,
+            "showSequenceNumbers": False
+        }
+    )
+
+    gantt_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Gantt chart configuration",
+        example={
+            "numberSectionStyles": 4,
+            "axisFormat": "%Y-%m-%d",
+            "topAxis": False,
+            "displayMode": "compact",  # or "normal"
+            "gridLineStartPadding": 350,
+            "fontSize": 11,
+            "fontFamily": '"Open-Sans", sans-serif',
+            "sectionFontSize": 11,
+            "numberSectionStyles": 4,
+            "leftPadding": 75
+        }
+    )
+
+    er_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="ER diagram configuration",
+        example={
+            "diagramPadding": 20,
+            "layoutDirection": "TB",  # or "LR", "RL", "BT"
+            "minEntityWidth": 100,
+            "minEntityHeight": 75,
+            "entityPadding": 15,
+            "stroke": "gray",
+            "fill": "honeydew",
+            "fontSize": 12,
+            "useMaxWidth": True
+        }
+    )
+
+    pie_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Pie chart configuration",
+        example={
+            "useMaxWidth": True,
+            "textPosition": 0.75,
+            "legendPosition": "right"  # or "bottom", "left", "top"
+        }
+    )
+
+    state_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="State diagram configuration",
+        example={
+            "dividerMargin": 10,
+            "sizeUnit": 5,
+            "padding": 5,
+            "textHeight": 10,
+            "titleShift": -15,
+            "noteMargin": 10,
+            "forkWidth": 70,
+            "forkHeight": 7,
+            "miniPadding": 2,
+            "fontSizeFactor": 5.02,
+            "fontSize": 24,
+            "labelHeight": 16,
+            "edgeLengthFactor": "20",
+            "compositTitleSize": 35,
+            "radius": 5,
+            "useMaxWidth": True
+        }
+    )
+
+    # Rendering options
+    width: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Diagram width in pixels"
+    )
+
+    height: Optional[int] = Field(
+        default=None,
+        gt=0,
+        description="Diagram height in pixels"
+    )
+
+    background_color: Optional[str] = Field(
+        default="white",
+        description="Background color (CSS color value)"
+    )
+
+    # Output options
+    puppeteer_config: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Puppeteer configuration for rendering",
+        example={
+            "headless": True,
+            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
+        }
+    )
+
+    # Font configuration
+    font_family: Optional[str] = Field(
+        default=None,
+        description="Override default font family"
+    )
+
+    # Accessibility
+    wrap: bool = Field(
+        default=False,
+        description="Enable text wrapping in nodes"
+    )
+
+    @model_validator(mode='after')
+    def apply_diagram_defaults(self) -> 'MermaidConfig':
+        """Apply sensible defaults based on look_and_feel."""
+        if self.look_and_feel == "handDrawn":
+            if not self.theme_variables:
+                self.theme_variables = {}
+            # Apply hand-drawn style variables
+            self.theme_variables.update({
+                "fontFamily": "Kalam, cursive",
+                "primaryBorderColor": "#666",
+                "primaryColor": "#f9f9f9"
+            })
+        return self
+
+    def to_config_json(self) -> str:
+        """Generate mermaid configuration JSON."""
+        config = {
+            "theme": self.theme,
+            "securityLevel": self.security_level,
+            "look": self.look_and_feel
+        }
+
+        # Add theme variables
+        if self.theme_variables:
+            config["themeVariables"] = self.theme_variables
+
+        # Add diagram-specific configs
+        if self.flowchart_config:
+            config["flowchart"] = self.flowchart_config
+        if self.sequence_config:
+            config["sequence"] = self.sequence_config
+        if self.gantt_config:
+            config["gantt"] = self.gantt_config
+        if self.er_config:
+            config["er"] = self.er_config
+        if self.pie_config:
+            config["pie"] = self.pie_config
+        if self.state_config:
+            config["state"] = self.state_config
+
+        # Add font family
+        if self.font_family:
+            config["fontFamily"] = self.font_family
+
+        # Add wrap
+        config["wrap"] = self.wrap
+
+        return json.dumps(config, indent=2)
+
+    def to_cli_args(self) -> List[str]:
+        """Convert to mermaid CLI (mmdc) arguments."""
+        args = []
+
+        # Create config file content
+        config_content = self.to_config_json()
+
+        # In real implementation, write to temp file
+        # For now, return args that would be used
+        args.extend(["--configFile", "<generated-config.json>"])
+
+        # Add dimensions
+        if self.width:
+            args.extend(["--width", str(self.width)])
+        if self.height:
+            args.extend(["--height", str(self.height)])
+
+        # Add background color
+        if self.background_color:
+            args.extend(["--backgroundColor", self.background_color])
+
+        # Add puppeteer config if specified
+        if self.puppeteer_config:
+            args.extend(["--puppeteerConfigFile", "<puppeteer-config.json>"])
+
+        return args
+```
+
+### Framework Options Usage Examples
+
+```python
+# Example usage with Mermaid diagram specification
+diagram_spec = DiagramSpecification(
+    id="user-flow",
+    type=DiagramType.SEQUENCE,
+    framework=DiagramFramework.MERMAID,
+    agent="t2d-mermaid-generator",
+    title="User Authentication Flow",
+    instructions="Create a sequence diagram showing user login flow with authentication service, user database, and session management",
+    output_file="docs/assets/user-flow.mmd",
+    output_formats=[OutputFormat.SVG, OutputFormat.PNG],
+    options=MermaidConfig(
+        theme="forest",
+        look_and_feel="handDrawn",
+        sequence_config={
+            "mirrorActors": True,
+            "showSequenceNumbers": True,
+            "rightAngles": True
+        },
+        width=1600,
+        height=900
+    )
+)
+
+# Generate configuration
+config_json = diagram_spec.options.to_config_json()
+cli_args = diagram_spec.options.to_cli_args()
+
+# Example with theme customization
+custom_theme_spec = DiagramSpecification(
+    id="system-arch",
+    type=DiagramType.FLOWCHART,
+    framework=DiagramFramework.MERMAID,
+    agent="t2d-mermaid-generator",
+    title="System Architecture",
+    instructions="Create a flowchart showing microservices architecture with API gateway, service mesh, and databases",
+    output_file="docs/assets/architecture.mmd",
+    output_formats=[OutputFormat.SVG],
+    options=MermaidConfig(
+        theme="dark",
+        theme_variables={
+            "primaryColor": "#ff6b6b",
+            "primaryTextColor": "#ffffff",
+            "primaryBorderColor": "#ff6b6b",
+            "lineColor": "#4ecdc4",
+            "secondaryColor": "#45b7d1",
+            "tertiaryColor": "#96ceb4"
+        },
+        flowchart_config={
+            "curve": "basis",
+            "padding": 15,
+            "nodeSpacing": 60,
+            "rankSpacing": 80,
+            "useMaxWidth": True,
+            "htmlLabels": True
+        },
+        background_color="transparent",
+        wrap=True
+    )
+)
+
+# Example with Gantt chart configuration
+gantt_spec = DiagramSpecification(
+    id="project-timeline",
+    type=DiagramType.GANTT,
+    framework=DiagramFramework.MERMAID,
+    agent="t2d-mermaid-generator",
+    title="Project Development Timeline",
+    instructions="Create a Gantt chart showing development phases, milestones, and dependencies",
+    output_file="docs/assets/timeline.mmd",
+    output_formats=[OutputFormat.SVG, OutputFormat.PNG],
+    options=MermaidConfig(
+        theme="neutral",
+        gantt_config={
+            "axisFormat": "%m/%d",
+            "displayMode": "compact",
+            "fontSize": 12,
+            "fontFamily": '"Roboto", sans-serif',
+            "leftPadding": 120
+        },
+        width=1400,
+        height=600
+    )
+)
+
+# Example with D2 diagram specification for comparison
+d2_spec = DiagramSpecification(
+    id="architecture-d2",
+    type=DiagramType.C4_CONTAINER,
+    framework=DiagramFramework.D2,
+    agent="t2d-d2-generator",
+    title="System Architecture (D2)",
+    instructions="Create a C4 container diagram showing microservices architecture",
+    output_file="docs/assets/architecture.d2",
+    output_formats=[OutputFormat.SVG],
+    options=D2Options(
+        layout_engine="elk",
+        theme="cool-classics",
+        sketch=True,
+        width=1920,
+        height=1080,
+        direction="right"
+    )
+)
+```
+
+### MarpConfig Model
+
+```python
+class MarpConfig(T2DBaseModel):
+    """Advanced Marp presentation configuration with directives and exports."""
+
+    # Theme configuration
+    theme: Literal[
+        "default", "gaia", "uncover",
+        # Custom themes can be added
+    ] = Field(
+        default="default",
+        description="Marp theme to apply"
+    )
+
+    custom_theme_path: Optional[Path] = Field(
+        default=None,
+        description="Path to custom CSS theme file"
+    )
+
+    # Global directives
+    marp: bool = Field(
+        default=True,
+        description="Enable Marp rendering"
+    )
+
+    size: Literal["4:3", "16:9", "4K", "A4", "Letter"] = Field(
+        default="16:9",
+        description="Slide size/aspect ratio"
+    )
+
+    paginate: bool = Field(
+        default=True,
+        description="Show page numbers"
+    )
+
+    header: Optional[str] = Field(
+        default=None,
+        description="Global header text for all slides"
+    )
+
+    footer: Optional[str] = Field(
+        default=None,
+        description="Global footer text for all slides"
+    )
+
+    # Style configuration
+    style: Optional[str] = Field(
+        default=None,
+        description="Custom CSS styles",
+        example="""
+        section {
+            background-color: #f0f0f0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007acc;
+        }
+        """
+    )
+
+    background_color: Optional[str] = Field(
+        default=None,
+        description="Default background color"
+    )
+
+    background_image: Optional[str] = Field(
+        default=None,
+        description="URL or path to background image"
+    )
+
+    background_size: Literal["cover", "contain", "auto", "fit"] = Field(
+        default="cover",
+        description="Background image sizing"
+    )
+
+    # Typography
+    font_family: Optional[str] = Field(
+        default=None,
+        description="Primary font family"
+    )
+
+    font_size: Optional[str] = Field(
+        default=None,
+        description="Base font size (e.g., '28px', '2em')"
+    )
+
+    # Color scheme
+    color: Optional[str] = Field(
+        default=None,
+        description="Default text color"
+    )
+
+    # Slide-specific directives
+    class_: Optional[str] = Field(
+        default=None,
+        alias="class",
+        description="CSS class to apply to slides"
+    )
+
+    # Transition effects (for HTML export)
+    transition: Optional[Literal[
+        "none", "fade", "slide", "convex",
+        "concave", "zoom", "linear"
+    ]] = Field(
+        default=None,
+        description="Slide transition effect for HTML export"
+    )
+
+    transition_speed: Literal["slow", "default", "fast"] = Field(
+        default="default",
+        description="Transition speed"
+    )
+
+    # Export configurations
+    html_options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="HTML export options",
+        example={
+            "printable": True,
+            "progress": True,
+            "controls": True,
+            "controlsLayout": "bottom-right",
+            "controlsTutorial": True,
+            "hash": True,
+            "respondToHashChanges": True
+        }
+    )
+
+    pdf_options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="PDF export options",
+        example={
+            "format": "A4",
+            "landscape": True,
+            "printBackground": True,
+            "displayHeaderFooter": True,
+            "margin": {
+                "top": "1cm",
+                "right": "1cm",
+                "bottom": "1cm",
+                "left": "1cm"
+            }
+        }
+    )
+
+    pptx_options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="PowerPoint export options",
+        example={
+            "output_width": 1920,
+            "output_height": 1080
+        }
+    )
+
+    # Advanced features
+    math: Literal["katex", "mathjax", None] = Field(
+        default="katex",
+        description="Math rendering engine"
+    )
+
+    emoji_shortcode: bool = Field(
+        default=True,
+        description="Enable emoji shortcodes like :smile:"
+    )
+
+    html: bool = Field(
+        default=True,
+        description="Allow raw HTML in markdown"
+    )
+
+    # Auto-play configuration (for HTML)
+    auto_play: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description="Auto-advance slides after N seconds (0 = disabled)"
+    )
+
+    loop: bool = Field(
+        default=False,
+        description="Loop presentation when auto-playing"
+    )
+
+    # Speaker notes
+    notes: bool = Field(
+        default=True,
+        description="Enable speaker notes"
+    )
+
+    @field_validator('custom_theme_path')
+    @classmethod
+    def validate_theme_exists(cls, v: Optional[Path]) -> Optional[Path]:
+        """Check if custom theme file exists."""
+        if v and not v.exists():
+            raise ValueError(f"Custom theme file not found: {v}")
+        return v
+
+    def to_frontmatter(self) -> str:
+        """Generate Marp frontmatter for markdown file."""
+        fm = ["---"]
+
+        # Core directives
+        fm.append(f"marp: {str(self.marp).lower()}")
+        fm.append(f"theme: {self.theme}")
+        fm.append(f"size: {self.size}")
+        fm.append(f"paginate: {str(self.paginate).lower()}")
+
+        # Optional directives
+        if self.header:
+            fm.append(f"header: '{self.header}'")
+        if self.footer:
+            fm.append(f"footer: '{self.footer}'")
+        if self.background_color:
+            fm.append(f"backgroundColor: {self.background_color}")
+        if self.background_image:
+            fm.append(f"backgroundImage: url('{self.background_image}')")
+        if self.background_size:
+            fm.append(f"backgroundSize: {self.background_size}")
+        if self.color:
+            fm.append(f"color: {self.color}")
+        if self.class_:
+            fm.append(f"class: {self.class_}")
+        if self.math:
+            fm.append(f"math: {self.math}")
+
+        # Style block
+        if self.style or self.font_family or self.font_size:
+            fm.append("style: |")
+            if self.font_family or self.font_size:
+                fm.append("  section {")
+                if self.font_family:
+                    fm.append(f"    font-family: {self.font_family};")
+                if self.font_size:
+                    fm.append(f"    font-size: {self.font_size};")
+                fm.append("  }")
+            if self.style:
+                for line in self.style.strip().split('\n'):
+                    fm.append(f"  {line}")
+
+        fm.append("---")
+        fm.append("")  # Empty line after frontmatter
+
+        return "\n".join(fm)
+
+    def to_cli_args(self) -> List[str]:
+        """Convert to Marp CLI arguments."""
+        args = []
+
+        # Theme
+        if self.custom_theme_path:
+            args.extend(["--theme", str(self.custom_theme_path)])
+        elif self.theme != "default":
+            args.extend(["--theme", self.theme])
+
+        # HTML options
+        if self.html:
+            args.append("--html")
+
+        # Math
+        if self.math:
+            args.extend(["--math", self.math])
+
+        # PDF options
+        if self.pdf_options:
+            if self.pdf_options.get("format"):
+                args.extend(["--pdf-format", self.pdf_options["format"]])
+            if self.pdf_options.get("landscape"):
+                args.append("--pdf-landscape")
+
+        # Allow local files
+        args.append("--allow-local-files")
+
+        return args
+
+    def to_engine_config(self) -> Dict[str, Any]:
+        """Generate Marp engine configuration."""
+        config = {
+            "html": self.html,
+            "emoji": {
+                "shortcode": self.emoji_shortcode
+            }
+        }
+
+        if self.math:
+            config["math"] = self.math
+
+        if self.html_options:
+            config["options"] = self.html_options
+
+        return config
+
+class SlideDirective(T2DBaseModel):
+    """Individual slide directives for fine control."""
+
+    # Layout directives
+    class_: Optional[Literal[
+        "lead", "invert", "fit", "centered"
+    ]] = Field(default=None, alias="class")
+
+    # Background directives (per slide)
+    bg: Optional[str] = Field(
+        default=None,
+        description="Background color or image URL"
+    )
+
+    bg_color: Optional[str] = Field(
+        default=None,
+        description="Background color"
+    )
+
+    bg_image: Optional[str] = Field(
+        default=None,
+        description="Background image URL"
+    )
+
+    bg_size: Optional[str] = Field(
+        default=None,
+        description="Background size"
+    )
+
+    # Pagination
+    paginate_skip: bool = Field(
+        default=False,
+        description="Skip page number on this slide"
+    )
+
+    # Header/Footer overrides
+    header: Optional[str] = None
+    footer: Optional[str] = None
+
+    def to_markdown_comment(self) -> str:
+        """Convert to HTML comment for slide."""
+        directives = []
+
+        if self.class_:
+            directives.append(f"_class: {self.class_}")
+        if self.bg:
+            directives.append(f"bg: {self.bg}")
+        if self.bg_color:
+            directives.append(f"backgroundColor: {self.bg_color}")
+        if self.bg_image:
+            directives.append(f"backgroundImage: url('{self.bg_image}')")
+        if self.bg_size:
+            directives.append(f"backgroundSize: {self.bg_size}")
+        if self.paginate_skip:
+            directives.append("_paginate: false")
+        if self.header is not None:
+            directives.append(f"_header: '{self.header}'")
+        if self.footer is not None:
+            directives.append(f"_footer: '{self.footer}'")
+
+        if directives:
+            return f"<!-- {' '.join(directives)} -->"
+        return ""
 ```
 
 ### Validation Examples
@@ -705,6 +1681,557 @@ def enhanced_validation_command(recipe_path: str) -> None:
         print(f"❌ Recipe validation failed:")
         for error in report.errors:
             print(f"  - {error}")
+```
+
+## File-Based State Management
+
+Since we're using a simplified architecture without an orchestrator, implement file-based state management for coordination between agents:
+
+### State Directory Structure
+```python
+class StateManager(T2DBaseModel):
+    """Manages file-based state for agent coordination."""
+
+    state_dir: Path = Field(
+        default=Path(".t2d-state"),
+        description="Directory for state files"
+    )
+
+    @field_validator('state_dir')
+    @classmethod
+    def ensure_state_dir(cls, v: Path) -> Path:
+        """Create state directory if it doesn't exist."""
+        v.mkdir(exist_ok=True)
+        return v
+
+    def write_state(self, key: str, data: dict) -> None:
+        """Write state data to file."""
+        state_file = self.state_dir / f"{key}.json"
+        state_file.write_text(json.dumps(data, indent=2))
+
+    def read_state(self, key: str) -> Optional[dict]:
+        """Read state data from file."""
+        state_file = self.state_dir / f"{key}.json"
+        if state_file.exists():
+            return json.loads(state_file.read_text())
+        return None
+
+    def list_states(self) -> List[str]:
+        """List all available state keys."""
+        return [f.stem for f in self.state_dir.glob("*.json")]
+```
+
+### Processing State Model
+```python
+class ProcessingState(T2DBaseModel):
+    """Tracks the state of recipe processing."""
+
+    recipe_path: Path
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+
+    # Track what's been processed
+    diagrams_completed: List[str] = Field(default_factory=list)
+    content_files_created: List[Path] = Field(default_factory=list)
+    errors: List[str] = Field(default_factory=list)
+
+    # Current phase
+    phase: Literal["transforming", "generating", "documenting", "complete", "error"] = "transforming"
+
+    def add_completed_diagram(self, diagram_id: str) -> None:
+        """Mark a diagram as completed."""
+        if diagram_id not in self.diagrams_completed:
+            self.diagrams_completed.append(diagram_id)
+
+    def add_content_file(self, file_path: Path) -> None:
+        """Track a created content file."""
+        if file_path not in self.content_files_created:
+            self.content_files_created.append(file_path)
+
+    def add_error(self, error: str) -> None:
+        """Record an error."""
+        self.errors.append(error)
+        self.phase = "error"
+
+    def complete(self) -> None:
+        """Mark processing as complete."""
+        self.completed_at = datetime.utcnow()
+        self.phase = "complete"
+```
+
+### Agent Coordination Models
+```python
+class DiagramGenerationState(T2DBaseModel):
+    """State for diagram generation agents."""
+
+    diagram_id: str
+    framework: DiagramFramework
+    status: Literal["pending", "generating", "complete", "failed"] = "pending"
+    output_files: List[Path] = Field(default_factory=list)
+    error_message: Optional[str] = None
+
+    def mark_complete(self, files: List[Path]) -> None:
+        """Mark generation as complete with output files."""
+        self.status = "complete"
+        self.output_files = files
+
+    def mark_failed(self, error: str) -> None:
+        """Mark generation as failed."""
+        self.status = "failed"
+        self.error_message = error
+
+class ContentGenerationState(T2DBaseModel):
+    """State for content generation agents."""
+
+    content_type: Literal["documentation", "presentation"]
+    status: Literal["waiting", "gathering", "generating", "complete", "failed"] = "waiting"
+    diagrams_found: List[Path] = Field(default_factory=list)
+    output_path: Optional[Path] = None
+    error_message: Optional[str] = None
+
+    def add_diagram(self, path: Path) -> None:
+        """Add a discovered diagram."""
+        if path not in self.diagrams_found:
+            self.diagrams_found.append(path)
+```
+
+### State File Examples
+
+Example `.t2d-state/processing.json`:
+```json
+{
+  "recipe_path": "recipe.t2d.yaml",
+  "started_at": "2025-01-17T10:00:00Z",
+  "completed_at": null,
+  "diagrams_completed": ["architecture-c4", "database-erd"],
+  "content_files_created": ["docs/architecture.md", "docs/database.md"],
+  "errors": [],
+  "phase": "generating"
+}
+```
+
+Example `.t2d-state/diagram-architecture-c4.json`:
+```json
+{
+  "diagram_id": "architecture-c4",
+  "framework": "d2",
+  "status": "complete",
+  "output_files": ["diagrams/architecture-c4.d2", "diagrams/architecture-c4.svg"],
+  "error_message": null
+}
+```
+
+This file-based approach allows agents to:
+- Work independently without direct communication
+- Check progress by reading state files
+- Coordinate through simple filesystem operations
+- Recover from failures by examining state
+- Run in parallel without conflicts
+
+Make sure to add the necessary imports at the top of the file (json, datetime, etc.).
+
+## Expanded Diagram Type System
+
+### Comprehensive DiagramType Enum
+
+```python
+class DiagramType(str, Enum):
+    """Comprehensive diagram types supporting all major frameworks."""
+
+    # Core Mermaid types
+    FLOWCHART = "flowchart"
+    SEQUENCE = "sequence"
+    CLASS = "class"
+    STATE = "state"
+    ERD = "erd"
+    JOURNEY = "journey"
+    GANTT = "gantt"
+    PIE = "pie"
+    QUADRANT = "quadrant"
+    REQUIREMENT = "requirement"
+    GITGRAPH = "gitgraph"
+    MINDMAP = "mindmap"
+    TIMELINE = "timeline"
+    SANKEY = "sankey"
+    XY_CHART = "xy_chart"
+    BLOCK = "block"
+    PACKET = "packet"
+    ARCHITECTURE = "architecture"
+    KANBAN = "kanban"
+
+    # C4 diagrams (can be done in Mermaid or D2)
+    C4_CONTEXT = "c4_context"
+    C4_CONTAINER = "c4_container"
+    C4_COMPONENT = "c4_component"
+    C4_DEPLOYMENT = "c4_deployment"
+    C4_LANDSCAPE = "c4_landscape"
+
+    # PlantUML specific
+    PLANTUML_USECASE = "plantuml_usecase"
+    PLANTUML_ACTIVITY = "plantuml_activity"
+    PLANTUML_COMPONENT = "plantuml_component"
+    PLANTUML_DEPLOYMENT = "plantuml_deployment"
+    PLANTUML_OBJECT = "plantuml_object"
+    PLANTUML_PACKAGE = "plantuml_package"
+    PLANTUML_PROFILE = "plantuml_profile"
+    PLANTUML_COMPOSITE = "plantuml_composite"
+    PLANTUML_COMMUNICATION = "plantuml_communication"
+    PLANTUML_INTERACTION = "plantuml_interaction"
+    PLANTUML_TIMING = "plantuml_timing"
+    PLANTUML_ARCHIMATE = "plantuml_archimate"
+    PLANTUML_SPECIFICATION = "plantuml_specification"
+    PLANTUML_DITAA = "plantuml_ditaa"
+    PLANTUML_DOT = "plantuml_dot"
+    PLANTUML_SALT = "plantuml_salt"
+    PLANTUML_JSON = "plantuml_json"
+    PLANTUML_YAML = "plantuml_yaml"
+    PLANTUML_NETWORK = "plantuml_network"
+    PLANTUML_WIREFRAME = "plantuml_wireframe"
+
+    # Generic/Unknown
+    UNKNOWN = "unknown"
+
+
+class DiagramFramework(str, Enum):
+    """Supported diagram rendering frameworks."""
+    MERMAID = "mermaid"
+    D2 = "d2"
+    PLANTUML = "plantuml"
+    GRAPHVIZ = "graphviz"
+    AUTO = "auto"
+```
+
+### Diagram Type Framework Mapping
+
+```python
+DIAGRAM_TYPE_MAPPING = {
+    # Mermaid-native types
+    DiagramType.FLOWCHART: DiagramFramework.MERMAID,
+    DiagramType.SEQUENCE: DiagramFramework.MERMAID,
+    DiagramType.CLASS: DiagramFramework.MERMAID,
+    DiagramType.STATE: DiagramFramework.MERMAID,
+    DiagramType.ERD: DiagramFramework.MERMAID,
+    DiagramType.JOURNEY: DiagramFramework.MERMAID,
+    DiagramType.GANTT: DiagramFramework.MERMAID,
+    DiagramType.PIE: DiagramFramework.MERMAID,
+    DiagramType.QUADRANT: DiagramFramework.MERMAID,
+    DiagramType.REQUIREMENT: DiagramFramework.MERMAID,
+    DiagramType.GITGRAPH: DiagramFramework.MERMAID,
+    DiagramType.MINDMAP: DiagramFramework.MERMAID,
+    DiagramType.TIMELINE: DiagramFramework.MERMAID,
+    DiagramType.SANKEY: DiagramFramework.MERMAID,
+    DiagramType.XY_CHART: DiagramFramework.MERMAID,
+    DiagramType.BLOCK: DiagramFramework.MERMAID,
+    DiagramType.PACKET: DiagramFramework.MERMAID,
+    DiagramType.ARCHITECTURE: DiagramFramework.MERMAID,
+    DiagramType.KANBAN: DiagramFramework.MERMAID,
+
+    # C4 diagrams - prefer D2 for better layout
+    DiagramType.C4_CONTEXT: DiagramFramework.D2,
+    DiagramType.C4_CONTAINER: DiagramFramework.D2,
+    DiagramType.C4_COMPONENT: DiagramFramework.D2,
+    DiagramType.C4_DEPLOYMENT: DiagramFramework.D2,
+    DiagramType.C4_LANDSCAPE: DiagramFramework.D2,
+
+    # PlantUML-specific types
+    DiagramType.PLANTUML_USECASE: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_ACTIVITY: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_COMPONENT: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_DEPLOYMENT: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_OBJECT: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_PACKAGE: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_PROFILE: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_COMPOSITE: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_COMMUNICATION: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_INTERACTION: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_TIMING: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_ARCHIMATE: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_SPECIFICATION: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_DITAA: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_DOT: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_SALT: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_JSON: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_YAML: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_NETWORK: DiagramFramework.PLANTUML,
+    DiagramType.PLANTUML_WIREFRAME: DiagramFramework.PLANTUML,
+
+    # Default fallback
+    DiagramType.UNKNOWN: DiagramFramework.MERMAID,
+}
+```
+
+### Natural Language to Diagram Type Inference
+
+```python
+def infer_diagram_type(description: str) -> DiagramType:
+    """Infer diagram type from natural language description."""
+    description_lower = description.lower()
+
+    # Check for specific keywords
+    keyword_mapping = {
+        # Mermaid types
+        ("flow", "flowchart", "process flow", "workflow"): DiagramType.FLOWCHART,
+        ("sequence", "interaction", "message flow"): DiagramType.SEQUENCE,
+        ("class", "object model", "class diagram"): DiagramType.CLASS,
+        ("state", "state machine", "fsm", "finite state"): DiagramType.STATE,
+        ("erd", "entity relationship", "database", "schema", "table"): DiagramType.ERD,
+        ("journey", "user journey", "customer journey"): DiagramType.JOURNEY,
+        ("gantt", "timeline", "project plan", "schedule"): DiagramType.GANTT,
+        ("pie", "pie chart", "distribution"): DiagramType.PIE,
+        ("quadrant", "matrix", "2x2"): DiagramType.QUADRANT,
+        ("requirement", "requirements", "req"): DiagramType.REQUIREMENT,
+        ("git", "gitgraph", "branch", "commit history"): DiagramType.GITGRAPH,
+        ("mindmap", "mind map", "brainstorm"): DiagramType.MINDMAP,
+        ("timeline", "chronology", "history"): DiagramType.TIMELINE,
+        ("sankey", "flow diagram"): DiagramType.SANKEY,
+        ("xy", "chart", "graph", "plot"): DiagramType.XY_CHART,
+        ("block", "block diagram"): DiagramType.BLOCK,
+        ("packet", "network packet"): DiagramType.PACKET,
+        ("architecture", "system design"): DiagramType.ARCHITECTURE,
+        ("kanban", "board", "task board"): DiagramType.KANBAN,
+
+        # C4 types
+        ("c4 context", "system context"): DiagramType.C4_CONTEXT,
+        ("c4 container", "container diagram"): DiagramType.C4_CONTAINER,
+        ("c4 component", "component diagram"): DiagramType.C4_COMPONENT,
+        ("c4 deployment", "deployment"): DiagramType.C4_DEPLOYMENT,
+        ("c4 landscape", "landscape"): DiagramType.C4_LANDSCAPE,
+
+        # PlantUML types
+        ("use case", "usecase", "actor"): DiagramType.PLANTUML_USECASE,
+        ("activity", "activity diagram"): DiagramType.PLANTUML_ACTIVITY,
+        ("wireframe", "ui mockup"): DiagramType.PLANTUML_WIREFRAME,
+        ("network", "network diagram"): DiagramType.PLANTUML_NETWORK,
+    }
+
+    for keywords, diagram_type in keyword_mapping.items():
+        if any(keyword in description_lower for keyword in keywords):
+            return diagram_type
+
+    return DiagramType.UNKNOWN
+
+
+def get_framework_for_type(diagram_type: DiagramType,
+                          preference: Optional[DiagramFramework] = None) -> DiagramFramework:
+    """Get the appropriate framework for a diagram type, with optional user preference."""
+    if preference and preference != DiagramFramework.AUTO:
+        # Validate that the preference can handle the diagram type
+        if can_framework_handle_type(preference, diagram_type):
+            return preference
+        else:
+            # Log warning and fall back to default
+            print(f"Warning: {preference} cannot handle {diagram_type}, using default")
+
+    return DIAGRAM_TYPE_MAPPING.get(diagram_type, DiagramFramework.MERMAID)
+
+
+def can_framework_handle_type(framework: DiagramFramework, diagram_type: DiagramType) -> bool:
+    """Check if a framework can handle a specific diagram type."""
+    framework_capabilities = {
+        DiagramFramework.MERMAID: {
+            DiagramType.FLOWCHART, DiagramType.SEQUENCE, DiagramType.CLASS,
+            DiagramType.STATE, DiagramType.ERD, DiagramType.JOURNEY,
+            DiagramType.GANTT, DiagramType.PIE, DiagramType.QUADRANT,
+            DiagramType.REQUIREMENT, DiagramType.GITGRAPH, DiagramType.MINDMAP,
+            DiagramType.TIMELINE, DiagramType.SANKEY, DiagramType.XY_CHART,
+            DiagramType.BLOCK, DiagramType.PACKET, DiagramType.ARCHITECTURE,
+            DiagramType.KANBAN, DiagramType.C4_CONTEXT, DiagramType.C4_CONTAINER
+        },
+        DiagramFramework.D2: {
+            DiagramType.ARCHITECTURE, DiagramType.C4_CONTEXT, DiagramType.C4_CONTAINER,
+            DiagramType.C4_COMPONENT, DiagramType.C4_DEPLOYMENT, DiagramType.C4_LANDSCAPE,
+            DiagramType.FLOWCHART, DiagramType.SEQUENCE
+        },
+        DiagramFramework.PLANTUML: {
+            DiagramType.SEQUENCE, DiagramType.CLASS, DiagramType.STATE,
+            DiagramType.C4_CONTEXT, DiagramType.C4_CONTAINER, DiagramType.C4_COMPONENT,
+            DiagramType.PLANTUML_USECASE, DiagramType.PLANTUML_ACTIVITY,
+            DiagramType.PLANTUML_COMPONENT, DiagramType.PLANTUML_DEPLOYMENT,
+            DiagramType.PLANTUML_OBJECT, DiagramType.PLANTUML_PACKAGE,
+            DiagramType.PLANTUML_PROFILE, DiagramType.PLANTUML_COMPOSITE,
+            DiagramType.PLANTUML_COMMUNICATION, DiagramType.PLANTUML_INTERACTION,
+            DiagramType.PLANTUML_TIMING, DiagramType.PLANTUML_ARCHIMATE,
+            DiagramType.PLANTUML_SPECIFICATION, DiagramType.PLANTUML_DITAA,
+            DiagramType.PLANTUML_DOT, DiagramType.PLANTUML_SALT,
+            DiagramType.PLANTUML_JSON, DiagramType.PLANTUML_YAML,
+            DiagramType.PLANTUML_NETWORK, DiagramType.PLANTUML_WIREFRAME
+        },
+        DiagramFramework.GRAPHVIZ: {
+            DiagramType.FLOWCHART, DiagramType.ARCHITECTURE
+        }
+    }
+
+    return diagram_type in framework_capabilities.get(framework, set())
+
+
+def get_diagram_type_examples() -> Dict[DiagramType, str]:
+    """Get example descriptions for each diagram type."""
+    return {
+        # Mermaid examples
+        DiagramType.FLOWCHART: "Process flow for user registration with decision points",
+        DiagramType.SEQUENCE: "API interaction sequence between frontend, backend, and database",
+        DiagramType.CLASS: "Object-oriented model of the core domain entities",
+        DiagramType.STATE: "User authentication state machine with transitions",
+        DiagramType.ERD: "Database schema showing table relationships and constraints",
+        DiagramType.JOURNEY: "Customer journey from discovery to purchase completion",
+        DiagramType.GANTT: "Project timeline with milestones and dependencies",
+        DiagramType.PIE: "Distribution of system resource usage by component",
+        DiagramType.QUADRANT: "Technology evaluation matrix by complexity vs value",
+        DiagramType.REQUIREMENT: "Requirements traceability from business needs to implementation",
+        DiagramType.GITGRAPH: "Git branching strategy and merge workflow",
+        DiagramType.MINDMAP: "Architecture decision brainstorming and considerations",
+        DiagramType.TIMELINE: "System evolution milestones and major releases",
+        DiagramType.SANKEY: "Data flow through system components with volumes",
+        DiagramType.XY_CHART: "Performance metrics over time with trend analysis",
+        DiagramType.BLOCK: "High-level system block diagram with interfaces",
+        DiagramType.PACKET: "Network packet structure and protocol analysis",
+        DiagramType.ARCHITECTURE: "Microservices architecture with communication patterns",
+        DiagramType.KANBAN: "Development workflow board with status tracking",
+
+        # C4 examples
+        DiagramType.C4_CONTEXT: "System context showing external users and systems",
+        DiagramType.C4_CONTAINER: "Container view of microservices and databases",
+        DiagramType.C4_COMPONENT: "Component breakdown within a specific service",
+        DiagramType.C4_DEPLOYMENT: "Production deployment topology and infrastructure",
+        DiagramType.C4_LANDSCAPE: "Enterprise architecture landscape view",
+
+        # PlantUML examples
+        DiagramType.PLANTUML_USECASE: "Actor interactions with system use cases",
+        DiagramType.PLANTUML_ACTIVITY: "Business process workflow with swim lanes",
+        DiagramType.PLANTUML_WIREFRAME: "User interface mockup with interaction elements",
+        DiagramType.PLANTUML_NETWORK: "Network topology with devices and connections"
+    }
+```
+
+### Enhanced DiagramSpecification Model
+
+```python
+class EnhancedDiagramSpecification(DiagramSpecification):
+    """Enhanced diagram specification with intelligent framework selection."""
+
+    @model_validator(mode='after')
+    def validate_and_set_framework(self) -> 'EnhancedDiagramSpecification':
+        """Automatically set framework based on diagram type if not specified."""
+        if not self.framework:
+            self.framework = get_framework_for_type(self.type)
+        else:
+            # Validate user-specified framework can handle the diagram type
+            if not can_framework_handle_type(self.framework, self.type):
+                raise ValueError(
+                    f"Framework {self.framework.value} cannot handle diagram type {self.type.value}. "
+                    f"Recommended framework: {get_framework_for_type(self.type).value}"
+                )
+        return self
+
+    @classmethod
+    def from_description(cls, description: str, **kwargs) -> 'EnhancedDiagramSpecification':
+        """Create diagram specification from natural language description."""
+        inferred_type = infer_diagram_type(description)
+        recommended_framework = get_framework_for_type(inferred_type)
+
+        return cls(
+            type=inferred_type,
+            framework=recommended_framework,
+            title=description.title(),
+            instructions=f"Create a {inferred_type.value} diagram based on: {description}",
+            **kwargs
+        )
+
+    def get_framework_specific_options(self) -> Dict[str, Any]:
+        """Get framework-specific rendering options."""
+        framework_options = {
+            DiagramFramework.MERMAID: {
+                "theme": "default",
+                "fontFamily": "arial",
+                "fontSize": 16,
+                "primaryColor": "#ff6b6b",
+                "primaryTextColor": "#333"
+            },
+            DiagramFramework.D2: {
+                "theme": "neutral-default",
+                "layout": "dagre",
+                "sketch": False,
+                "pad": 100
+            },
+            DiagramFramework.PLANTUML: {
+                "skin": "rose",
+                "monochrome": False,
+                "handwritten": False,
+                "scale": 1.0
+            }
+        }
+
+        return framework_options.get(self.framework, {})
+
+    def get_suggested_output_formats(self) -> List[OutputFormat]:
+        """Get recommended output formats for this diagram type."""
+        # High-detail diagrams benefit from vector formats
+        vector_preferred = {
+            DiagramType.ARCHITECTURE, DiagramType.C4_CONTEXT,
+            DiagramType.C4_CONTAINER, DiagramType.C4_COMPONENT,
+            DiagramType.ERD, DiagramType.CLASS
+        }
+
+        # Interactive diagrams work well as SVG
+        interactive_types = {
+            DiagramType.MINDMAP, DiagramType.KANBAN,
+            DiagramType.JOURNEY, DiagramType.SANKEY
+        }
+
+        if self.type in vector_preferred:
+            return [OutputFormat.SVG, OutputFormat.PDF]
+        elif self.type in interactive_types:
+            return [OutputFormat.SVG]
+        else:
+            return [OutputFormat.SVG, OutputFormat.PNG]
+```
+
+### Usage Examples
+
+```python
+# Example 1: Automatic type inference
+spec1 = EnhancedDiagramSpecification.from_description(
+    "User registration process flow with validation steps",
+    id="user-registration",
+    output_file="diagrams/user-registration.mmd"
+)
+# Results in: type=FLOWCHART, framework=MERMAID
+
+# Example 2: C4 architecture diagram
+spec2 = EnhancedDiagramSpecification(
+    id="system-context",
+    type=DiagramType.C4_CONTEXT,
+    title="E-commerce System Context",
+    instructions="Show the e-commerce system with external users and integrations",
+    output_file="diagrams/context.d2",
+    output_formats=[OutputFormat.SVG, OutputFormat.PDF]
+)
+# Automatically sets framework=D2
+
+# Example 3: PlantUML use case diagram
+spec3 = EnhancedDiagramSpecification(
+    id="user-workflows",
+    type=DiagramType.PLANTUML_USECASE,
+    framework=DiagramFramework.PLANTUML,
+    title="User Workflow Use Cases",
+    instructions="Model the key user interactions with the system",
+    output_file="diagrams/use-cases.puml",
+    output_formats=[OutputFormat.SVG, OutputFormat.PNG]
+)
+
+# Example 4: Framework validation
+try:
+    invalid_spec = EnhancedDiagramSpecification(
+        id="invalid",
+        type=DiagramType.GANTT,  # Gantt charts only supported by Mermaid
+        framework=DiagramFramework.D2,  # D2 doesn't support Gantt
+        title="Project Timeline",
+        instructions="Show project milestones",
+        output_file="timeline.d2"
+    )
+except ValueError as e:
+    print(f"Validation error: {e}")
+    # Output: Framework d2 cannot handle diagram type gantt. Recommended framework: mermaid
 ```
 
 ---
