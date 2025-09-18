@@ -539,18 +539,36 @@ class AgentType(Enum):
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
-| name | string | Yes | Tool name | Tool identifier |
-| operation | FileOperation | Yes | Enum | Type of file operation |
-| validation | bool | Yes | Boolean | Whether Pydantic validation is applied |
+| name | string | Yes | Tool name | Tool identifier (e.g., "read_user_recipe", "write_processed_recipe") |
+| description | string | Yes | Max 500 chars | Tool purpose and usage |
+| parameters | Dict[str, Any] | Yes | JSON Schema | Tool parameter schema |
+| returns_validation | bool | Yes | Boolean | Whether output is Pydantic-validated |
+
+**Available MCP Tools**:
+- `read_user_recipe`: Read and validate recipe.yaml files
+- `write_processed_recipe`: Write and validate recipe.t2d.yaml files
+- `list_recipes`: List available recipe files
+- `validate_recipe`: Validate a recipe without writing
+- `analyze_recipe`: Analyze recipe structure and provide insights
+- `suggest_enhancements`: Suggest recipe improvements (PDF, PPT, missing diagrams)
+
+### MCPResource
+**Purpose**: Recipe files exposed as MCP resources for easy access
+**Source**: MCP server scans working directory
+
+| Field | Type | Required | Validation | Description |
+|-------|------|----------|------------|-------------|
+| uri | string | Yes | URI format | Resource URI (e.g., "recipe://my-project/recipe.yaml") |
+| name | string | Yes | Max 255 chars | Human-readable resource name |
+| path | string | Yes | Valid path | File system path to recipe |
+| type | ResourceType | Yes | Enum | Type of resource (user_recipe, processed_recipe) |
+| last_modified | datetime | Yes | ISO 8601 | When file was last modified |
 
 **Enums**:
 ```python
-class FileOperation(Enum):
-    READ_USER_RECIPE = "read_user_recipe"
-    WRITE_PROCESSED_RECIPE = "write_processed_recipe"
-    LIST_RECIPES = "list_recipes"
-    VALIDATE_RECIPE = "validate_recipe"
-    PREVIEW_DIAGRAM = "preview_diagram"
+class ResourceType(Enum):
+    USER_RECIPE = "user_recipe"      # recipe.yaml files
+    PROCESSED_RECIPE = "processed_recipe"  # recipe.t2d.yaml files
 ```
 
 ## Relationships
