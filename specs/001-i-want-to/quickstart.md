@@ -1,7 +1,7 @@
 # Quickstart Guide: t2d-kit
 
-**Multi-Framework Diagram Pipeline**
-*Transform YAML recipes into beautiful documentation and presentations with auto-routed diagrams*
+**Intelligent Documentation Generator**
+*Transform requirements into beautiful diagrams and documentation using self-organizing agents*
 
 ## Installation
 
@@ -10,26 +10,27 @@
 # Install with uv package manager
 uvx install t2d-kit
 
-# Setup agents and optionally create initial recipe
-t2d setup              # Just setup agents
-t2d setup --init       # Setup and create recipe.yaml
+# Setup intelligent agents
+t2d setup
 
 # Output:
 # ✅ t2d-kit setup complete!
-#    Claude agents installed to: ~/.claude
+#    Self-organizing agents installed to: ~/.claude/agents
 #
-# 📝 Available commands:
-#    /t2d-transform - Transform user recipe to processed recipe
-#    /t2d-create    - Process recipe and generate outputs
+# 🤖 Intelligent agents ready:
+#    - Transform Agent: Converts simple recipes to detailed specs
+#    - Diagram Agents: Generate D2, Mermaid, PlantUML diagrams
+#    - Content Agents: Create documentation and presentations
+#    - All agents self-activate based on "use proactively" instructions
 ```
 
-### Step 2: Configure MCP Server (Optional)
+### Step 2: Connect to Your Existing MkDocs Site
 ```bash
-# Start MCP server with current directory as working directory
-t2d mcp
+# t2d-kit integrates with your existing documentation site
+cd your-existing-docs-project
 
-# Or specify a different working directory for recipes
-t2d mcp ~/my-recipes
+# Start MCP server in your docs directory
+t2d mcp .
 
 # Add to Claude Desktop MCP settings:
 {
@@ -42,24 +43,25 @@ t2d mcp ~/my-recipes
 }
 
 # The MCP server provides:
-# - Recipe file management (read/write/validate)
-# - Recipe resources for discovery
-# - Diagram preview with visual rendering
-# - Tool availability checking
+# - Recipe management within your existing project
+# - Integration with existing MkDocs navigation
+# - File-based state persistence for agents
+# - Asset management in your docs/assets directory
 ```
 
 ### Step 3: Verify Installation
 ```bash
-# Check all components
+# Check all components and agent readiness
 t2d verify
 
 # ✓ Claude Code found
-# ✓ Agent files installed
-# ✓ Slash commands available
-# ✓ mise installed
-# ✓ D2 available
-# ✓ Mermaid CLI available
+# ✓ Intelligent agents installed and configured
+# ✓ Agent self-activation enabled
+# ✓ mise dependency manager available
+# ✓ D2 diagram tool ready
+# ✓ Mermaid CLI ready
 # ✓ MCP server functional
+# ✓ File-based state management working
 ```
 
 ## Prerequisites
@@ -122,188 +124,128 @@ npm install -g @mermaid-js/mermaid-cli
 # Linux: sudo apt install default-jre plantuml
 ```
 
-## Development Workflow
+## Intelligent Workflow
 
-### Simple Claude Desktop Workflow
+### Natural Language Development
 
-Just tell Claude what you want in natural language:
+Simply tell Claude what you want - the agents self-organize to complete complex tasks:
 
 ```
-# Transform and preview in one request:
-"Transform recipe.yaml, process it, and show me a preview"
+# Complete workflow in natural language:
+"Create technical documentation for my e-commerce platform with architecture diagrams and API docs"
 
-# Claude will:
-# 1. Transform recipe.yaml → recipe.t2d.yaml
-# 2. Generate all diagrams and content
-# 3. Start preview servers automatically
-# 4. Report URLs:
-#    - Documentation: http://localhost:8000
-#    - Presentation: http://localhost:8080
+# Claude's intelligent agents will:
+# 1. Transform Agent creates recipe.yaml → recipe.t2d.yaml automatically
+# 2. Diagram Agents generate appropriate diagrams (D2 for architecture, Mermaid for flows)
+# 3. Content Agents write documentation pages
+# 4. Integration with your existing MkDocs site
+# 5. All state persisted in files for transparency
 
-# Make changes and preview:
-"Update the architecture diagram to show microservices and preview the changes"
+# Iterative improvements:
+"Add a sequence diagram showing the payment flow and update the API documentation"
 
-# Claude will:
-# 1. Update the diagram
-# 2. Regenerate affected content
-# 3. Preview servers auto-reload
+# Agents self-activate to:
+# 1. Generate the sequence diagram
+# 2. Update relevant documentation pages
+# 3. Maintain consistency across all outputs
 ```
 
-The orchestrator agent handles all preview server management based on your request. No need for manual server commands!
+**No orchestrator needed** - agents are self-sufficient and coordinate through file-based state management.
 
 ## Quick Start Example
 
-### 1. Create a User Recipe File
+### 1. Create Your Simple Recipe
 
-#### Option A: Interactive Creation (Recommended)
-```bash
-# Create recipe interactively with prompts
-t2d init --interactive --name "My Project"
-
-# Or use templates:
-t2d init --name "My Project" --template full     # All features
-t2d init --name "My Project" --template basic    # Common setup
-t2d init --name "My Project" --template minimal  # Bare minimum
-```
-
-#### Option B: Manual Creation
-Save as `recipe.yaml` (user-maintained, simple):
+Create a `recipe.yaml` file with your requirements (user-maintained, simple format):
 
 ```yaml
 recipe:
   name: "E-Commerce Platform"
   version: "1.0.0"
 
-  # Product Requirements Document (3 options)
+  # Your requirements (any format - PRD, user stories, etc.)
+  requirements: |
+    # E-Commerce Platform Requirements
 
-  # Option 1: Embedded PRD content
-  prd:
-    content: |
-      # E-Commerce Platform PRD
+    ## Overview
+    Modern e-commerce platform with microservices architecture.
+    Users can browse products, manage cart, and complete purchases.
 
-      ## Overview
-      We're building a modern e-commerce platform that allows users to browse products,
-      add items to cart, and complete purchases with multiple payment methods.
+    ## Key Features
+    - User authentication and profiles
+    - Product catalog with search
+    - Shopping cart and checkout
+    - Payment processing (Stripe)
+    - Order tracking
+    - Admin dashboard
 
-      ## Key Features
-      - User registration and authentication
-      - Product catalog with search and filtering
-      - Shopping cart management
-      - Order processing and payment
-      - Order tracking and history
-      - Admin dashboard for inventory management
+    ## Tech Stack
+    - React frontend with TypeScript
+    - Node.js microservices (Auth, Products, Orders, Payments)
+    - PostgreSQL for persistence
+    - Redis for caching
+    - Kubernetes deployment
 
-      ## Technical Requirements
-      - RESTful API architecture
-      - Microservices for scalability
-      - PostgreSQL for data persistence
-      - Redis for caching
-      - Stripe for payment processing
-      - React frontend with TypeScript
-
-      ## User Flows
-      1. Registration: Email verification required
-      2. Shopping: Browse -> Add to Cart -> Checkout
-      3. Payment: Multiple payment methods supported
-      4. Order: Real-time tracking with notifications
-
-  # High-level instructions for generation
-  instructions:
+  # Simple instructions for what you want generated
+  want:
     diagrams:
-      - type: "system architecture"
-        description: "Show all microservices and their interactions"
-
-      - type: "user shopping flow"
-        description: "Sequence diagram from browse to purchase"
-
-      - type: "database schema"
-        description: "ERD for products, users, and orders"
-
-      - type: "deployment architecture"
-        description: "Show Kubernetes clusters and services"
+      - "system architecture showing microservices"
+      - "user flow from browse to purchase"
+      - "database relationships"
 
     documentation:
-      style: "technical"  # Developer-focused documentation
-      audience: "backend developers and DevOps engineers"
-      sections:
-        - "overview"
-        - "architecture"
-        - "api-reference"
-        - "deployment-guide"
-      detail_level: "detailed"
-      include_code_examples: true
-      include_diagrams_inline: true
+      audience: "developers"
+      style: "technical"
+      include_api_docs: true
 
-    presentation:
-      audience: "executive stakeholders and investors"
-      max_slides: 20
-      style: "executive"  # High-level overview
-      include_speaker_notes: true
-      emphasis_points:
-        - "Scalability to 1M users"
-        - "Security compliance"
-        - "Time to market advantages"
-      time_limit: 15  # 15-minute presentation
-
-    focus_areas:
-      - "Microservices communication patterns"
-      - "Payment processing security measures"
-      - "Horizontal scaling capabilities"
-      - "High availability architecture"
-
-    exclude:
-      - "Internal implementation details"
-      - "Third-party API keys"
-      - "Database passwords"
+    integration:
+      existing_site: true  # Integrate with existing MkDocs site
+      assets_dir: "docs/assets"
+      pages_dir: "docs/features"
 ```
 
-### Alternative PRD Sources
+### Alternative Requirements Sources
 
-#### Option 2: Local File Reference
+#### Option 2: Reference External Files
 ```yaml
 recipe:
   name: "E-Commerce Platform"
-  prd:
-    file_path: "docs/requirements/e-commerce-prd.md"
+  requirements:
+    file_path: "docs/requirements/prd.md"
     format: markdown
-    sections:  # Optional: specific sections to focus on
-      - "Technical Requirements"
-      - "API Specifications"
+  # ... rest of recipe
 ```
 
-#### Option 3: External PRD via MCP
-When you need to fetch a PRD from an external source, you can:
-
-```bash
-# Tell Claude to fetch the PRD first:
-"First fetch the PRD document with UUID abc-123 using mcp__chat-prd__get_document,
-then transform recipe.yaml using that PRD"
-
-# Or provide instructions with the transform command:
-"Transform recipe.yaml, but first fetch the PRD from document UUID abc-123"
-```
-
-The transform agent will:
-1. Fetch the PRD using the appropriate MCP tool
-2. Use the fetched content as the PRD
-3. Continue with normal recipe transformation
-
-### 2. Transform Recipe (Agent Processing)
-
-Transform the user recipe into a detailed specification by asking Claude Desktop:
+#### Option 3: Use Existing PRD Documents
+When you have requirements in external systems, just tell Claude:
 
 ```
-# In Claude Desktop, simply ask:
-"Use the t2d-transform agent to transform recipe.yaml"
-
-# Or use the slash command:
-/t2d-transform recipe.yaml
-
-# Claude Desktop will use Desktop Commander to execute the transform agent
-# which analyzes the PRD and generates recipe.t2d.yaml
+"Create diagrams and documentation for my e-commerce platform.
+First fetch the PRD document with UUID abc-123, then generate the architecture diagrams."
 ```
 
-This generates `recipe.t2d.yaml` (agent-generated, detailed):
+The agents will:
+1. Automatically fetch the requirements using appropriate tools
+2. Create a recipe.yaml based on those requirements
+3. Generate all diagrams and documentation
+4. Integrate with your existing site
+
+### 2. Generate Everything with Natural Language
+
+Simply tell Claude what you want - no complex commands needed:
+
+```
+# Natural language request:
+"Generate technical documentation and diagrams for my e-commerce platform recipe"
+
+# Claude's agents automatically:
+# 1. Transform Agent reads recipe.yaml and creates detailed recipe.t2d.yaml
+# 2. Diagram Agents generate appropriate diagrams based on content analysis
+# 3. Content Agents create documentation pages
+# 4. Everything integrates with your existing site structure
+```
+
+Behind the scenes, this generates `recipe.t2d.yaml` (agent-created, detailed specification):
 
 ```yaml
 recipe:
@@ -312,402 +254,285 @@ recipe:
   source_recipe: "recipe.yaml"
   generated_at: "2025-01-17T10:30:00Z"
 
-  # Agent-generated content specifications with prompts
-  content_files:
-    - id: overview
-      path: content/overview.md
-      type: documentation
-      agent: markdown_maintainer
-      agent_prompt: |
-        Create technical documentation for backend developers and DevOps engineers.
-        Include code examples and embed diagrams inline.
-        Focus on: Microservices communication patterns, Payment processing security measures
-        Style: Detailed technical documentation
+  # Intelligent agent configuration (auto-generated)
+  agents:
+    transform_agent:
+      use_proactively: true
+      state_file: ".t2d/transform.state"
 
-        Available diagrams:
-        - system-architecture: "E-Commerce Microservices Architecture" (docs/assets/system-architecture.svg)
-        - shopping-flow: "User Shopping Flow" (docs/assets/shopping-flow.svg)
-        - database-erd: "E-Commerce Database Schema" (docs/assets/database-erd.svg)
-        - deployment-architecture: "Kubernetes Deployment" (docs/assets/deployment-architecture.svg)
+    diagram_agents:
+      - agent: d2_generator
+        use_proactively: true
+        frameworks: ["d2"]
+        specialties: ["architecture", "systems", "c4"]
+        state_file: ".t2d/d2.state"
 
-        Embed relevant diagrams using: ![title](path)
+      - agent: mermaid_generator
+        use_proactively: true
+        frameworks: ["mermaid"]
+        specialties: ["sequence", "flowchart", "erd"]
+        state_file: ".t2d/mermaid.state"
 
-    - id: architecture
-      path: content/architecture.md
-      type: documentation
-      agent: mkdocs_formatter
-      agent_prompt: |
-        Format architecture documentation for MkDocs.
-        Target audience: backend developers and DevOps engineers
-        Include detailed technical information with code examples.
-        Focus on: Horizontal scaling capabilities, High availability architecture
+    content_agents:
+      - agent: mkdocs_maintainer
+        use_proactively: true
+        target_formats: ["mkdocs", "markdown"]
+        integration: existing_site
+        state_file: ".t2d/mkdocs.state"
 
-    - id: api-docs
-      path: content/api-docs.md
-      type: documentation
-      agent: markdown_maintainer
-      agent_prompt: |
-        Generate API reference documentation.
-        Style: Technical reference format
-        Include code examples for each endpoint
-        Detail level: Detailed
-
-    - id: slides
-      path: content/slides.md
-      type: presentation
-      agent: marp_slides
-      agent_prompt: |
-        Create executive presentation for stakeholders and investors.
-        Maximum 20 slides, 15-minute presentation.
-        Include speaker notes.
-        Emphasize: Scalability to 1M users, Security compliance, Time to market advantages
-        Style: Executive summary level, avoid technical jargon
-
-  # Agent-generated detailed diagram specs with prompts
+  # Auto-discovered diagram requirements
   diagram_specs:
     - id: system-architecture
-      type: c4_container
-      framework: d2  # Auto-selected by transform agent
-      title: "E-Commerce Microservices Architecture"
-      output_file: "docs/assets/system-architecture.d2"
-      instructions: |
-        Create a C4 Container diagram showing the e-commerce platform architecture.
-        Based on the PRD, include:
-        - User-facing applications (Web and Mobile)
-        - API Gateway as the central entry point
-        - Microservices: Auth Service, Product Service, Cart Service, Order Service, Payment Service, Notification Service
-        - Data stores: PostgreSQL for persistent data, Redis for caching
-        - External integration: Stripe API for payments
-        - Show all connections with appropriate protocols (HTTPS, gRPC, SQL, AMQP)
-        - Use proper C4 notation with clear labels
-
-    - id: shopping-flow
-      type: sequence
-      framework: mermaid  # Auto-selected by transform agent
-      title: "User Shopping Flow"
-      output_file: "docs/assets/shopping-flow.mmd"
-      instructions: |
-        Create a sequence diagram showing the complete user shopping flow.
-        Based on the PRD, show the flow from browse to purchase:
-        1. User browsing products (interaction with Product Service)
-        2. Adding items to cart (Cart Service with Redis)
-        3. Proceeding to checkout
-        4. Payment processing (Payment Service with Stripe)
-        5. Order confirmation (Order Service)
-        6. Notification sending (Notification Service)
-        Show all API calls, service interactions, and data operations.
-        Include error handling paths for payment failures.
-
-    - id: database-erd
-      type: erd
-      framework: mermaid  # Auto-selected by transform agent
-      title: "E-Commerce Database Schema"
-      output_file: "docs/assets/database-erd.mmd"
-      instructions: |
-        Create an Entity Relationship Diagram for the e-commerce database.
-        Based on the PRD, include these entities and relationships:
-        - Users (with email, password_hash, timestamps)
-        - Profiles (user profiles with name, avatar, bio)
-        - Products (with name, description, price, stock)
-        - Categories (for organizing products)
-        - Orders (with user reference, status, total, timestamps)
-        - OrderItems (linking orders to products with quantity and price)
-        - Payments (payment records with method, amount, status)
-        - Sessions (for user authentication tokens)
-        Show all primary keys, foreign keys, and cardinality of relationships.
-        Use standard ERD notation with proper relationship labels.
-
-    - id: deployment-architecture
       type: architecture
-      framework: d2  # Auto-selected by transform agent
-      title: "Kubernetes Deployment"
-      output_file: "docs/assets/deployment-architecture.d2"
-      instructions: |
-        Create a deployment architecture diagram showing the Kubernetes setup.
-        Based on the PRD requirements for scalability and high availability:
-        - Show multiple Kubernetes clusters (production and staging)
-        - Include node pools with auto-scaling capabilities
-        - Show ingress controllers and load balancers
-        - Depict microservice deployments with replica sets
-        - Include persistent volume claims for databases
-        - Show ConfigMaps and Secrets management
-        - Include monitoring stack (Prometheus, Grafana)
-        - Show CI/CD pipeline integration points
-        Emphasize horizontal scaling and high availability features.
+      framework: d2  # Auto-selected based on complexity
+      title: "E-Commerce Microservices Architecture"
+      config:
+        D2Options:
+          layout: elk
+          theme: "neutral"
+          font_size: 14
+      output_files:
+        source: "docs/assets/system-architecture.d2"
+        rendered: "docs/assets/system-architecture.svg"
 
-  outputs:
-    assets_dir: docs/assets
+    - id: user-flow
+      type: sequence
+      framework: mermaid  # Auto-selected for sequence diagrams
+      title: "Shopping Flow"
+      config:
+        MermaidConfig:
+          theme: "default"
+          sequence:
+            showSequenceNumbers: true
+      output_files:
+        source: "docs/assets/user-flow.mmd"
+        rendered: "docs/assets/user-flow.svg"
 
-    mkdocs:
-      config_file: mkdocs.yml
-      content_refs:
-        - content/overview.md
-        - content/architecture.md
-        - content/api-docs.md
+    - id: database-schema
+      type: erd
+      framework: mermaid
+      title: "Database Relationships"
+      output_files:
+        source: "docs/assets/database.mmd"
+        rendered: "docs/assets/database.svg"
 
-    marpkit:
-      slide_files:
-        - content/slides.md
-      theme: gaia
-      paginate: true
-      export_pdf: true
+  # Integration with existing MkDocs site
+  integration:
+    existing_site: true
+    mkdocs_config: "mkdocs.yml"  # Will be updated, not replaced
+    pages:
+      - id: architecture
+        path: "docs/features/architecture.md"
+        config:
+          MkDocsPageConfig:
+            title: "Platform Architecture"
+            nav_position: 2
+            tags: ["architecture", "microservices"]
+        diagrams: ["system-architecture", "user-flow"]
 
-  generation_notes:
-    - "Identified 4 main diagram needs from PRD analysis"
-    - "Selected D2 for architecture diagrams (better for complex systems)"
-    - "Selected Mermaid for sequence and ERD (better syntax for these types)"
-    - "Added API documentation based on 'include_api_docs' preference"
-    - "Structured content for both technical docs and stakeholder presentation"
+      - id: database
+        path: "docs/features/database.md"
+        diagrams: ["database-schema"]
+
+  # File-based state management
+  state_management:
+    base_dir: ".t2d"
+    files:
+      agent_states: ".t2d/agents.state"
+      generation_log: ".t2d/generation.log"
+      dependency_graph: ".t2d/deps.yaml"
 ```
 
-### 3. Process the Generated Recipe
+### 3. Agents Self-Execute Automatically
+
+The agents are already working! Claude continues processing based on the "use proactively" configuration:
 
 ```
-# In Claude Desktop, ask:
-"Use the t2d-orchestrate agent to process recipe.t2d.yaml"
-
-# Or use the slash command:
-/t2d-create recipe.t2d.yaml
-
-# Behind the scenes:
-# 1. Claude Desktop uses Desktop Commander to execute the orchestrator
-# 2. Claude orchestrator reads recipe.t2d.yaml using MCP tools
-# 3. Orchestrator invokes diagram generator agents (parallel)
-# 4. Generator agents write source files directly (.d2, .mmd, .puml)
-# 5. Orchestrator or a build agent runs CLI tools to compile diagrams
-# 6. Content maintainer agents write markdown files directly
-# 7. All agents use their Write tool to save files
-
-# Output:
-# ✓ Processing recipe: E-Commerce Platform
-# ✓ Source recipe: recipe.yaml
-# ✓ Generated at: 2025-01-17T10:30:00Z
+# Agents automatically coordinate:
 #
-# Step 1: Diagram source generation (4 agents in parallel):
-# ✓ t2d-d2-generator → system-architecture.d2
-# ✓ t2d-mermaid-generator → shopping-flow.mmd
-# ✓ t2d-mermaid-generator → database-erd.mmd
-# ✓ t2d-d2-generator → deployment-architecture.d2
+# Transform Agent:
+# ✓ Created recipe.t2d.yaml with intelligent analysis
+# ✓ State saved to .t2d/transform.state
 #
-# Step 2: Building diagram assets:
-# ✓ d2 system-architecture.d2 system-architecture.svg
-# ✓ mmdc -i shopping-flow.mmd -o shopping-flow.svg
-# ✓ mmdc -i database-erd.mmd -o database-erd.svg
-# ✓ d2 deployment-architecture.d2 deployment-architecture.svg
+# D2 Generator Agent:
+# ✓ Generated system-architecture.d2
+# ✓ Compiled to docs/assets/system-architecture.svg
+# ✓ State updated in .t2d/d2.state
 #
-# Step 3: Content generation (4 agents in parallel):
-# ✓ content/overview.md (markdown_maintainer)
-# ✓ content/architecture.md (mkdocs_formatter)
-# ✓ content/api-docs.md (markdown_maintainer)
-# ✓ content/slides.md (marp_slides)
+# Mermaid Generator Agent:
+# ✓ Generated user-flow.mmd and database-schema.mmd
+# ✓ Compiled to SVG files in docs/assets/
+# ✓ State updated in .t2d/mermaid.state
 #
-# Final assets:
-#   Source files:
-#     - docs/assets/system-architecture.d2
-#     - docs/assets/shopping-flow.mmd
-#     - docs/assets/database-erd.mmd
-#     - docs/assets/deployment-architecture.d2
+# MkDocs Maintainer Agent:
+# ✓ Created docs/features/architecture.md
+# ✓ Created docs/features/database.md
+# ✓ Updated mkdocs.yml navigation (preserving existing content)
+# ✓ Added page metadata and tags
+# ✓ State saved to .t2d/mkdocs.state
 #
-#   Built diagrams:
-#     - docs/assets/system-architecture.svg
-#     - docs/assets/shopping-flow.svg
-#     - docs/assets/database-erd.svg
-#     - docs/assets/deployment-architecture.svg
-#
-#   Content:
-#     - content/overview.md
-#     - content/architecture.md
-#     - content/api-docs.md
-#     - content/slides.md
-#
-# Configurations created:
-#   - mkdocs.yml
-#   - marp config
+# File System State:
+# ✓ .t2d/agents.state - Overall coordination state
+# ✓ .t2d/generation.log - Complete activity log
+# ✓ .t2d/deps.yaml - Inter-diagram dependencies
 ```
 
-### 3. View the Generated Files
+### 4. View Your Integrated Documentation
 
-Claude Code agents maintain markdown files that are referenced by both MkDocs and Marp:
+The agents have created content that integrates seamlessly with your existing site:
 
-**content/architecture.md** (maintained by Claude Code mkdocs_formatter):
+**docs/features/architecture.md** (created by MkDocs Maintainer Agent):
 
 ```markdown
-# System Architecture
+---
+title: Platform Architecture
+tags: [architecture, microservices]
+---
 
-## System Context
+# Platform Architecture
 
-![System Context](assets/c4-context.svg)
+## Microservices Overview
 
-<details>
-<summary>View diagram source</summary>
+![E-Commerce Microservices Architecture](../assets/system-architecture.svg)
 
-```d2
-# C4 Context Diagram source code here...
-```
-</details>
+Our e-commerce platform uses a microservices architecture with the following key services:
 
-## Login Flow
+- **Auth Service**: User authentication and authorization
+- **Product Service**: Product catalog and inventory management
+- **Cart Service**: Shopping cart state management
+- **Order Service**: Order processing and tracking
+- **Payment Service**: Payment processing with Stripe integration
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant API Gateway
-    participant Auth Service
-    participant Database
+## User Shopping Flow
 
-    User->>API Gateway: POST /login
-    API Gateway->>Auth Service: Validate credentials
-    Auth Service->>Database: Check user
-    Database->>Auth Service: User data
-    Auth Service->>API Gateway: JWT token
-    API Gateway->>User: 200 OK + token
-```
+The complete user journey from product discovery to purchase:
 
-## User Database
+![Shopping Flow](../assets/user-flow.svg)
 
-```mermaid
-erDiagram
-    User ||--|| Profile : has
-    User ||--o{ Session : has
+This sequence shows how users interact with our microservices:
 
-    User {
-        string id PK
-        string email UK
-        string password_hash
-        datetime created_at
-    }
+1. Browse products through the Product Service
+2. Add items to cart via Cart Service (cached in Redis)
+3. Proceed through checkout workflow
+4. Process payment through Payment Service and Stripe
+5. Create order record in Order Service
+6. Send confirmation notifications
 
-    Profile {
-        string id PK
-        string user_id FK
-        string name
-        string avatar
-        text bio
-    }
+## Database Schema
 
-    Session {
-        string id PK
-        string user_id FK
-        string token UK
-        datetime expires_at
-    }
-```
+![Database Relationships](../assets/database.svg)
+
+The database design supports the microservices architecture with clear service boundaries and optimized relationships for high-performance queries.
 ```
 
-## CLI Commands
+## Natural Language Interface
 
-The t2d CLI provides minimal commands for setup and MCP server management. All processing is done through Claude agents.
+t2d-kit eliminates complex CLI commands in favor of natural language interaction with intelligent agents.
 
-### Setup and Configuration
+### Core Philosophy: "Just Tell Claude What You Want"
+
+```
+# Instead of memorizing commands, just describe your needs:
+
+"Create architecture diagrams for my microservices platform"
+→ Agents analyze requirements, choose appropriate frameworks, generate diagrams
+
+"Add a sequence diagram showing the payment flow"
+→ Mermaid Agent creates sequence diagram, MkDocs Agent updates documentation
+
+"Generate API documentation with examples"
+→ Content Agents create comprehensive API docs integrated with your existing site
+
+"Update the database schema diagram to include the new user roles table"
+→ Agents update ERD, regenerate affected documentation pages
+```
+
+### Agent Self-Activation
+
+Agents are configured with `use_proactively: true` and automatically activate when Claude recognizes relevant tasks:
+
+- **Transform Agent**: Activates when Claude sees recipe files or requirements
+- **Diagram Agents**: Activate when architectural or flow discussions occur
+- **Content Agents**: Activate when documentation needs arise
+- **Integration Agents**: Maintain consistency across your existing site
+
+### File-Based State Management
+
+All agent coordination happens through transparent file states:
+
 ```bash
-# Install agents and slash commands to ~/.claude/
+# View agent states (all human-readable)
+ls .t2d/
+# agents.state      - Current agent coordination
+# generation.log    - Complete activity history
+# deps.yaml         - Inter-component dependencies
+# transform.state   - Transform agent progress
+# d2.state         - D2 diagram generation state
+# mermaid.state    - Mermaid diagram generation state
+# mkdocs.state     - Documentation integration state
+```
+
+### Simple Setup Commands
+
+```bash
+# One-time setup of intelligent agents
 t2d setup
 
-# Start MCP server with working directory
+# Connect to your existing documentation project
 t2d mcp .
 
-# Verify installation
+# Verify everything is working
 t2d verify
 ```
 
-### Working with Recipes
+## Simplified Architecture
 
-Recipe transformation and processing is done through Claude Desktop:
+t2d-kit uses a minimal Python foundation with intelligent Claude agents providing all the complexity.
 
-```
-# In Claude Desktop:
+### Python Components (Minimal Infrastructure)
 
-# Transform a user recipe:
-"Use the t2d-transform agent to transform recipe.yaml"
-
-# Process a recipe:
-"Use the t2d-orchestrate agent to process recipe.t2d.yaml"
-
-# Or use slash commands:
-/t2d-transform recipe.yaml
-/t2d-create recipe.t2d.yaml
-```
-
-### Validate Recipe
-
-Recipe validation is done through the MCP server:
-
-```
-# In Claude Desktop with MCP server running:
-"Validate the recipe.yaml file"
-
-# Claude will use MCP tools to validate the YAML structure
-# and check for required fields using Pydantic models
-```
-
-### Information Commands
-
-```
-# In Claude Desktop:
-
-# List available recipes:
-"Show me all available recipes"
-
-# Get information about diagram types:
-"What diagram types does t2d-kit support?"
-
-# Check framework availability:
-"Which diagram frameworks are available?"
-
-# Claude will use MCP resources and tools to provide this information
-```
-
-## Python Components
-
-The Python code in t2d-kit is minimal and focused on two areas:
-
-### 1. CLI Wrapper (cli/main.py)
+**CLI Wrapper**: Just setup and MCP server startup
 ```python
-# Handles setup and MCP server startup only
-@click.group()
-def cli():
-    """t2d-kit: Multi-framework diagram pipeline."""
-    pass
-
 @cli.command()
 def setup():
-    """Install Claude agents and slash commands."""
-    # Copies agent files to ~/.claude/agents/
-    # Copies slash commands to ~/.claude/commands/
+    """Install intelligent agents to ~/.claude/agents/"""
+    # Copies self-organizing agent configurations
 
 @cli.command()
-@click.argument('working_dir')
 def mcp(working_dir):
-    """Start MCP server for recipe operations."""
-    # Starts the MCP server with specified working directory
+    """Start MCP server for file operations"""
+    # Provides file I/O for agents in your existing project
 ```
 
-### 2. MCP Server (mcp/server.py)
+**MCP Server**: File operations and recipe validation
 ```python
-# Provides file operations for Claude agents
-class RecipeMCPServer:
-    async def read_user_recipe(path: str) -> UserRecipe:
-        # Read and validate with Pydantic
+class T2DMCPServer:
+    async def read_recipe(path: str) -> Recipe:
+        # File I/O with Pydantic validation
 
-    async def write_processed_recipe(path: str, recipe: ProcessedRecipe):
-        # Validate and write with Pydantic
-
-    async def list_recipes() -> List[RecipeResource]:
-        # Return available recipes as MCP resources
+    async def manage_state(agent_id: str, state: dict):
+        # Transparent state persistence for agents
 ```
 
-All recipe transformation and processing logic resides in Claude agents, not Python code.
+### Agent Intelligence (Where the Magic Happens)
 
-## Claude Desktop Integration
+All the intelligence lives in self-organizing Claude agents:
 
-### Dual-Mode Operation
+- **Transform Agent**: Analyzes requirements, creates detailed specifications
+- **Diagram Framework Agents**: D2, Mermaid, PlantUML generators that self-select based on content
+- **Content Integration Agents**: Maintain your existing MkDocs site structure
+- **State Coordination**: File-based coordination without complex orchestration
 
-t2d-kit operates in two complementary modes:
+**Key insight**: Instead of building complex Python orchestration logic, t2d-kit uses Claude's natural intelligence with minimal infrastructure.
 
-#### 1. Interactive Mode (Claude Desktop)
+## Integration with Existing Sites
 
-Configure MCP server in Claude Desktop settings:
+### Seamless MkDocs Integration
+
+t2d-kit is designed to enhance your existing documentation, not replace it:
+
 ```json
+// Claude Desktop MCP settings
 {
   "mcpServers": {
     "t2d-kit": {
@@ -716,328 +541,386 @@ Configure MCP server in Claude Desktop settings:
       "env": {}
     }
   }
+}
 ```
 
-Then use natural language in Claude Desktop:
-```
-# Create recipes:
-"Create a recipe for my e-commerce platform architecture with C4 diagrams"
-
-# Transform recipes:
-"Use the t2d-transform agent to transform recipe.yaml"
-
-# Process recipes:
-"Use the t2d-orchestrate agent to process recipe.t2d.yaml"
-
-# Claude Desktop will use Desktop Commander to execute the appropriate agents
-```
-
-#### 2. How Desktop Commander Works
-
-Desktop Commander is the execution environment that allows Claude Desktop to run Claude CLI commands:
+### Natural Workflow
 
 ```
-User asks Claude Desktop → "Transform recipe.yaml"
-↓
-Claude Desktop recognizes agent request
-↓
-Desktop Commander executes: claude "Use t2d-transform agent on recipe.yaml"
-↓
-Transform agent runs with access to MCP tools
-↓
-Generates recipe.t2d.yaml
+# In your existing docs project:
+"I need architecture diagrams for the user authentication flow"
+
+# Claude's agents automatically:
+# 1. Analyze your existing mkdocs.yml structure
+# 2. Create diagrams in your docs/assets/ directory
+# 3. Generate new pages in appropriate sections
+# 4. Update navigation while preserving your existing content
+# 5. Use your site's existing theme and styling
 ```
 
-Desktop Commander is NOT a separate CLI tool you run - it's the bridge between Claude Desktop and headless Claude execution.
+### Preserves Your Existing Structure
 
-### Claude Code Architecture
+The MkDocs Maintainer Agent respects your existing site:
+- Adds to navigation without disrupting existing pages
+- Uses your existing theme and styling
+- Places assets in your established directory structure
+- Maintains your existing metadata and frontmatter patterns
 
-The entire workflow is orchestrated by Claude Code:
+### State Transparency
 
-**commands/orchestrate.txt** (Main orchestrator):
-```
-You are the t2d-kit orchestrator. Given a recipe file:
-1. Read and parse YAML structure using MCP file operations
-2. Route each diagram to the appropriate framework based on rules below
-3. Invoke diagram generator subagents (Claude Code) for creation
-4. Invoke content maintainer subagents for markdown generation
-5. Generate MkDocs and MarpKit configurations
-6. Report progress and handle errors gracefully
-
-ROUTING RULES - Apply these when framework not specified:
-- C4 diagrams (context, container, component) → D2
-- Sequence diagrams → Mermaid
-- Flowcharts → Mermaid
-- ERD → Mermaid
-- Gantt → Mermaid (only option)
-- Architecture → D2
-- Network → D2
-- State machines → Mermaid
-- Class diagrams → PlantUML
-- Allow user overrides if framework specified in recipe
-
-Available subagents (all Claude Code):
-- d2_generator: Creates D2 diagrams using d2 CLI
-- mermaid_generator: Creates Mermaid diagrams using mmdc CLI
-- plantuml_generator: Creates PlantUML diagrams using plantuml CLI
-- markdown_maintainer: General content creation
-- mkdocs_formatter: Documentation formatting
-- marp_slides: Presentation slide creation
-
-Use MCP for all file operations (read, write, parse YAML).
-```
-
-**prompts/markdown_maintainer.txt** (Content subagent):
-```
-You are a markdown content maintainer. Given the following context:
-- Diagram assets: {diagram_paths}
-- Content type: {content_type}
-- Recipe context: {recipe_content}
-
-Generate well-structured markdown documentation that embeds the diagrams appropriately.
-```
-
-**prompts/mkdocs_formatter.txt** (MkDocs subagent):
-```
-You are an MkDocs documentation formatter. Format the content for optimal MkDocs rendering...
-```
-
-**prompts/marp_slides.txt** (Marp subagent):
-```
-You are a Marp presentation creator. Transform the content into slide format...
-```
-
-## Working with t2d-kit
-
-### Understanding the Architecture
-
-t2d-kit is a Claude-first system where:
-- All intelligence resides in Claude agents
-- Python only provides minimal infrastructure (CLI setup, MCP server)
-- Desktop Commander enables headless agent execution
-- MCP provides file operations for agents
-
-### Typical Workflow
-
-1. **Write your user recipe** (recipe.yaml) with PRD content
-2. **Ask Claude Desktop** to transform it: "Use the t2d-transform agent on recipe.yaml"
-3. **Review the generated recipe** (recipe.t2d.yaml)
-4. **Ask Claude Desktop** to process it: "Use the t2d-orchestrate agent on recipe.t2d.yaml"
-5. **View generated diagrams and documentation** in the output directories
-
-## MarpKit Presentation Generation
-
-### Create a Presentation Recipe
-
-Save as `presentation.yml`:
-
-```yaml
-recipe:
-  name: "Architecture Presentation"
-  diagram_specs:
-    - id: system-overview
-      type: c4_context
-      title: "System Architecture"
-      instructions: "Show main components and interactions"
-
-    - id: user-flow
-      type: sequence
-      title: "User Journey"
-      instructions: "Login -> Browse -> Purchase -> Checkout"
-
-  documentation:
-    main_file: docs/architecture.md
-    assets_dir: docs/assets
-    platforms:
-      - marpkit
-    presentation:
-      output_file: slides/architecture.md
-      theme: gaia
-      paginate: true
-      auto_split: true
-      export_pdf: true
-      slides:
-        - title: "System Architecture"
-          diagram_ids: [system-overview]
-          layout: image-focus
-          speaker_notes: "Explain the high-level architecture"
-
-        - title: "User Flow"
-          diagram_ids: [user-flow]
-          layout: content
-          speaker_notes: "Walk through the user journey"
-```
-
-### Generate Presentation
-
+All agent decisions are visible in human-readable state files:
 ```bash
-# Create presentation
-t2d create presentation.yml --template marpkit
-
-# Convert to PDF/HTML
-marp slides/architecture.md --pdf
-marp slides/architecture.md --html
-
-# Serve live presentation
-marp --server slides/
+.t2d/
+├── agents.state          # Current coordination state
+├── generation.log        # Complete activity history
+├── mkdocs.state         # Integration decisions and page mappings
+└── deps.yaml            # Dependency relationships between diagrams
 ```
 
-### Generated Marp Markdown
+### Intelligent Agent Configuration Examples
 
-The output `slides/architecture.md` will contain:
+The agents use "use proactively" configuration to self-activate based on context:
 
+**Transform Agent** (`~/.claude/agents/t2d-transform.md`):
+```markdown
+# Transform Agent
+
+You transform simple recipe.yaml files into detailed recipe.t2d.yaml specifications.
+
+## Use Proactively: true
+
+Activate when Claude detects:
+- Recipe files with requirements or PRD content
+- Requests for technical documentation generation
+- Architecture or system design discussions
+
+## Intelligence:
+- Analyze requirements to identify diagram needs
+- Auto-select appropriate frameworks (D2 for architecture, Mermaid for flows)
+- Generate detailed specifications with D2Options and MermaidConfig
+- Plan integration with existing MkDocs sites
+
+## State Management:
+Save progress to `.t2d/transform.state` with:
+- Analysis decisions and reasoning
+- Framework selection rationale
+- Generated configuration details
+```
+
+**MkDocs Maintainer Agent** (`~/.claude/agents/t2d-mkdocs.md`):
+```markdown
+# MkDocs Site Maintainer
+
+You maintain MkDocs documentation sites by integrating new content seamlessly.
+
+## Use Proactively: true
+
+Activate when Claude needs to:
+- Add new documentation pages to existing sites
+- Update navigation structures
+- Integrate diagrams into existing content
+
+## Existing Site Intelligence:
+- Read and understand current mkdocs.yml structure
+- Preserve existing theme, plugins, and styling
+- Add new navigation entries without disrupting existing ones
+- Use MkDocsPageConfig for proper metadata integration
+
+## State: `.t2d/mkdocs.state`
+Track integration decisions and maintain consistency across updates.
+```
+
+## The t2d-kit Experience
+
+### Philosophy: Natural Intelligence Over Complex Tools
+
+t2d-kit represents a new approach to documentation generation:
+
+- **Human**: Describe what you want in natural language
+- **Agents**: Self-organize to understand and execute complex workflows
+- **File System**: Transparent state management you can inspect and understand
+- **Integration**: Enhance existing projects rather than starting from scratch
+
+### Typical Experience
+
+1. **Start with existing documentation project** - t2d-kit enhances what you have
+2. **Tell Claude your needs** - "I need architecture diagrams for my auth system"
+3. **Agents coordinate automatically** - Transform, generate, integrate, document
+4. **Review transparent results** - All files, states, and decisions are visible
+5. **Iterate naturally** - "Now add a sequence diagram for the login flow"
+
+### Key Benefits
+
+**For Developers**:
+- No new syntax to learn - just describe your needs
+- Integrates with existing MkDocs sites seamlessly
+- All agent decisions are transparent and file-based
+- Self-organizing - agents coordinate without complex orchestration
+
+**For Technical Writers**:
+- Maintains consistency between diagrams and documentation
+- Automatic updates when requirements change
+- Professional output that follows documentation best practices
+
+**For Teams**:
+- Version control friendly (all outputs are files)
+- Easy to review and approve changes
+- Scales from simple diagrams to complex documentation systems
+
+## Presentations with Marp Integration
+
+### Natural Presentation Creation
+
+```
+# Tell Claude what you want:
+"Create a presentation about our microservices architecture for the executive team"
+
+# Claude's agents automatically:
+# 1. Identify key diagrams needed for executive audience
+# 2. Generate appropriate diagrams (high-level, business-focused)
+# 3. Create Marp-formatted slides
+# 4. Include speaker notes
+# 5. Configure for PDF export
+```
+
+### Generated Marp Output
+
+The Marp Agent creates presentation files that work with your existing workflow:
+
+**slides/executive-overview.md**:
 ```markdown
 ---
 marp: true
-theme: gaia
+theme: default
 paginate: true
 ---
 
-# System Architecture
+# E-Commerce Platform Architecture
+## Executive Overview
 
-![bg right:60%](../docs/assets/system-overview.svg)
+![bg right:60%](../docs/assets/system-architecture.svg)
 
-<!--
-Explain the high-level architecture
--->
+Key benefits: Scalability, Security, Time-to-Market
+
+<!-- Speaker notes: Emphasize the business value of microservices -->
 
 ---
 
-# User Flow
+# Customer Journey
 
-![height:500px](../docs/assets/user-flow.svg)
+![width:900px](../docs/assets/user-flow.svg)
 
-<!--
-Walk through the user journey
--->
+Streamlined experience from browse to purchase
+
+<!-- Walk through each step, emphasizing conversion optimization -->
 ```
 
-## MkDocs Integration
+### Automatic Presentation Configuration
 
-### Setup
+The Marp Agent uses intelligent defaults:
+- Executive audience → Clean, business-focused visuals
+- Technical audience → Detailed diagrams with code examples
+- PDF export enabled for distribution
+- Speaker notes included based on audience type
 
-1. Install MkDocs with diagram plugins:
+## Seamless Site Integration
+
+### Works with Your Existing MkDocs Site
+
+t2d-kit is designed to enhance what you already have:
+
 ```bash
-pip install mkdocs mkdocs-mermaid2-plugin
+# In your existing documentation project
+cd my-existing-docs-site
+
+# Start t2d-kit MCP server
+t2d mcp .
+
+# Tell Claude what you need
+"Add architecture diagrams to our API documentation"
+
+# Agents automatically:
+# - Analyze your existing mkdocs.yml
+# - Preserve your theme, plugins, and structure
+# - Add new content in appropriate sections
+# - Generate diagrams compatible with your setup
 ```
 
-2. Configure `mkdocs.yml`:
+### Intelligent MkDocs Configuration
+
+The MkDocs Agent understands your existing setup and adds minimal configuration:
+
+**Existing mkdocs.yml** (preserved):
 ```yaml
-site_name: My Documentation
+site_name: My API Documentation
 theme:
   name: material
+nav:
+  - Home: index.md
+  - API Reference: api/
+  - Guides: guides/
+```
 
-plugins:
-  - search
-  - mermaid2:
-      version: 9.4.3
+**Updated mkdocs.yml** (enhanced by agents):
+```yaml
+site_name: My API Documentation
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - API Reference: api/
+  - Architecture: features/architecture.md  # Added
+  - Database: features/database.md          # Added
+  - Guides: guides/
 
+# Minimal additions for diagram support
 markdown_extensions:
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
-
-extra_javascript:
-  - https://unpkg.com/mermaid@9.4.3/dist/mermaid.min.js
+  - attr_list  # For diagram sizing
+  - md_in_html  # For advanced layouts
 ```
 
-3. Generate documentation:
-```bash
-t2d create recipe.yml --template mkdocs
-mkdocs serve
+### Respect Your Workflow
+
+- Uses your existing asset directories
+- Maintains your naming conventions
+- Preserves your site theme and styling
+- Adds only necessary configuration changes
+
+## Advanced Usage Examples
+
+### Complex Multi-System Documentation
+
+```
+# Natural language for complex scenarios:
+"Document our entire platform including the authentication microservice,
+payment processing system, and the new notification service. Include
+database relationships, API flows, and deployment architecture."
+
+# Agents coordinate to create:
+# - Multiple architecture diagrams (D2 for complex systems)
+# - Sequence diagrams for each service interaction (Mermaid)
+# - Comprehensive ERD showing all service data relationships
+# - API documentation with interactive examples
+# - Deployment diagrams showing Kubernetes configuration
 ```
 
-## Recipe Examples
+### Framework Intelligence
 
-### Multi-Page Documentation
+Agents automatically choose the best framework for each diagram type:
 
 ```yaml
-recipe:
-  name: "Complete System Docs"
-  diagram_specs:
-    # ... diagram definitions ...
-
-  documentation:
-    main_file: docs/index.md
-    assets_dir: docs/assets
-    pages:
-      - file: docs/architecture.md
-        diagrams: [c4-context, c4-container]
-      - file: docs/database.md
-        diagrams: [user-erd, order-erd]
-      - file: docs/workflows.md
-        diagrams: [login-flow, checkout-flow]
-```
-
-### Framework Override
-
-```yaml
+# In the generated recipe.t2d.yaml, you'll see intelligent selections:
 diagram_specs:
-  - id: custom-network
-    type: network
-    framework: graphviz  # Override default D2
-    instructions: |
-      digraph Network {
-        router -> switch1
-        router -> switch2
-        switch1 -> server1
-        switch1 -> server2
-        switch2 -> server3
-      }
+  - type: architecture
+    framework: d2          # Auto-selected for complex systems
+    config:
+      D2Options:
+        layout: elk        # Best for microservices
+        theme: neutral
+
+  - type: sequence
+    framework: mermaid     # Auto-selected for interactions
+    config:
+      MermaidConfig:
+        theme: default
+        sequence:
+          showSequenceNumbers: true
+
+  - type: erd
+    framework: mermaid     # Best syntax for database relationships
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Understanding Agent Behavior
 
-**Framework not found**
+Since agents work intelligently, troubleshooting focuses on understanding their decisions:
+
+**Check Agent States**:
 ```bash
-# Check installed frameworks
-t2d list-frameworks
+# View current agent coordination
+cat .t2d/agents.state
 
-# Install missing framework
-npm install -g @mermaid-js/mermaid-cli  # For Mermaid
+# See complete generation history
+cat .t2d/generation.log
+
+# Understand framework selection decisions
+cat .t2d/transform.state
 ```
 
-**Recipe validation fails**
-```bash
-# Get detailed validation info
-t2d validate recipe.yml --verbose
+**Common Scenarios**:
 
-# Common issues:
-# - Missing required fields
-# - Invalid diagram type
-# - YAML syntax errors
+```
+# Agent didn't activate as expected:
+"Why didn't the diagram agent create any sequence diagrams?"
+
+# Claude will explain:
+# - What it detected in the requirements
+# - Why certain diagram types were or weren't identified
+# - How to adjust requirements for different outcomes
+
+# Framework selection questions:
+"Why was D2 chosen instead of Mermaid for the architecture diagram?"
+
+# Check .t2d/transform.state for the reasoning
 ```
 
-**Slow generation**
+**Verify Dependencies**:
 ```bash
-# Use parallel processing for multiple diagrams
-t2d create recipe.yml --parallel 4
+# Check that required tools are available
+t2d verify
 
-# Cache rendered diagrams
-export T2D_CACHE_DIR=~/.t2d-cache
+# If missing tools:
+mise install  # Installs all dependencies automatically
 ```
 
-### Debug Mode
+### Getting Help from Agents
 
-```bash
-# Enable debug logging
-export T2D_LOG_LEVEL=DEBUG
-t2d create recipe.yml
+Since agents are intelligent, you can ask them directly:
 
-# Save debug log
-t2d create recipe.yml --debug 2> debug.log
+```
+# In Claude Desktop:
+"Explain why the MkDocs integration didn't update the navigation"
+
+# Or:
+"What would happen if I changed the requirements to emphasize security instead of scalability?"
+
+# Agents can explain their reasoning and suggest improvements
 ```
 
 ## Next Steps
 
-1. **Explore Examples**: Check the `examples/` directory for more recipes
-2. **Read the Docs**: Full documentation at [docs.t2d-kit.io](https://docs.t2d-kit.io)
-3. **Contribute**: Submit recipes and improvements at [github.com/t2d-kit/t2d-kit](https://github.com/t2d-kit/t2d-kit)
-4. **Get Support**: Join discussions at [github.com/t2d-kit/t2d-kit/discussions](https://github.com/t2d-kit/t2d-kit/discussions)
+### Start Small, Think Big
+
+1. **Begin with your existing documentation** - t2d-kit enhances what you have
+2. **Try a simple request** - "Add a system architecture diagram to my docs"
+3. **Observe the agent coordination** - Check `.t2d/` files to understand decisions
+4. **Iterate naturally** - "Now add sequence diagrams for the user workflows"
+5. **Scale up complexity** - Let agents handle multi-system documentation
+
+### Learning Path
+
+**Week 1**: Basic diagram generation
+- Start with simple architecture or flow diagrams
+- Understand how agents choose frameworks
+- Get comfortable with natural language requests
+
+**Week 2**: Site integration
+- Integrate with your existing MkDocs site
+- Explore how agents preserve your site structure
+- Try presentation generation with Marp
+
+**Week 3**: Advanced workflows
+- Multi-system documentation
+- Complex diagram relationships
+- Custom requirements and iterations
+
+### Community and Support
+
+- **Examples**: Explore patterns in the `examples/` directory
+- **Issues**: Report problems and improvements
+- **Discussions**: Share usage patterns and learn from others
 
 ---
-*Happy diagramming! 🎨*
+
+**Remember**: t2d-kit succeeds when you forget about the tools and focus on describing what you need. The agents handle the complexity so you can focus on your ideas.
