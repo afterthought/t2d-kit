@@ -80,34 +80,45 @@ specs/001-i-want-to/
 
 ### Source Code (repository root)
 ```
-# Option 1: Single project (DEFAULT)
+# Modern Python src layout
 t2d-kit/
-├── cli/
-│   └── main.py          # Minimal CLI wrapper (env setup, invoke agents)
-├── mcp/                 # MCP server for recipe file management
-│   ├── server.py        # Read/write/validate user recipes
-│   ├── models.py        # Pydantic models for validation
-│   └── config.json      # MCP server configuration
-├── agents/              # Claude Code subagents (Markdown with YAML frontmatter)
-│   ├── t2d-transform.md        # Transform user recipe → processed recipe
-│   ├── t2d-orchestrate.md      # Process recipe.t2d.yaml (routing + coordination)
-│   ├── t2d-d2-generator.md     # D2 diagram generator
-│   ├── t2d-mermaid-generator.md # Mermaid diagram generator
-│   ├── t2d-plantuml-generator.md # PlantUML diagram generator
-│   ├── t2d-markdown-maintainer.md # General markdown content
-│   ├── t2d-mkdocs-formatter.md # MkDocs-specific formatting
-│   └── t2d-marp-slides.md      # Marp presentation slides
-├── commands/            # Slash commands for Claude Desktop
-│   ├── t2d-transform    # /t2d-transform command script
-│   └── t2d-create       # /t2d-create command script
-└── examples/            # Example recipes
-    ├── recipe.yaml      # User recipe example
-    └── recipe.t2d.yaml  # Processed recipe example
-
-tests/
-├── contract/
-├── integration/
-└── unit/
+├── src/
+│   └── t2d_kit/
+│       ├── __init__.py          # Package initialization
+│       ├── py.typed             # Type checking marker
+│       ├── _version.py          # Version management
+│       ├── cli/
+│       │   ├── __init__.py
+│       │   └── main.py          # CLI entry point
+│       ├── mcp/                 # FastMCP server
+│       │   ├── __init__.py
+│       │   ├── server.py        # FastMCP implementation
+│       │   ├── models.py        # Pydantic models
+│       │   └── __main__.py      # Server entry point
+│       └── agents/              # Claude Code subagents (bundled)
+│           ├── __init__.py
+│           ├── t2d-transform.md
+│           ├── t2d-orchestrate.md
+│           ├── t2d-d2-generator.md
+│           ├── t2d-mermaid-generator.md
+│           ├── t2d-plantuml-generator.md
+│           ├── t2d-markdown-maintainer.md
+│           ├── t2d-mkdocs-formatter.md
+│           └── t2d-marp-slides.md
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py             # pytest configuration
+│   ├── unit/
+│   ├── integration/
+│   └── fixtures/                # Test data
+├── docs/                        # Project documentation
+├── examples/                    # Example recipes
+│   ├── recipe.yaml
+│   └── recipe.t2d.yaml
+├── pyproject.toml              # Modern Python configuration
+├── uv.lock                     # UV lock file for reproducible builds
+├── .mise.toml                  # Tool version management
+└── README.md
 ```
 
 **Structure Decision**: Option 1 (Single project) - CLI tool with library core

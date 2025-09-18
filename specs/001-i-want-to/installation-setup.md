@@ -40,49 +40,87 @@ Default locations for Claude Code resources:
 └── (same structure)
 ```
 
-### Desktop Commander Usage
-
-Desktop Commander is the execution environment for running Claude CLI commands. No configuration needed - it simply executes:
-- Claude Code agent commands
-- MCP server interactions
-- CLI tool invocations
-
-Example usage:
-```bash
-# Desktop Commander runs Claude CLI to execute agents
-desktop-commander claude-code "Use the t2d-transform agent on recipe.yaml"
-```
 
 ## Installation Process
 
-### 1. Python Package Structure
+### 1. Modern Python Package Structure (src layout)
 
-```python
+```toml
 # pyproject.toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "t2d-kit"
-version = "1.0.0"
+dynamic = ["version"]
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "pydantic>=2.0",
+    "fastmcp>=0.2.0",
+    "pyyaml>=6.0",
+]
 
 [project.scripts]
-t2d = "t2d_kit.cli:main"
+t2d = "t2d_kit.cli.main:cli"
 
-[tool.setuptools.package-data]
-t2d_kit = [
-    "agents/**/*.md",      # Claude agent markdown files bundled with package
-    "commands/**/*",       # Slash command scripts bundled
-    "templates/**/*",      # Any templates needed
-]
+[tool.hatch.version]
+path = "src/t2d_kit/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/t2d_kit"]
+
+[tool.hatch.build.targets.wheel.data]
+"src/t2d_kit/agents" = "t2d_kit/agents"
 ```
 
-### 2. CLI Setup Command
+### 2. Package Initialization Files
 
 ```python
-# cli/main.py
+# src/t2d_kit/__init__.py
+"""t2d-kit: Multi-framework diagram pipeline for Claude Code."""
+
+__version__ = "1.0.0"
+
+# src/t2d_kit/_version.py
+"""Single source of truth for version."""
+__version__ = "1.0.0"
+
+# src/t2d_kit/cli/__init__.py
+"""CLI module for t2d-kit."""
+from .main import cli
+
+__all__ = ["cli"]
+
+# src/t2d_kit/mcp/__init__.py
+"""FastMCP server for recipe management."""
+from .server import mcp
+
+__all__ = ["mcp"]
+
+# src/t2d_kit/agents/__init__.py
+"""Claude Code subagents bundled with package."""
+# Agent markdown files are resources, not Python modules
+```
+
+### 3. Type Checking Support
+
+```python
+# src/t2d_kit/py.typed
+# This file marks the package as PEP 561 compliant
+# for type checking with mypy and other tools
+```
+
+### 4. CLI Setup Command with importlib.resources
+
+```python
+# src/t2d_kit/cli/main.py
 import click
-import shutil
-import os
 from pathlib import Path
 import subprocess
+from importlib import resources
+import shutil
 
 @click.group()
 def cli():
@@ -102,11 +140,11 @@ def setup(init, name, force):
         click.echo("⚠️  Claude Code not found. Please install Claude Desktop first.")
         return 1
 
-    # Install agent files
+    # Install agent files using importlib.resources
     install_claude_agents(claude_home, force)
 
-    # Install slash commands
-    install_slash_commands(claude_home, force)
+    # Install slash commands (deprecated - use natural language)
+    # install_slash_commands(claude_home, force)
 
     # Setup mise dependencies
     setup_mise_dependencies()
@@ -168,15 +206,16 @@ def setup(init, name, force):
 @cli.command()
 @click.argument('working_dir', type=click.Path(exists=True), default='.')
 def mcp(working_dir):
-    """Start the MCP server for Claude Desktop integration.
+    """Start the FastMCP server for Claude Desktop integration.
 
     Args:
         working_dir: Working directory for recipes (default: current directory)
     """
-    from t2d_kit.mcp.server import main
+    from t2d_kit.mcp.server import mcp as fastmcp_server
     import asyncio
+    import json
 
-    click.echo(f"Starting t2d-kit MCP server in {working_dir}...")
+    click.echo(f"Starting t2d-kit FastMCP server in {working_dir}...")
     click.echo("Add this to your Claude Desktop MCP settings:")
     click.echo(json.dumps({
         "mcpServers": {
@@ -218,9 +257,9 @@ def find_claude_home():
     return None
 
 def install_claude_agents(claude_home, force):
-    """Install agent markdown files from bundled package data."""
-    # Agent files are bundled with the Python package
-    import pkg_resources
+    """Install agent markdown files using modern importlib.resources."""
+    from importlib import resources
+    import t2d_kit.agents
 
     target_dir = claude_home / "agents"
 
@@ -243,24 +282,29 @@ def install_claude_agents(claude_home, force):
         "t2d-marp-slides"
     ]
 
-    # Copy agent files from package resources
+    # Copy agent files from package resources using importlib
     for agent_name in agents:
         try:
             # Read agent file from bundled package data
-            agent_content = pkg_resources.resource_string(
-                "t2d_kit", f"agents/{agent_name}.md"
-            ).decode('utf-8')
+            agent_files = resources.files(t2d_kit.agents)
+            agent_file = agent_files / f"{agent_name}.md"
 
-            # Write to Claude agents directory
-            target_file = target_dir / f"{agent_name}.md"
-            target_file.write_text(agent_content)
-            click.echo(f"   Installed agent: {agent_name}")
-        except FileNotFoundError:
-            click.echo(f"   Warning: Agent {agent_name} not found in package")
+            if agent_file.is_file():
+                agent_content = agent_file.read_text()
+
+                # Write to Claude agents directory
+                target_file = target_dir / f"{agent_name}.md"
+                target_file.write_text(agent_content)
+                click.echo(f"   Installed agent: {agent_name}")
+            else:
+                click.echo(f"   Warning: Agent {agent_name} not found in package")
+        except Exception as e:
+            click.echo(f"   Error installing {agent_name}: {e}")
 
 def install_slash_commands(claude_home, force):
-    """Install slash command definitions."""
-    source_dir = Path(__file__).parent.parent / "commands"
+    """Install slash command definitions (deprecated - use natural language)."""
+    # Note: Slash commands are deprecated in favor of natural language invocation
+    # This function is kept for backward compatibility
     target_dir = claude_home / "commands"
 
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -385,30 +429,103 @@ def verify():
     return 0 if critical_good else 1
 ```
 
-## Package Structure
+## UV Lock File for Reproducible Builds
+
+```toml
+# uv.lock is automatically generated by UV
+# This ensures reproducible installations across environments
+# DO NOT edit manually - use 'uv lock' to update
+
+[[package]]
+name = "t2d-kit"
+version = "1.0.0"
+dependencies = [
+    "click>=8.1",
+    "pydantic>=2.0",
+    "fastmcp>=0.2.0",
+    "pyyaml>=6.0"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.21",
+    "mypy>=1.7",
+    "ruff>=0.1.0",
+    "black>=23.0"
+]
+```
+
+## Testing Configuration
+
+```python
+# tests/conftest.py
+"""Pytest configuration for t2d-kit tests."""
+import pytest
+from pathlib import Path
+from t2d_kit.mcp.models import UserRecipe, ProcessedRecipe
+
+@pytest.fixture
+def sample_user_recipe():
+    """Provide a sample user recipe for testing."""
+    return UserRecipe(
+        name="test-project",
+        prd={"content": "Test PRD content"},
+        instructions={
+            "diagrams": [
+                {"type": "architecture", "description": "System overview"}
+            ]
+        }
+    )
+
+@pytest.fixture
+def temp_recipe_dir(tmp_path):
+    """Provide a temporary directory for recipe files."""
+    recipe_dir = tmp_path / "recipes"
+    recipe_dir.mkdir()
+    return recipe_dir
+```
+
+## Package Structure (src layout)
 
 ```
 t2d-kit/
-├── pyproject.toml
-├── setup.py
-├── t2d_kit/
+├── src/
+│   └── t2d_kit/
+│       ├── __init__.py
+│       ├── py.typed             # Type checking marker
+│       ├── _version.py          # Version management
+│       ├── cli/
+│       │   ├── __init__.py
+│       │   └── main.py          # CLI entry point
+│       ├── mcp/
+│       │   ├── __init__.py
+│       │   ├── server.py        # FastMCP server
+│       │   ├── models.py        # Pydantic models
+│       │   └── __main__.py      # Server entry
+│       └── agents/              # Bundled agent files
+│           ├── __init__.py
+│           ├── t2d-transform.md
+│           ├── t2d-orchestrate.md
+│           ├── t2d-d2-generator.md
+│           ├── t2d-mermaid-generator.md
+│           ├── t2d-plantuml-generator.md
+│           ├── t2d-markdown-maintainer.md
+│           ├── t2d-mkdocs-formatter.md
+│           └── t2d-marp-slides.md
+├── tests/
 │   ├── __init__.py
-│   ├── cli.py
-│   ├── mcp/
-│   │   ├── server.py
-│   │   └── models.py
-│   ├── agents/           # Bundled agent files (Markdown with YAML frontmatter)
-│   │   ├── t2d-transform.md
-│   │   ├── t2d-orchestrate.md
-│   │   ├── t2d-d2-generator.md
-│   │   ├── t2d-mermaid-generator.md
-│   │   ├── t2d-plantuml-generator.md
-│   │   ├── t2d-markdown-maintainer.md
-│   │   ├── t2d-mkdocs-formatter.md
-│   │   └── t2d-marp-slides.md
-│   └── commands/         # Slash command scripts
-│       ├── t2d-transform
-│       └── t2d-create
+│   ├── conftest.py
+│   ├── unit/
+│   ├── integration/
+│   └── fixtures/
+├── docs/
+├── examples/
+│   ├── recipe.yaml
+│   └── recipe.t2d.yaml
+├── pyproject.toml
+├── uv.lock
+├── .mise.toml
 └── README.md
 ```
 

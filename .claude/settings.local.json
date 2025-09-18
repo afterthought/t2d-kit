@@ -9,7 +9,9 @@
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
       "mcp__ref-tools__ref_search_documentation",
       "mcp__ref-tools__ref_read_url",
-      "Bash(d2:*)"
+      "Bash(d2:*)",
+      "WebSearch",
+      "WebFetch(domain:d2lang.com)"
     ]
   },
   "enabledMcpjsonServers": [
