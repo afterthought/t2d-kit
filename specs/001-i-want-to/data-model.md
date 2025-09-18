@@ -32,6 +32,35 @@ erDiagram
 
 ## Core Entities
 
+### Base Model Configuration
+
+All models inherit from T2DBaseModel with enhanced validation:
+
+```python
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from typing import Annotated
+
+class T2DBaseModel(BaseModel):
+    """Base model for all T2D-Kit entities with enhanced validation."""
+
+    model_config = ConfigDict(
+        extra='forbid',              # No unexpected fields
+        validate_assignment=True,    # Validate on assignment
+        str_strip_whitespace=True,   # Auto-strip strings
+        frozen=False,               # Allow mutations
+        use_enum_values=True,       # Use enum values in JSON
+        json_schema_extra={
+            "title": "T2D-Kit Models",
+            "version": "1.0.0"
+        }
+    )
+
+# Common type annotations
+IdField = Annotated[str, Field(pattern=r'^[a-zA-Z0-9_-]+$', min_length=1, max_length=100)]
+PathField = Annotated[str, Field(min_length=1, max_length=500)]
+InstructionsField = Annotated[str, Field(min_length=10, max_length=10000)]
+```
+
 ### UserRecipe (recipe.yaml)
 **Purpose**: User-maintained recipe with PRD content and high-level instructions
 **Source**: User-created YAML file

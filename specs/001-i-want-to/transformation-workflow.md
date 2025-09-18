@@ -11,17 +11,24 @@ The t2d-kit system uses a two-file recipe approach that separates user intent fr
 1. **recipe.yaml** - User-maintained, simple, high-level
 2. **recipe.t2d.yaml** - Agent-generated, detailed, executable
 
-## Workflow Stages
+## Workflow Stages (Simplified - No Orchestrator)
 
 ```mermaid
 flowchart LR
     User[User] -->|writes| UR[recipe.yaml]
-    UR -->|transform| Agent[Claude Agent]
-    Agent -->|analyzes PRD| Analysis[PRD Analysis]
+    UR -->|"transform recipe"| Transform[Transform Agent]
+    Transform -->|analyzes PRD| Analysis[PRD Analysis]
     Analysis -->|generates| PR[recipe.t2d.yaml]
-    PR -->|processes| Orchestrator[Claude Orchestrator]
-    Orchestrator -->|creates| Output[Diagrams & Docs]
+
+    User2[User] -->|"process recipe"| Generators[Generator Agents]
+    PR -->|read by| Generators
+    Generators -->|self-complete| Diagrams[Diagrams & Assets]
+
+    Diagrams -->|discovered by| Content[Content Agents]
+    Content -->|self-complete| Output[Docs & Presentations]
 ```
+
+**Key Change**: No orchestrator needed! Agents are invoked naturally based on user requests and complete their work independently.
 
 ## Stage 1: User Recipe Creation
 

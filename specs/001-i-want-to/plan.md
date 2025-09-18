@@ -71,10 +71,12 @@ specs/001-i-want-to/
 ├── plan.md                      # This file (/plan command output)
 ├── research.md                  # Phase 0 output (/plan command)
 ├── data-model.md                # Phase 1 output (/plan command)
+├── enhanced-models.md           # Enhanced Pydantic models with validation
 ├── quickstart.md                # Phase 1 output (/plan command)
-├── mcp-server.md                # MCP server specification (/plan command)
+├── mcp-server.md                # FastMCP server specification (/plan command)
 ├── installation-setup.md        # Installation and agent setup (/plan command)
 ├── transformation-workflow.md   # Two-file recipe workflow (/plan command)
+├── simplified-agents.md         # Self-sufficient agent definitions
 └── tasks.md                     # Phase 2 output (/tasks command - NOT created by /plan)
 ```
 
@@ -97,14 +99,12 @@ t2d-kit/
 │       │   └── __main__.py      # Server entry point
 │       └── agents/              # Claude Code subagents (bundled)
 │           ├── __init__.py
-│           ├── t2d-transform.md
-│           ├── t2d-orchestrate.md
-│           ├── t2d-d2-generator.md
-│           ├── t2d-mermaid-generator.md
-│           ├── t2d-plantuml-generator.md
-│           ├── t2d-markdown-maintainer.md
-│           ├── t2d-mkdocs-formatter.md
-│           └── t2d-marp-slides.md
+│           ├── t2d-transform.md        # Recipe transformer
+│           ├── t2d-d2-generator.md     # Complete D2 lifecycle
+│           ├── t2d-mermaid-generator.md # Complete Mermaid lifecycle
+│           ├── t2d-plantuml-generator.md # Complete PlantUML lifecycle
+│           ├── t2d-docs-generator.md   # Documentation generation
+│           └── t2d-slides-generator.md # Presentation generation
 ├── tests/
 │   ├── __init__.py
 │   ├── conftest.py             # pytest configuration

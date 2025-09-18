@@ -5,17 +5,17 @@
 **Current Branch**: 001-i-want-to
 
 ## Quick Summary
-t2d-kit is a command-line tool that processes YAML recipes to generate documentation and presentations with auto-routed diagrams. The system is entirely Claude Code-driven - Claude serves as the orchestrator, handles all routing decisions, generates diagrams via CLI tools, and creates content. The only Python code is a minimal CLI wrapper. Claude uses MCP for file operations (including YAML parsing), applies routing rules from its prompt, and coordinates all subagents. Recipes can be manipulated via MCP in Claude Desktop and processed via Desktop Commander headless execution.
+t2d-kit is a command-line tool that processes YAML recipes to generate documentation and presentations with auto-routed diagrams. The system uses self-sufficient Claude Code agents that complete their entire lifecycle independently - NO ORCHESTRATOR NEEDED. Each agent handles its complete workflow: generator agents create source AND build assets, content agents create markdown AND build final outputs. The only Python code is a minimal CLI wrapper and FastMCP server. Agents coordinate through files and natural Claude delegation via "use proactively" descriptions.
 
 ## Tech Stack
-- **Minimal Python**: CLI wrapper only (Click 8.1+)
-- **Core Engine**: Claude Code (orchestrator and all agents)
-- **File Operations**: MCP (including YAML parsing)
+- **Minimal Python**: CLI wrapper + FastMCP server
+- **Core Engine**: Self-sufficient Claude Code agents (no orchestrator)
+- **MCP Server**: FastMCP for YAML validation and manipulation
 - **Diagram CLIs**: D2, Mermaid CLI (mmdc), PlantUML
-- **Documentation**: MkDocs with diagram plugins
-- **Presentations**: MarpKit for slide generation
-- **Distribution**: uvx (for CLI wrapper)
-- **Execution**: Desktop Commander (headless Claude execution)
+- **Documentation**: MkDocs with native Mermaid support
+- **Presentations**: Marp (not MarpKit) for slide generation
+- **Distribution**: uvx with src layout
+- **Package Structure**: Modern src/ layout with importlib.resources
 
 ## Key Commands
 ```bash
@@ -28,14 +28,14 @@ t2d setup
 # Start MCP server
 t2d mcp .
 
-# Process recipe
-t2d create recipe.yml
+# Create starter recipe (optional)
+t2d setup --init
 
-# Validate recipe
-t2d validate recipe.yml
+# Transform recipe (in Claude)
+"Transform recipe.yaml"
 
-# Batch processing
-t2d batch --directory ./recipes
+# Process recipe (in Claude)
+"Process recipe and generate all outputs"
 
 ## Project Structure
 ```
@@ -46,8 +46,13 @@ t2d-kit/
 │   ├── server.py        # Read/write/validate user recipes
 │   ├── models.py        # Pydantic models for validation
 │   └── config.json      # MCP server configuration
-├── agents/              # Claude Code subagents (Markdown with YAML frontmatter)
-│   ├── t2d-transform.md        # Transform user recipe → processed recipe
+├── agents/              # Self-sufficient Claude Code agents
+│   ├── t2d-transform.md        # Recipe transformer (complete lifecycle)
+│   ├── t2d-d2-generator.md     # D2: source → build → report
+│   ├── t2d-mermaid-generator.md # Mermaid: source → build → report
+│   ├── t2d-plantuml-generator.md # PlantUML: source → build → report
+│   ├── t2d-docs-generator.md   # Docs: markdown → MkDocs → report
+│   └── t2d-slides-generator.md # Slides: markdown → Marp → report
 │   ├── t2d-orchestrate.md      # Process recipe.t2d.yaml (routing + coordination)
 │   ├── t2d-d2-generator.md     # D2 diagram generator
 │   ├── t2d-mermaid-generator.md # Mermaid diagram generator
