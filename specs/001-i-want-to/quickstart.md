@@ -5,19 +5,14 @@
 
 ## Installation
 
-### Step 1: Install via uvx (Recommended)
+### Step 1: Install and Setup
 ```bash
 # Install with uv package manager
 uvx install t2d-kit
 
-# Verify installation
-t2d --version
-```
-
-### Step 2: Setup Claude Code Integration
-```bash
-# Install agent files and slash commands
-t2d setup
+# Setup agents and optionally create initial recipe
+t2d setup              # Just setup agents
+t2d setup --init       # Setup and create recipe.yaml
 
 # Output:
 # ✅ t2d-kit setup complete!
@@ -28,7 +23,7 @@ t2d setup
 #    /t2d-create    - Process recipe and generate outputs
 ```
 
-### Step 3: Configure MCP Server (Optional)
+### Step 2: Configure MCP Server (Optional)
 ```bash
 # Start MCP server with current directory as working directory
 t2d mcp
@@ -53,7 +48,7 @@ t2d mcp ~/my-recipes
 # - Tool availability checking
 ```
 
-### Step 4: Verify Installation
+### Step 3: Verify Installation
 ```bash
 # Check all components
 t2d verify
@@ -127,10 +122,51 @@ npm install -g @mermaid-js/mermaid-cli
 # Linux: sudo apt install default-jre plantuml
 ```
 
+## Development Workflow
+
+### Simple Claude Desktop Workflow
+
+Just tell Claude what you want in natural language:
+
+```
+# Transform and preview in one request:
+"Transform recipe.yaml, process it, and show me a preview"
+
+# Claude will:
+# 1. Transform recipe.yaml → recipe.t2d.yaml
+# 2. Generate all diagrams and content
+# 3. Start preview servers automatically
+# 4. Report URLs:
+#    - Documentation: http://localhost:8000
+#    - Presentation: http://localhost:8080
+
+# Make changes and preview:
+"Update the architecture diagram to show microservices and preview the changes"
+
+# Claude will:
+# 1. Update the diagram
+# 2. Regenerate affected content
+# 3. Preview servers auto-reload
+```
+
+The orchestrator agent handles all preview server management based on your request. No need for manual server commands!
+
 ## Quick Start Example
 
 ### 1. Create a User Recipe File
 
+#### Option A: Interactive Creation (Recommended)
+```bash
+# Create recipe interactively with prompts
+t2d init --interactive --name "My Project"
+
+# Or use templates:
+t2d init --name "My Project" --template full     # All features
+t2d init --name "My Project" --template basic    # Common setup
+t2d init --name "My Project" --template minimal  # Bare minimum
+```
+
+#### Option B: Manual Creation
 Save as `recipe.yaml` (user-maintained, simple):
 
 ```yaml
@@ -138,7 +174,9 @@ recipe:
   name: "E-Commerce Platform"
   version: "1.0.0"
 
-  # Product Requirements Document
+  # Product Requirements Document (3 options)
+
+  # Option 1: Embedded PRD content
   prd:
     content: |
       # E-Commerce Platform PRD
@@ -218,6 +256,37 @@ recipe:
       - "Third-party API keys"
       - "Database passwords"
 ```
+
+### Alternative PRD Sources
+
+#### Option 2: Local File Reference
+```yaml
+recipe:
+  name: "E-Commerce Platform"
+  prd:
+    file_path: "docs/requirements/e-commerce-prd.md"
+    format: markdown
+    sections:  # Optional: specific sections to focus on
+      - "Technical Requirements"
+      - "API Specifications"
+```
+
+#### Option 3: External PRD via MCP
+When you need to fetch a PRD from an external source, you can:
+
+```bash
+# Tell Claude to fetch the PRD first:
+"First fetch the PRD document with UUID abc-123 using mcp__chat-prd__get_document,
+then transform recipe.yaml using that PRD"
+
+# Or provide instructions with the transform command:
+"Transform recipe.yaml, but first fetch the PRD from document UUID abc-123"
+```
+
+The transform agent will:
+1. Fetch the PRD using the appropriate MCP tool
+2. Use the fetched content as the PRD
+3. Continue with normal recipe transformation
 
 ### 2. Transform Recipe (Agent Processing)
 
@@ -456,9 +525,9 @@ recipe:
 #   - marp config
 ```
 
-### 4. View the Generated Files
+### 3. View the Generated Files
 
-Claude Code agents maintain markdown files that are referenced by both MkDocs and MarpKit:
+Claude Code agents maintain markdown files that are referenced by both MkDocs and Marp:
 
 **content/architecture.md** (maintained by Claude Code mkdocs_formatter):
 
@@ -569,21 +638,6 @@ Recipe validation is done through the MCP server:
 
 # Claude will use MCP tools to validate the YAML structure
 # and check for required fields using Pydantic models
-```
-
-### Batch Processing
-
-For batch processing multiple recipes:
-
-```
-# In Claude Desktop:
-"Process all recipes in the ./recipes directory"
-
-# Claude orchestrator will:
-# 1. List recipes using MCP tools
-# 2. Transform each user recipe
-# 3. Process each generated recipe
-# 4. Report progress for all recipes
 ```
 
 ### Information Commands
@@ -932,21 +986,6 @@ diagram_specs:
         switch1 -> server2
         switch2 -> server3
       }
-```
-
-### Batch Recipe
-
-```yaml
-# batch-recipes.yml
-recipes:
-  - name: "API Documentation"
-    # ... recipe 1 ...
-
-  - name: "Database Schema"
-    # ... recipe 2 ...
-
-  - name: "User Workflows"
-    # ... recipe 3 ...
 ```
 
 ## Troubleshooting

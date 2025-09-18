@@ -68,10 +68,9 @@ t2d = "t2d_kit.cli:main"
 
 [tool.setuptools.package-data]
 t2d_kit = [
-    "agents/**/*.txt",
-    "agents/**/*.yaml",
-    "commands/**/*",
-    "templates/**/*",
+    "agents/**/*.md",      # Claude agent markdown files bundled with package
+    "commands/**/*",       # Slash command scripts bundled
+    "templates/**/*",      # Any templates needed
 ]
 ```
 
@@ -89,6 +88,82 @@ import subprocess
 def cli():
     """t2d-kit: Multi-framework diagram pipeline."""
     pass
+
+@cli.command()
+@click.option('--init', is_flag=True, help='Create a new recipe.yaml file')
+@click.option('--name', help='Project name for new recipe')
+@click.option('--force', is_flag=True, help='Overwrite existing files')
+def setup(init, name, force):
+    """Setup t2d-kit: install agents, commands, and optionally create a recipe."""
+    # First, always do the setup steps
+    # Detect Claude Code installation
+    claude_home = find_claude_home()
+    if not claude_home:
+        click.echo("⚠️  Claude Code not found. Please install Claude Desktop first.")
+        return 1
+
+    # Install agent files
+    install_claude_agents(claude_home, force)
+
+    # Install slash commands
+    install_slash_commands(claude_home, force)
+
+    # Setup mise dependencies
+    setup_mise_dependencies()
+
+    click.echo("✅ t2d-kit setup complete!")
+    click.echo(f"   Claude agents installed to: {claude_home}")
+    click.echo("\n📝 Available commands:")
+    click.echo("   /t2d-transform - Transform user recipe to processed recipe")
+    click.echo("   /t2d-create    - Process recipe and generate outputs")
+
+    # Optionally create a recipe
+    if init:
+        if not name:
+            name = click.prompt("\nProject name", default="My Project")
+
+        import yaml
+        from pathlib import Path
+
+        recipe = {
+            'recipe': {
+                'name': name,
+                'version': '1.0.0',
+                'prd': {
+                    'content': '# Add your PRD content here\n\nDescribe your system requirements...'
+                },
+                'instructions': {
+                    'diagrams': [
+                        {'type': 'architecture', 'description': 'System architecture overview'},
+                        {'type': 'sequence', 'description': 'Key user flows'},
+                        {'type': 'erd', 'description': 'Data model'}
+                    ],
+                    'documentation': {
+                        'style': 'technical',
+                        'audience': 'developers',
+                        'include_diagrams_inline': True
+                    },
+                    'presentation': {
+                        'audience': 'stakeholders',
+                        'max_slides': 20,
+                        'style': 'executive'
+                    }
+                }
+            }
+        }
+
+        output_file = Path('recipe.yaml')
+        if output_file.exists() and not click.confirm(f"\n{output_file} exists. Overwrite?"):
+            output_file = Path(click.prompt("Output filename", default="recipe-new.yaml"))
+
+        with open(output_file, 'w') as f:
+            yaml.dump(recipe, f, default_flow_style=False, sort_keys=False)
+
+        click.echo(f"\n✅ Created {output_file}")
+        click.echo("\nNext steps:")
+        click.echo(f"  1. Edit {output_file} to add your PRD content")
+        click.echo(f"  2. In Claude Desktop: 'Transform recipe.yaml'")
+        click.echo(f"  3. In Claude Desktop: 'Process recipe and preview'")
 
 @cli.command()
 @click.argument('working_dir', type=click.Path(exists=True), default='.')
@@ -117,31 +192,7 @@ def mcp(working_dir):
     except KeyboardInterrupt:
         click.echo("\nMCP server stopped.")
 
-@cli.command()
-@click.option('--force', is_flag=True, help='Overwrite existing files')
-def setup(force):
-    """Install Claude Code agents and slash commands."""
-
-    # Detect Claude Code installation
-    claude_home = find_claude_home()
-    if not claude_home:
-        click.echo("⚠️  Claude Code not found. Please install Claude Desktop first.")
-        return 1
-
-    # Install agent files
-    install_claude_agents(claude_home, force)
-
-    # Install slash commands
-    install_slash_commands(claude_home, force)
-
-    # Setup mise dependencies
-    setup_mise_dependencies()
-
-    click.echo("✅ t2d-kit setup complete!")
-    click.echo(f"   Claude agents installed to: {claude_home}")
-    click.echo("\n📝 Available commands:")
-    click.echo("   /t2d-transform - Transform user recipe to processed recipe")
-    click.echo("   /t2d-create    - Process recipe and generate outputs")
+# Note: setup command is defined above with optional --init flag
 
 def find_claude_home():
     """Find Claude Code installation directory."""
@@ -167,8 +218,10 @@ def find_claude_home():
     return None
 
 def install_claude_agents(claude_home, force):
-    """Install agent markdown files."""
-    source_dir = Path(__file__).parent.parent / "agents"
+    """Install agent markdown files from bundled package data."""
+    # Agent files are bundled with the Python package
+    import pkg_resources
+
     target_dir = claude_home / "agents"
 
     if target_dir.exists() and not force:
@@ -178,7 +231,7 @@ def install_claude_agents(claude_home, force):
     # Create directory structure
     target_dir.mkdir(parents=True, exist_ok=True)
 
-    # Agent definitions to install
+    # Agent definitions bundled with package
     agents = [
         "t2d-transform",
         "t2d-orchestrate",
@@ -190,14 +243,20 @@ def install_claude_agents(claude_home, force):
         "t2d-marp-slides"
     ]
 
-    # Copy agent files
+    # Copy agent files from package resources
     for agent_name in agents:
-        source_file = source_dir / f"{agent_name}.md"
-        target_file = target_dir / f"{agent_name}.md"
+        try:
+            # Read agent file from bundled package data
+            agent_content = pkg_resources.resource_string(
+                "t2d_kit", f"agents/{agent_name}.md"
+            ).decode('utf-8')
 
-        if source_file.exists():
-            shutil.copy2(source_file, target_file)
+            # Write to Claude agents directory
+            target_file = target_dir / f"{agent_name}.md"
+            target_file.write_text(agent_content)
             click.echo(f"   Installed agent: {agent_name}")
+        except FileNotFoundError:
+            click.echo(f"   Warning: Agent {agent_name} not found in package")
 
 def install_slash_commands(claude_home, force):
     """Install slash command definitions."""
@@ -246,6 +305,84 @@ def setup_mise_dependencies():
         click.echo("   ✓ Dependencies installed via mise")
     except FileNotFoundError:
         click.echo("   ⚠️  mise not found - run 'curl https://mise.run | sh' to install")
+
+@cli.command()
+def verify():
+    """Verify t2d-kit installation and dependencies."""
+    import shutil
+
+    checks = {
+        "Claude Code": False,
+        "Agent files": False,
+        "Slash commands": False,
+        "mise": False,
+        "D2": False,
+        "Mermaid CLI": False,
+        "PlantUML": False,
+        "MkDocs": False,
+        "Marp": False
+    }
+
+    # Check Claude Code
+    claude_home = find_claude_home()
+    if claude_home and claude_home.exists():
+        checks["Claude Code"] = True
+
+        # Check agent files
+        agent_dir = claude_home / "agents"
+        if agent_dir.exists() and list(agent_dir.glob("t2d-*.md")):
+            checks["Agent files"] = True
+
+        # Check slash commands
+        cmd_dir = claude_home / "commands"
+        if cmd_dir.exists() and (cmd_dir / "t2d-transform").exists():
+            checks["Slash commands"] = True
+
+    # Check mise
+    if shutil.which("mise"):
+        checks["mise"] = True
+
+    # Check D2
+    if shutil.which("d2"):
+        checks["D2"] = True
+
+    # Check Mermaid CLI
+    if shutil.which("mmdc"):
+        checks["Mermaid CLI"] = True
+
+    # Check PlantUML
+    plantuml_jar = Path.home() / ".local/share/plantuml/plantuml.jar"
+    if plantuml_jar.exists() or shutil.which("plantuml"):
+        checks["PlantUML"] = True
+
+    # Check MkDocs
+    if shutil.which("mkdocs"):
+        checks["MkDocs"] = True
+
+    # Check Marp
+    if shutil.which("marp"):
+        checks["Marp"] = True
+
+    # Print results
+    click.echo("\n🔍 t2d-kit Installation Check:\n")
+    for component, status in checks.items():
+        icon = "✓" if status else "✗"
+        color = "green" if status else "red"
+        click.secho(f"   {icon} {component}", fg=color)
+
+    # Overall status
+    all_good = all(checks.values())
+    critical_good = checks["Claude Code"] and checks["Agent files"]
+
+    if all_good:
+        click.echo("\n✅ All components installed and ready!")
+    elif critical_good:
+        click.echo("\n⚠️  Core components ready, but some tools missing.")
+        click.echo("   Run: t2d setup")
+    else:
+        click.echo("\n❌ Installation incomplete. Run: t2d setup")
+
+    return 0 if critical_good else 1
 ```
 
 ## Package Structure
@@ -318,7 +455,7 @@ mise install
 ---
 name: t2d-d2-generator
 description: D2 diagram generator for t2d-kit. Use proactively when processing D2 diagram specifications.
-tools: Read, Write, Edit, Bash
+tools: Read, Write
 ---
 
 You are a D2 diagram generator agent for t2d-kit.
@@ -330,17 +467,15 @@ Given diagram specifications, generate D2 code that:
 4. Optimizes for readability
 
 Process:
-1. Read the diagram specification
-2. Generate D2 code based on instructions
-3. Save to the specified .d2 file
-4. Run d2 command to generate SVG/PNG
-5. Report success or errors
+1. Receive diagram specification with instructions prompt
+2. Interpret the natural language instructions
+3. Generate D2 code based on instructions
+4. Save to the specified .d2 file using Write tool
+5. Report completion
 
-Use the d2 CLI tool for rendering:
-- `d2 input.d2 output.svg` for SVG output
-- `d2 input.d2 output.png --format png` for PNG output
+NOTE: You only generate the .d2 source file. The orchestrator will run the d2 CLI command to create the SVG/PNG outputs.
 
-Ensure the generated D2 code is valid and renders correctly.
+Ensure the generated D2 code is valid syntax.
 ```
 
 ### Example: agents/t2d-transform.md
@@ -357,23 +492,85 @@ Task: Transform a user recipe (recipe.yaml) into a processed recipe (recipe.t2d.
 
 Steps:
 1. Read user recipe using MCP read_user_recipe tool
-2. Extract and analyze PRD content thoroughly
-3. Map user diagram requests to specific diagram types
-4. Generate detailed diagram specifications with complete DSL
-5. Create content file definitions for documentation/presentation
-6. Write processed recipe using MCP write_processed_recipe tool
-
-Analysis approach:
-- Identify all system components from PRD
-- Extract relationships and data flows
-- Map natural language to specific diagram types
-- Generate complete, executable instructions
+2. If PRD is file_path, read it using Read tool
+3. Extract and analyze PRD content thoroughly
+4. Map user diagram requests to specific diagram types and assign agents
+5. Create DiagramSpecification objects with agent assignments
+6. Create DiagramReference objects with expected paths
+7. Create ContentFile objects with base_prompt and diagram_refs
+8. Write processed recipe using MCP write_processed_recipe tool
 
 Output should include:
-- Detailed diagram specifications
-- Content file definitions
-- Output configuration for MkDocs/MarpKit
+- Detailed diagram specifications with agent field
+- DiagramReference objects with expected paths
+- Content file definitions with base_prompt (no diagram list)
+- Output configuration for MkDocs/Marp
 - Generation notes explaining decisions
+```
+
+### Example: agents/t2d-orchestrate.md
+```markdown
+---
+name: t2d-orchestrate
+description: Recipe orchestrator for t2d-kit. Processes recipe.t2d.yaml and coordinates all generation.
+tools: Read, Write, Bash, Task, mcp__t2d-kit__read_processed_recipe
+---
+
+You are the t2d-kit orchestrator that processes recipes and coordinates diagram generation.
+
+Process:
+1. Read recipe.t2d.yaml using MCP tool
+2. For each diagram specification:
+   - Invoke the specified agent (from agent field)
+   - Pass the instructions prompt
+3. After all source files generated, build diagrams:
+   - Run d2 CLI for .d2 files
+   - Run mmdc CLI for .mmd files
+   - Run plantuml for .puml files
+4. Update DiagramReference objects with actual paths
+5. For each content file:
+   - Combine base_prompt with diagram references
+   - Invoke content agent with combined prompt
+6. Generate final outputs:
+   - Run mkdocs build for documentation
+   - Run marp for presentations
+
+PREVIEW MODE:
+If the user requests preview (e.g., "process and preview", "show me a preview"):
+1. After generating content, start appropriate preview servers:
+   - For documentation: `mkdocs serve --dev-addr 0.0.0.0:8000 &`
+   - For presentations: `marp --watch content/slides.md --server &`
+   - For diagrams: `d2 --watch *.d2 --host 0.0.0.0:8001 &` (if requested)
+2. Report URLs to user:
+   - Documentation: http://localhost:8000
+   - Presentation: http://localhost:8080
+   - Note: Files will auto-reload on changes
+
+Use Bash tool for all CLI commands.
+Run preview servers in background with & for non-blocking execution.
+```
+
+### Example: agents/t2d-markdown-maintainer.md
+```markdown
+---
+name: t2d-markdown-maintainer
+description: Markdown content maintainer for t2d-kit documentation.
+tools: Read, Write
+---
+
+You maintain markdown documentation files.
+
+When invoked, you receive:
+- Base instructions for content creation
+- List of available diagrams with paths
+
+Create comprehensive markdown documentation that:
+1. Follows the specified style and audience
+2. Embeds diagrams using markdown image syntax
+3. Includes appropriate sections
+4. Maintains consistent formatting
+
+Save files using Write tool.
 ```
 
 ## Post-Install Verification

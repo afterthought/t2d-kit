@@ -8,6 +8,25 @@
 
 The MCP (Model Context Protocol) server provides recipe manipulation capabilities for Claude Desktop, enabling interactive recipe creation, editing, and validation. This is a Python-based MCP server that exposes tools for YAML recipe management.
 
+### Automatic Validation
+
+**Validation happens automatically on every read and write operation:**
+
+1. **When reading recipes** (`read_user_recipe`, `read_processed_recipe`):
+   - YAML is parsed and immediately validated with Pydantic
+   - Invalid recipes return detailed validation errors
+   - Valid recipes return clean, validated data
+
+2. **When writing recipes** (`write_processed_recipe`):
+   - Data is validated with Pydantic before writing to disk
+   - Invalid data is rejected with field-level error messages
+   - Only valid recipes are written to files
+
+3. **No manual validation needed**:
+   - Transform agent reads user recipe → automatic validation
+   - Transform agent writes processed recipe → automatic validation
+   - Orchestrator reads processed recipe → automatic validation
+
 ## Architecture
 
 ```
@@ -72,8 +91,13 @@ class PRDContent(BaseModel):
 
     @field_validator('content', 'file_path')
     def validate_prd_source(cls, v, values):
-        if not v and not values.get('file_path') and not values.get('content'):
+        has_content = values.get('content') is not None
+        has_file = values.get('file_path') is not None
+
+        if not (has_content or has_file):
             raise ValueError('PRD must have either content or file_path')
+        if has_content and has_file:
+            raise ValueError('PRD cannot have both content and file_path')
         return v
 
 class DiagramRequest(BaseModel):
@@ -103,6 +127,7 @@ class DiagramSpecification(BaseModel):
     id: str = Field(..., min_length=1, max_length=100)
     type: DiagramType
     framework: Optional[FrameworkType] = Field(default=FrameworkType.AUTO)
+    agent: str = Field(..., description="Claude Code agent to invoke (e.g., 't2d-d2-generator')")
     title: str = Field(..., min_length=1, max_length=255)
     instructions: str = Field(..., min_length=1, max_length=50000)
 
@@ -119,17 +144,18 @@ class MkDocsConfig(BaseModel):
     nav_structure: Optional[List[Dict[str, str]]] = None
     theme: Optional[str] = Field(default="material")
 
-class MarpKitConfig(BaseModel):
+class MarpConfig(BaseModel):
     slide_files: List[str] = Field(..., min_items=1)
     theme: Optional[str] = Field(default="gaia")
     paginate: Optional[bool] = Field(default=True)
     export_pdf: Optional[bool] = Field(default=False)
     export_pptx: Optional[bool] = Field(default=False)
+    export_html: Optional[bool] = Field(default=True)
 
 class OutputConfig(BaseModel):
     assets_dir: str = Field(..., min_length=1)
     mkdocs: Optional[MkDocsConfig] = None
-    marpkit: Optional[MarpKitConfig] = None
+    marp: Optional[MarpConfig] = None
 
 class ProcessedRecipe(BaseModel):
     """Agent-generated recipe with detailed specifications"""
@@ -194,8 +220,9 @@ class T2DKitMCPServer:
         self.server.add_tool(self.list_diagram_types)
         self.server.add_tool(self.list_frameworks)
         self.server.add_tool(self.suggest_framework)
-        self.server.add_tool(self.preview_diagram)
         self.server.add_tool(self.test_diagram_generation)
+        self.server.add_tool(self.analyze_recipe)
+        self.server.add_tool(self.suggest_enhancements)
 
     def _register_resources(self):
         """Register MCP resources for recipe discovery."""
@@ -205,10 +232,10 @@ class T2DKitMCPServer:
 
     @Tool(
         name="read_user_recipe",
-        description="Read and parse a user recipe YAML file"
+        description="Read and validate a user recipe YAML file"
     )
     async def read_user_recipe(self, file_path: str) -> ToolResult:
-        """Read a recipe YAML file and return its contents."""
+        """Read a recipe YAML file and validate with Pydantic."""
         try:
             path = Path(file_path)
             if not path.exists():
@@ -217,12 +244,18 @@ class T2DKitMCPServer:
             with open(path, 'r') as f:
                 recipe_data = yaml.safe_load(f)
 
+            # Validate with Pydantic model automatically on read
+            recipe_wrapper = UserRecipeWrapper(**recipe_data)
+
+            # Return validated data
             return ToolResult(
                 content=[TextContent(
                     type="text",
-                    text=json.dumps(recipe_data, indent=2)
+                    text=json.dumps(recipe_wrapper.model_dump(), indent=2)
                 )]
             )
+        except ValidationError as e:
+            return ToolResult(error=f"Recipe validation failed: {e}")
         except yaml.YAMLError as e:
             return ToolResult(error=f"Invalid YAML: {e}")
         except Exception as e:
@@ -455,154 +488,241 @@ class T2DKitMCPServer:
                 )]
             )
 
+# Note: Preview functionality is handled by the orchestrator agent
+    # when requested via user prompt (e.g., "process and preview")
+    # The orchestrator starts preview servers with watch mode for live development
+
     @Tool(
-        name="preview_diagram",
-        description="Generate a visual preview of diagram with live rendering"
+        name="analyze_recipe",
+        description="Analyze a recipe and provide insights about its structure and content"
     )
-    async def preview_diagram(
-        self,
-        diagram_type: str,
-        framework: str,
-        instructions: str,
-        render: bool = True
-    ) -> ToolResult:
-        """Generate preview of a diagram, optionally with visual rendering."""
-        import tempfile
-        import subprocess
-        import base64
-        from pathlib import Path
+    async def analyze_recipe(self, file_path: str) -> ToolResult:
+        """Analyze a recipe and provide insights."""
+        try:
+            # Read the recipe
+            read_result = await self.read_user_recipe(file_path)
+            if read_result.error:
+                return read_result
 
-        # Generate diagram source code
-        if framework == "mermaid":
-            if diagram_type == "sequence":
-                source = f"""sequenceDiagram
-    participant User
-    participant System
-    {instructions}"""
-            elif diagram_type == "erd":
-                source = f"""erDiagram
-    {instructions}"""
-            elif diagram_type == "flowchart":
-                source = f"""flowchart TD
-    Start --> Process
-    {instructions}"""
-            else:
-                source = f"""graph TD
-    {instructions}"""
-        elif framework == "d2":
-            source = f"""# {diagram_type.upper()} Diagram
-{instructions}"""
-        else:
-            source = instructions
+            # Parse the validated recipe data
+            import json
+            recipe_data = json.loads(read_result.content[0].text)
+            recipe = recipe_data['recipe']
 
-        if not render:
-            # Return just the source code
+            # Analyze the recipe
+            analysis = {
+                "recipe_name": recipe['name'],
+                "version": recipe.get('version', '1.0.0'),
+                "prd_provided": bool(recipe.get('prd', {}).get('content') or recipe.get('prd', {}).get('file_path')),
+                "diagram_count": len(recipe.get('instructions', {}).get('diagrams', [])),
+                "has_documentation": bool(recipe.get('instructions', {}).get('documentation')),
+                "has_presentation": bool(recipe.get('instructions', {}).get('presentation')),
+                "focus_areas": recipe.get('instructions', {}).get('focus_areas', []),
+                "diagram_types": [],
+                "framework_preferences": [],
+                "insights": [],
+                "opportunities": []
+            }
+
+            # Analyze diagrams
+            for diagram in recipe.get('instructions', {}).get('diagrams', []):
+                analysis["diagram_types"].append(diagram.get('type', 'unspecified'))
+                if diagram.get('framework_preference'):
+                    analysis["framework_preferences"].append(diagram['framework_preference'])
+
+            # Generate insights
+            if not analysis["has_documentation"] and not analysis["has_presentation"]:
+                analysis["insights"].append("No output format specified - consider adding documentation or presentation instructions")
+
+            if analysis["diagram_count"] == 0:
+                analysis["insights"].append("No diagrams specified - add diagram requests to generate visuals")
+            elif analysis["diagram_count"] > 10:
+                analysis["insights"].append(f"Large number of diagrams ({analysis['diagram_count']}) - consider focusing on key visuals")
+
+            if not analysis["prd_provided"]:
+                analysis["insights"].append("No PRD content provided - add PRD content for better context-aware diagram generation")
+
+            if not analysis["framework_preferences"]:
+                analysis["insights"].append("No framework preferences specified - system will auto-select optimal frameworks")
+
+            # Identify opportunities
+            if not analysis["has_documentation"]:
+                analysis["opportunities"].append("Add MkDocs documentation output for comprehensive technical docs")
+
+            if not analysis["has_presentation"]:
+                analysis["opportunities"].append("Add MarpKit presentation output for stakeholder presentations")
+
+            # Check for missing common diagram types
+            common_types = ["architecture", "sequence", "erd", "flowchart"]
+            specified_types = [d.lower() for d in analysis["diagram_types"]]
+            missing_common = [t for t in common_types if t not in specified_types]
+
+            if missing_common:
+                analysis["opportunities"].append(f"Consider adding these common diagram types: {', '.join(missing_common)}")
+
             return ToolResult(
                 content=[TextContent(
                     type="text",
-                    text=source
+                    text=json.dumps(analysis, indent=2)
                 )]
             )
 
-        # Render the diagram to an image
+        except Exception as e:
+            return ToolResult(error=f"Error analyzing recipe: {e}")
+
+    @Tool(
+        name="suggest_enhancements",
+        description="Suggest enhancements for a recipe including export formats and additional features"
+    )
+    async def suggest_enhancements(self, file_path: str) -> ToolResult:
+        """Suggest enhancements for recipe including PDF, PowerPoint, and other options."""
         try:
-            with tempfile.TemporaryDirectory() as tmpdir:
-                tmppath = Path(tmpdir)
+            # First analyze the recipe
+            analysis_result = await self.analyze_recipe(file_path)
+            if analysis_result.error:
+                return analysis_result
 
-                if framework == "mermaid":
-                    # Use mermaid CLI to generate SVG
-                    input_file = tmppath / "diagram.mmd"
-                    output_file = tmppath / "diagram.svg"
-                    input_file.write_text(source)
+            import json
+            analysis = json.loads(analysis_result.content[0].text)
 
-                    result = subprocess.run(
-                        ["mmdc", "-i", str(input_file), "-o", str(output_file), "-t", "default"],
-                        capture_output=True,
-                        text=True
-                    )
+            suggestions = {
+                "recipe_name": analysis["recipe_name"],
+                "current_state": {
+                    "diagrams": analysis["diagram_count"],
+                    "has_documentation": analysis["has_documentation"],
+                    "has_presentation": analysis["has_presentation"]
+                },
+                "suggested_enhancements": [],
+                "example_additions": {}
+            }
 
-                    if result.returncode != 0:
-                        return ToolResult(error=f"Mermaid rendering failed: {result.stderr}")
+            # Suggest export formats
+            if analysis["has_presentation"] and not analysis.get("has_pdf_export"):
+                suggestions["suggested_enhancements"].append({
+                    "type": "export_format",
+                    "name": "PDF Export for Presentations",
+                    "description": "Export Marp presentations as PDF for easy sharing",
+                    "impact": "High - Enables offline viewing and printing"
+                })
+                suggestions["example_additions"]["pdf_export"] = {
+                    "instructions": {
+                        "presentation": {
+                            "marpkit": {
+                                "export_pdf": True,
+                                "pdf_options": {
+                                    "format": "A4",
+                                    "landscape": True
+                                }
+                            }
+                        }
+                    }
+                }
 
-                    # Read the SVG and return as HTML for inline display
-                    svg_content = output_file.read_text()
+            if analysis["has_presentation"] and not analysis.get("has_pptx_export"):
+                suggestions["suggested_enhancements"].append({
+                    "type": "export_format",
+                    "name": "PowerPoint Export",
+                    "description": "Export presentations as PPTX for editing in PowerPoint",
+                    "impact": "High - Enables stakeholder customization"
+                })
+                suggestions["example_additions"]["pptx_export"] = {
+                    "instructions": {
+                        "presentation": {
+                            "marpkit": {
+                                "export_pptx": True
+                            }
+                        }
+                    }
+                }
 
-                    # Return both the source and rendered HTML
-                    return ToolResult(
-                        content=[
-                            TextContent(
-                                type="text",
-                                text=f"Source:\n```{framework}\n{source}\n```"
-                            ),
-                            TextContent(
-                                type="text",
-                                text=f"<html><body>{svg_content}</body></html>",
-                                mime_type="text/html"
-                            )
+            # Suggest diagram enhancements
+            if analysis["diagram_count"] > 0:
+                if "gantt" not in [d.lower() for d in analysis["diagram_types"]]:
+                    suggestions["suggested_enhancements"].append({
+                        "type": "diagram",
+                        "name": "Project Timeline (Gantt Chart)",
+                        "description": "Add a Gantt chart to show project phases and milestones",
+                        "impact": "Medium - Provides timeline visibility"
+                    })
+                    suggestions["example_additions"]["gantt_diagram"] = {
+                        "instructions": {
+                            "diagrams": [{
+                                "type": "gantt",
+                                "description": "Project implementation timeline with key milestones"
+                            }]
+                        }
+                    }
+
+                if "erd" not in [d.lower() for d in analysis["diagram_types"]] and analysis["prd_provided"]:
+                    suggestions["suggested_enhancements"].append({
+                        "type": "diagram",
+                        "name": "Data Model (ERD)",
+                        "description": "Add an Entity Relationship Diagram for data structure",
+                        "impact": "Medium - Clarifies data relationships"
+                    })
+                    suggestions["example_additions"]["erd_diagram"] = {
+                        "instructions": {
+                            "diagrams": [{
+                                "type": "erd",
+                                "description": "System data model showing entities and relationships"
+                            }]
+                        }
+                    }
+
+            # Suggest documentation enhancements
+            if not analysis["has_documentation"]:
+                suggestions["suggested_enhancements"].append({
+                    "type": "output",
+                    "name": "MkDocs Documentation Site",
+                    "description": "Generate a full documentation site with navigation",
+                    "impact": "High - Creates searchable, organized documentation"
+                })
+                suggestions["example_additions"]["mkdocs"] = {
+                    "instructions": {
+                        "documentation": {
+                            "mkdocs": {
+                                "theme": "material",
+                                "nav": [
+                                    {"Home": "index.md"},
+                                    {"Architecture": "architecture.md"},
+                                    {"API": "api.md"}
+                                ]
+                            }
+                        }
+                    }
+                }
+
+            # Suggest focus areas if not present
+            if not analysis.get("focus_areas"):
+                suggestions["suggested_enhancements"].append({
+                    "type": "content",
+                    "name": "Focus Areas",
+                    "description": "Define specific areas to emphasize in documentation",
+                    "impact": "Medium - Ensures key concepts are highlighted"
+                })
+                suggestions["example_additions"]["focus_areas"] = {
+                    "instructions": {
+                        "focus_areas": [
+                            "Security considerations",
+                            "Performance optimization",
+                            "Scalability approach",
+                            "Integration points"
                         ]
-                    )
+                    }
+                }
 
-                elif framework == "d2":
-                    # Use D2 CLI to generate SVG
-                    input_file = tmppath / "diagram.d2"
-                    output_file = tmppath / "diagram.svg"
-                    input_file.write_text(source)
+            # Add usage examples
+            suggestions["how_to_apply"] = "To apply these suggestions, update your recipe.yaml file with the relevant sections from 'example_additions'. You can copy and merge the suggested YAML structures into your existing recipe."
 
-                    result = subprocess.run(
-                        ["d2", str(input_file), str(output_file)],
-                        capture_output=True,
-                        text=True
-                    )
-
-                    if result.returncode != 0:
-                        return ToolResult(error=f"D2 rendering failed: {result.stderr}")
-
-                    # Read SVG and encode as base64 for image display
-                    svg_content = output_file.read_text()
-
-                    # For D2, we can also generate PNG for better compatibility
-                    png_file = tmppath / "diagram.png"
-                    subprocess.run(
-                        ["d2", str(input_file), str(png_file), "--format", "png"],
-                        capture_output=True
-                    )
-
-                    if png_file.exists():
-                        # Return PNG as base64-encoded image
-                        png_data = png_file.read_bytes()
-                        png_base64 = base64.b64encode(png_data).decode('utf-8')
-
-                        return ToolResult(
-                            content=[
-                                TextContent(
-                                    type="text",
-                                    text=f"Source:\n```d2\n{source}\n```"
-                                ),
-                                ImageContent(
-                                    type="image",
-                                    data=png_base64,
-                                    mime_type="image/png"
-                                )
-                            ]
-                        )
-                    else:
-                        # Fallback to SVG as HTML
-                        return ToolResult(
-                            content=[
-                                TextContent(
-                                    type="text",
-                                    text=f"Source:\n```d2\n{source}\n```"
-                                ),
-                                TextContent(
-                                    type="text",
-                                    text=f"<html><body>{svg_content}</body></html>",
-                                    mime_type="text/html"
-                                )
-                            ]
-                        )
+            return ToolResult(
+                content=[TextContent(
+                    type="text",
+                    text=json.dumps(suggestions, indent=2)
+                )]
+            )
 
         except Exception as e:
-            return ToolResult(error=f"Error rendering preview: {e}")
+            return ToolResult(error=f"Error generating suggestions: {e}")
 
     @Tool(
         name="test_diagram_generation",

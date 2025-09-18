@@ -8,7 +8,8 @@
       "Bash(.specify/scripts/bash/setup-plan.sh:*)",
       "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
       "mcp__ref-tools__ref_search_documentation",
-      "mcp__ref-tools__ref_read_url"
+      "mcp__ref-tools__ref_read_url",
+      "Bash(d2:*)"
     ]
   },
   "enabledMcpjsonServers": [

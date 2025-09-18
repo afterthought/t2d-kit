@@ -46,7 +46,7 @@ Research conducted to resolve technical unknowns for the t2d-kit diagram generat
 - JSON Schema only: No Python type hints
 
 ### 4. Documentation and Presentation Generation
-**Decision**: Markdown-first approach with file references for both MkDocs and MarpKit
+**Decision**: Markdown-first approach with file references for both MkDocs and Marp
 **Rationale**:
 - Consistent architecture: both tools reference markdown files
 - Content maintained by specialized subagents
@@ -55,18 +55,19 @@ Research conducted to resolve technical unknowns for the t2d-kit diagram generat
 **Implementation**:
 - Markdown files created and maintained by subagents
 - MkDocs references markdown files in mkdocs.yml
-- MarpKit references markdown files for slide generation
+- Marp processes markdown files for slide generation
 - Orchestrator coordinates file generation and references
 **Alternatives Considered**:
 - Inline content generation: Less reusable, harder to maintain
 - Direct API integration: Tighter coupling, less flexible
 - Single tool only: Limits output flexibility
+- MarpKit: Over-engineered for our needs, Marp CLI is sufficient
 
 ### 5. Claude Desktop/Desktop Commander Integration
 **Decision**: Dual-mode integration with MCP for manipulation and Desktop Commander for processing
 **Rationale**:
 - MCP server for interactive recipe creation/editing in Claude Desktop
-- Desktop Commander for headless batch processing
+- Desktop Commander for headless execution
 - Claude Code as subagents for content generation
 - Clean separation between UI and processing
 **Architecture**:
@@ -79,17 +80,17 @@ Research conducted to resolve technical unknowns for the t2d-kit diagram generat
 - Python-only agents: Less flexible content generation
 - Single mode: Limited use cases
 
-### 6. Batch Processing Strategy
-**Decision**: Async processing with configurable worker pool
+### 6. Parallel Diagram Processing
+**Decision**: Process multiple diagrams in parallel within a recipe
 **Rationale**:
-- Parallel diagram generation
-- Memory-efficient for large batches
-- Progress reporting capability
-- Configurable concurrency limits
+- Each diagram can be generated independently
+- Better resource utilization
+- Faster overall processing time
+- Failed diagrams don't block others
 **Alternatives Considered**:
-- Serial processing: Too slow
-- Multiprocessing: Higher overhead
-- External queue: Over-engineered
+- Serial processing: Too slow for complex recipes
+- One agent per diagram type: Less flexible
+- External job queue: Over-engineered
 
 ### 7. Fully Claude-Driven Architecture
 **Decision**: Use Claude Code for everything - orchestration, routing, diagram generation, and content
@@ -250,7 +251,7 @@ run = """
 - CLI runs in user context
 - File locking for shared recipes
 - Server mode future enhancement
-- Batch processing handles multiple recipes
+- Parallel processing handles multiple diagrams
 
 ## Technology Stack Summary
 
@@ -276,8 +277,7 @@ run = """
 - **MkDocs 1.5+**: Documentation framework
 - **mkdocs-mermaid2-plugin**: Mermaid integration
 - **mkdocs-d2-plugin**: D2 integration (custom or community)
-- **MarpKit**: Presentation generation from Markdown
-- **Marp CLI**: Converting Marp markdown to slides
+- **Marp CLI**: Markdown to presentation conversion (HTML, PDF, PPTX)
 
 ### Development Tools
 - **pytest 7.0+**: Testing framework
@@ -303,7 +303,7 @@ run = """
 1. Validation errors → Clear user messages
 2. Framework errors → Fallback to Mermaid
 3. File errors → Retry with backoff
-4. Batch errors → Continue with working recipes
+4. Diagram errors → Continue with working diagrams
 
 ### Extensibility Points
 1. New framework generators via plugin system

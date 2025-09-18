@@ -59,10 +59,7 @@ recipe:
 # Option 1: Via slash command in Claude Desktop
 /t2d-transform recipe.yaml
 
-# Option 2: Via Desktop Commander (execution environment)
-desktop-commander claude "Use the t2d-transform agent on recipe.yaml"
-
-# Option 3: Direct Claude CLI
+# Option 2: Direct Claude CLI
 claude "Use the t2d-transform agent to transform recipe.yaml"
 ```
 

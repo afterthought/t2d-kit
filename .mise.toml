@@ -6,7 +6,7 @@
 python = "3.11"
 node = "20"
 go = "1.21"
-java = "17"
+
 
 # Diagram generation tools
 "npm:@mermaid-js/mermaid-cli" = "latest"  # Provides mmdc command
@@ -15,71 +15,4 @@ java = "17"
 # Optional: Python package management
 # uv = "latest"  # If using uv for Python packages
 
-[env]
-# Environment variables for tools
-JAVA_HOME = "{{env.MISE_JAVA_HOME}}"
-GOPATH = "{{env.HOME}}/go"
-PATH = "{{env.GOPATH}}/bin:{{env.PATH}}"
 
-[tasks.setup]
-description = "Initial setup for t2d-kit"
-run = """
-  echo "Setting up t2d-kit..."
-
-  # Ensure Go bin is in PATH for d2
-  export PATH="$HOME/go/bin:$PATH"
-
-  # Verify all tools are available
-  echo "Checking tool installations..."
-  python --version
-  node --version
-  go version
-  java -version
-  d2 --version || echo "D2 not found - run 'mise install'"
-  mmdc --version || echo "Mermaid CLI not found - run 'mise install'"
-
-  echo "Setup complete!"
-"""
-
-[tasks.setup-plantuml]
-description = "Download and setup PlantUML jar"
-run = """
-  mkdir -p ~/.local/share/plantuml
-  echo "Downloading PlantUML..."
-  curl -L https://github.com/plantuml/plantuml/releases/latest/download/plantuml.jar \
-    -o ~/.local/share/plantuml/plantuml.jar
-  echo "PlantUML installed to ~/.local/share/plantuml/plantuml.jar"
-  echo "You can now use: java -jar ~/.local/share/plantuml/plantuml.jar"
-"""
-
-[tasks.test-tools]
-description = "Test all diagram generation tools"
-run = """
-  echo "Testing diagram tools..."
-
-  # Test D2
-  echo "Testing D2..."
-  echo "x -> y" | d2 - test.svg && rm test.svg && echo "✓ D2 working"
-
-  # Test Mermaid
-  echo "Testing Mermaid CLI..."
-  echo "graph TD; A-->B" | mmdc -i - -o test.svg && rm test.svg && echo "✓ Mermaid working"
-
-  # Test PlantUML if jar exists
-  if [ -f ~/.local/share/plantuml/plantuml.jar ]; then
-    echo "Testing PlantUML..."
-    echo "@startuml\nA -> B\n@enduml" | java -jar ~/.local/share/plantuml/plantuml.jar -pipe > test.svg && rm test.svg && echo "✓ PlantUML working"
-  else
-    echo "⚠ PlantUML not installed - run 'mise run setup-plantuml' to install"
-  fi
-
-  echo "Tool testing complete!"
-"""
-
-[tasks.dev]
-description = "Run development environment"
-depends = ["setup"]
-run = """
-  echo "Starting t2d-kit development environment..."
-  # Add any dev server or watch commands here
-"""

@@ -50,7 +50,7 @@ Built as a CLI tool with easy installation via uvx, with MCP server for Claude D
 **Project Type**: single (CLI tool with library core)
 **Performance Goals**: Sub-10 second generation time for standard documentation sets
 **Constraints**: <200ms recipe validation, <5s per diagram generation, support 10+ diagram types
-**Scale/Scope**: Support batch processing of 50+ recipes, 100+ diagrams per recipe
+**Scale/Scope**: Support processing of complex recipes with 10+ diagrams per recipe
 
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
@@ -130,7 +130,7 @@ tests/
    Task: "Research MkDocs diagram plugin integration"
    Task: "Research MarpKit presentation features and diagram embedding"
    Task: "Research Claude Desktop MCP server patterns"
-   Task: "Find optimal batch processing strategies for file generation"
+   Task: "Find optimal strategies for parallel diagram generation"
    ```
 
 3. **Consolidate findings** in `research.md` using format:
@@ -153,14 +153,12 @@ tests/
 
 2. **Define CLI commands** (handled by Claude orchestrator):
    - `t2d create <recipe.yml>`: Process recipe file
-   - `t2d validate <recipe.yml>`: Validate recipe syntax
-   - `t2d batch`: Process multiple recipes
    - `t2d setup`: Bootstrap mise dependencies
 
 3. **Define test scenarios** from user stories:
    - Product manager creates architecture diagrams from PRD
    - Technical writer generates GitHub-ready documentation
-   - Developer processes batch of recipes
+   - Developer processes complex recipe with many diagrams
    - System handles unsupported diagram types
    - Agents bootstrap missing tools via mise
 

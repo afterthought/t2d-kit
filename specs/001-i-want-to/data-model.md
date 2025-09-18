@@ -19,9 +19,9 @@ erDiagram
     DiagramSpecification ||--|| FrameworkMapping : "uses"
     DiagramSpecification ||--|| DiagramOutput : "produces"
     OutputConfig ||--o| MkDocsConfig : "contains"
-    OutputConfig ||--o| MarpKitConfig : "contains"
+    OutputConfig ||--o| MarpConfig : "contains"
     MkDocsConfig ||--o{ ContentFile : "references"
-    MarpKitConfig ||--o{ ContentFile : "references"
+    MarpConfig ||--o{ ContentFile : "references"
     ProcessedRecipe ||--|| ProcessingLog : "generates"
     ProcessingLog ||--o{ ProcessingEvent : "records"
     ClaudeAgent ||--|| MCPServer : "uses for file ops"
@@ -49,12 +49,29 @@ erDiagram
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
-| content | string | Conditional | Max 1MB | Embedded PRD content |
-| file_path | string | Conditional | Valid path | Path to PRD file |
+| content | string | Conditional | Max 1MB | Embedded PRD content directly in recipe |
+| file_path | string | Conditional | Valid path | Path to local PRD file |
 | format | PRDFormat | No | Enum | Format of PRD (markdown, text, html) |
 | sections | List[string] | No | Section names | Key sections to focus on |
 
-**Validation**: Must have either `content` OR `file_path`, not both
+**Validation**: Must have either `content` OR `file_path` (exactly one)
+
+**How PRD is Handled**:
+1. **If `content` provided**: Transform agent uses directly
+2. **If `file_path` provided**: Transform agent reads file using Read tool
+
+**Note**: If the user needs to fetch a PRD from an external source (e.g., via MCP), they can:
+- Invoke the transform command with instructions: `/t2d-transform recipe.yaml --fetch-prd-from "mcp__chat-prd__get_document UUID"`
+- Or simply tell Claude: "First fetch PRD document UUID abc-123, then transform the recipe"
+- The transform agent will handle fetching as part of its execution
+
+**PRD Processing**:
+Once the PRD content is obtained, the transform agent:
+1. Analyzes the PRD content for system components, features, and requirements
+2. Maps user diagram requests to specific diagram types
+3. Generates detailed DiagramSpecification objects with prompts
+4. Creates ContentFile specifications with base prompts
+5. Writes the processed recipe.t2d.yaml via MCP
 
 ### UserInstructions
 **Purpose**: High-level instructions for what to generate
@@ -142,6 +159,7 @@ class PresentationStyle(Enum):
 | generated_at | datetime | Yes | ISO 8601 | When generated |
 | content_files | List[ContentFile] | Yes | Valid paths | Generated content specifications |
 | diagram_specs | List[DiagramSpecification] | Yes | Min 1 item | Detailed diagram specifications |
+| diagram_refs | List[DiagramReference] | Yes | Min 1 item | Diagram references (1:1 with diagram_specs) |
 | outputs | OutputConfig | Yes | Valid config | Output configuration |
 | generation_notes | List[string] | No | String list | Notes from agent about decisions |
 
@@ -159,23 +177,39 @@ class PresentationStyle(Enum):
 | id | string | Yes | UUID or slug | Unique identifier |
 | path | string | Yes | Valid path | Path to markdown file |
 | type | ContentType | Yes | Enum | Type of content (documentation, presentation) |
-| agent | string | Yes | Agent name | Claude agent responsible (markdown_maintainer, mkdocs_formatter, marp_slides) |
-| agent_prompt | string | Yes | Max 5KB | Complete prompt including instructions and diagram context |
-| diagram_context | List[DiagramReference] | Yes | Diagram info | Diagrams available for this content |
+| agent | string | Yes | Agent name | Claude Code agent responsible (t2d-markdown-maintainer, t2d-mkdocs-formatter, t2d-marp-slides) |
+| base_prompt | string | Yes | Max 5KB | Base instructions WITHOUT diagram list (diagram context added dynamically) |
+| diagram_refs | List[string] | Yes | Diagram IDs | List of diagram IDs available to this content |
 | title | string | No | Max 255 chars | Content title |
 | last_updated | datetime | Yes | ISO 8601 | Last update timestamp |
 
+**Note**: The `base_prompt` contains instructions but NOT the diagram list. The orchestrator dynamically combines `base_prompt` with actual `DiagramReference` objects when invoking the content agent.
+
 ### DiagramReference
-**Purpose**: Information about diagrams passed to content agents
-**Source**: Generated from DiagramSpecification after diagrams are created
+**Purpose**: Metadata about diagrams that will be available to content agents
+**Source**: Created by transform agent in recipe.t2d.yaml, paths updated after generation
+**Lifecycle**:
+1. Transform agent creates with expected paths (e.g., "docs/assets/system.svg")
+2. Orchestrator updates with actual paths after successful generation
+3. Orchestrator passes to content agents dynamically at invocation
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
 | id | string | Yes | Diagram ID | References DiagramSpecification.id |
 | title | string | Yes | Max 255 chars | Diagram title |
 | type | DiagramType | Yes | Enum | Type of diagram (c4_container, sequence, etc.) |
-| file_path | string | Yes | Valid path | Path to generated diagram file |
+| expected_path | string | Yes | Valid path | Expected path for generated diagram file |
+| actual_paths | Dict[OutputFormat, str] | No | Format→path | Actual paths after generation (SVG, PNG, etc.) |
 | description | string | No | Max 500 chars | What the diagram shows |
+| status | GenerationStatus | Yes | Enum | pending, generated, failed |
+
+**Enums**:
+```python
+class GenerationStatus(Enum):
+    PENDING = "pending"      # Not yet generated
+    GENERATED = "generated"  # Successfully generated
+    FAILED = "failed"        # Generation failed
+```
 
 **Enums**:
 ```python
@@ -193,13 +227,18 @@ class ContentType(Enum):
 | id | string | Yes | UUID or slug | Unique identifier |
 | type | DiagramType | Yes | Enum value | Diagram type (c4, sequence, erd, etc.) |
 | framework | FrameworkType | No | Enum value | Target framework (auto-selected if empty) |
+| agent | string | Yes | Agent name | Claude Code agent to invoke (e.g., 't2d-d2-generator', 't2d-mermaid-generator') |
 | title | string | Yes | Max 255 chars | Diagram title |
 | instructions | string | Yes | Max 5KB | Prompt for generator agent describing what to create |
 | output_file | string | Yes | Valid path | Where to save the .d2/.mmd/.puml file |
 | output_formats | List[OutputFormat] | Yes | Min 1 | Desired outputs (svg, png, pdf) |
 | options | Dict[str, Any] | No | Framework-specific | Rendering options |
 
-**Note**: The `instructions` field contains natural language prompts that tell the generator agent what diagram to create, NOT the actual D2/Mermaid/PlantUML syntax. The generator agents (t2d-d2-generator, t2d-mermaid-generator, etc.) interpret these prompts and generate the appropriate syntax.
+**Note**: The `instructions` field contains natural language prompts that tell the generator agent what diagram to create, NOT the actual D2/Mermaid/PlantUML syntax. The `agent` field specifies which Claude Code generator agent (t2d-d2-generator, t2d-mermaid-generator, etc.) will interpret these prompts and generate the appropriate syntax.
+
+**Output Format Handling**: When multiple output formats are specified, the generator agent will either:
+1. Pass all formats to the CLI in a single command if supported (e.g., some tools support multiple outputs)
+2. Loop through formats and call the CLI multiple times (e.g., `d2 diagram.d2 diagram.svg` then `d2 diagram.d2 diagram.png`)
 
 **Enums**:
 ```python
@@ -275,7 +314,7 @@ class OutputFormat(Enum):
 |-------|------|----------|------------|-------------|
 | assets_dir | string | Yes | Valid path | Asset output directory for diagrams |
 | mkdocs | MkDocsConfig | No | Valid config | MkDocs site configuration |
-| marpkit | MarpKitConfig | No | Valid config | MarpKit presentation configuration |
+| marp | MarpConfig | No | Valid config | Marp presentation configuration |
 
 ### MkDocsConfig
 **Purpose**: MkDocs-specific configuration with markdown file references
@@ -289,17 +328,18 @@ class OutputFormat(Enum):
 | theme | string | No | Theme name | MkDocs theme (material, readthedocs, etc.) |
 | plugins | List[string] | No | Plugin list | MkDocs plugins to enable |
 
-### MarpKitConfig
-**Purpose**: MarpKit-specific configuration with markdown file references
-**Source**: Recipe marpkit section
+### MarpConfig
+**Purpose**: Marp-specific configuration with markdown file references
+**Source**: Recipe marp section
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
 | slide_files | List[string] | Yes | File paths | References to markdown slide files |
-| theme | string | No | Theme name | MarpKit theme (default, gaia, uncover) |
+| theme | string | No | Theme name | Marp theme (default, gaia, uncover) |
 | paginate | bool | No | Boolean | Add page numbers |
 | export_pdf | bool | No | Boolean | Export to PDF |
 | export_pptx | bool | No | Boolean | Export to PowerPoint |
+| export_html | bool | No | Boolean | Export to HTML (default: true) |
 
 **Enums**:
 ```python
@@ -309,7 +349,7 @@ class TemplateType(Enum):
     GITLAB = "gitlab"
     CONFLUENCE = "confluence"
     MKDOCS = "mkdocs"
-    MARPKIT = "marpkit"
+    MARP = "marp"
     CUSTOM = "custom"  # Requires template_path
 
 class Platform(Enum):
@@ -319,22 +359,23 @@ class Platform(Enum):
     CONFLUENCE = "confluence"
     STATIC_SITE = "static"
     MKDOCS = "mkdocs"
-    MARPKIT = "marpkit"
+    MARP = "marp"
 ```
 
 ### PresentationConfig
-**Purpose**: MarpKit presentation generation settings
+**Purpose**: Marp presentation generation settings
 **Source**: Recipe presentation section
 
 | Field | Type | Required | Validation | Description |
 |-------|------|----------|------------|-------------|
 | output_file | string | Yes | Valid path | Presentation markdown output |
-| theme | string | No | Theme name | MarpKit theme (default, gaia, uncover) |
+| theme | string | No | Theme name | Marp theme (default, gaia, uncover) |
 | paginate | bool | No | Boolean | Add page numbers |
 | slides | List[SlideSpec] | No | Slide list | Explicit slide definitions |
 | auto_split | bool | No | Boolean | Auto-split by headers |
 | export_pdf | bool | No | Boolean | Export to PDF |
 | export_pptx | bool | No | Boolean | Export to PowerPoint |
+| export_html | bool | No | Boolean | Export to HTML |
 
 ### SlideSpec
 **Purpose**: Individual slide configuration for presentations
@@ -523,11 +564,11 @@ class FileOperation(Enum):
 ### ProcessedRecipe → ContentFile (1:N)
 - Processed recipe defines content files to be created
 - Each content file maintained by specific Claude agent
-- Files referenced by both MkDocs and MarpKit
+- Files referenced by both MkDocs and Marp
 
 ### ContentFile → ClaudeAgent (N:1)
 - Each content file maintained by a Claude agent
-- Agents: markdown_maintainer, mkdocs_formatter, marp_slides
+- Agents: t2d-markdown-maintainer, t2d-mkdocs-formatter, t2d-marp-slides
 - Agent determines content structure and formatting
 
 ### DiagramSpecification → ClaudeAgent (N:1)
@@ -536,9 +577,11 @@ class FileOperation(Enum):
 - Agent uses CLI tools (d2, mmdc, plantuml) for generation
 
 ### ClaudeAgent → MCPServer (N:1)
-- Transform agent uses MCP to read user recipes (recipe.yaml)
+- Transform agent uses MCP to:
+  - Read user recipes (recipe.yaml) with validation
+  - Write processed recipes (recipe.t2d.yaml) with validation
 - Orchestrator uses MCP to read processed recipes (recipe.t2d.yaml)
-- MCP provides YAML validation with Pydantic
+- MCP provides YAML validation with Pydantic for both recipe types
 - Generator and content agents use their own Write/Read tools directly
 - Build steps use Bash tool to run CLI commands
 
@@ -579,36 +622,36 @@ documentation:
 
 # Transform agent generates (in recipe.t2d.yaml):
 content_files:
-  - agent: markdown_maintainer
-    agent_prompt: |
+  - agent: t2d-markdown-maintainer
+    base_prompt: |
       Create technical documentation for developers.
       Include detailed explanations with code examples.
       Style: Technical reference format
-
-      Available diagrams to include:
-      1. system-architecture (C4 Container): "E-Commerce Microservices Architecture"
-         Path: docs/assets/system-architecture.svg
-      2. shopping-flow (Sequence): "User Shopping Flow"
-         Path: docs/assets/shopping-flow.svg
-      3. database-erd (ERD): "E-Commerce Database Schema"
-         Path: docs/assets/database-erd.svg
-
-      Embed these diagrams where appropriate in the documentation.
+      Embed diagrams where appropriate in the documentation.
       Use markdown image syntax: ![alt text](path)
+    diagram_refs: ["system-architecture", "shopping-flow", "database-erd"]
 
-    diagram_context:
-      - id: system-architecture
-        title: "E-Commerce Microservices Architecture"
-        type: c4_container
-        file_path: docs/assets/system-architecture.svg
-      - id: shopping-flow
-        title: "User Shopping Flow"
-        type: sequence
-        file_path: docs/assets/shopping-flow.svg
-      - id: database-erd
-        title: "E-Commerce Database Schema"
-        type: erd
-        file_path: docs/assets/database-erd.svg
+diagram_refs:
+  - id: system-architecture
+    title: "E-Commerce Microservices Architecture"
+    type: c4_container
+    expected_path: docs/assets/system-architecture.svg
+    status: pending
+  - id: shopping-flow
+    title: "User Shopping Flow"
+    type: sequence
+    expected_path: docs/assets/shopping-flow.svg
+    status: pending
+  - id: database-erd
+    title: "E-Commerce Database Schema"
+    type: erd
+    expected_path: docs/assets/database-erd.svg
+    status: pending
+
+# When orchestrator invokes the content agent, it dynamically combines:
+# 1. The base_prompt from ContentFile
+# 2. The DiagramReference objects (with updated actual_paths after generation)
+# Creating the full prompt at invocation time
 ```
 
 #### Presentation Instructions → Agent Prompts
@@ -622,12 +665,13 @@ presentation:
 
 # Transform agent generates:
 content_files:
-  - agent: marp_slides
-    agent_prompt: |
+  - agent: t2d-marp-slides
+    base_prompt: |
       Create executive presentation for executives.
       Maximum 20 slides.
       Emphasize: ROI, Timeline
       Style: High-level overview, avoid technical details
+    diagram_refs: ["system-architecture", "timeline-gantt"]
 ```
 
 #### Focus Areas and Exclusions
@@ -635,36 +679,66 @@ These modify all agent prompts:
 - **focus_areas**: Added to prompts as "Focus on: [areas]"
 - **exclude**: Added to prompts as "Avoid mentioning: [items]"
 
-### Workflow Order and Diagram Availability
+### Workflow Order and Tool Usage
 
 The orchestrator processes recipes in this order:
+
+0. **Recipe transformation** (transform agent creates recipe.t2d.yaml)
+   - Transform agent reads recipe.yaml
+   - Creates DiagramSpecification objects with agent assignments
+   - Creates DiagramReference objects with expected paths (status: pending)
+   - Creates ContentFile objects with base_prompt and diagram_refs
+   - Writes recipe.t2d.yaml via MCP
 
 1. **Generate diagram source files** (parallel execution by generator agents)
    - Each generator agent receives the `instructions` prompt
    - Agent interprets the prompt and creates the diagram syntax
-   - Agent writes the .d2/.mmd/.puml file directly using Write tool
+   - Agent uses **Write tool** to save .d2/.mmd/.puml file
    - Example: t2d-d2-generator writes "architecture.d2"
 
-2. **Build diagram assets** (orchestrator or build agent runs CLI tools)
-   - The orchestrator (or a dedicated build agent) uses Bash tool to run CLI commands:
-     - `d2 diagram.d2 diagram.svg` for D2 files
-     - `mmdc -i diagram.mmd -o diagram.svg` for Mermaid files
-     - `java -jar plantuml.jar diagram.puml` for PlantUML files
-   - Collects paths to all generated assets (SVG, PNG files)
-   - Creates DiagramReference objects for each completed diagram
+2. **Build diagram assets** (orchestrator runs all CLI tools via Bash)
+   - The orchestrator uses **Bash tool** to run diagram CLI commands:
+     - For single format: `d2 diagram.d2 diagram.svg`
+     - For multiple formats, either:
+       - Single command: `d2 diagram.d2 --format=svg,png` (if tool supports)
+       - Multiple commands: `d2 diagram.d2 diagram.svg` then `d2 diagram.d2 diagram.png`
+     - Mermaid: `mmdc -i diagram.mmd -o diagram.svg` (then repeat for PNG if needed)
+     - PlantUML: `java -jar plantuml.jar -tsvg diagram.puml` and `-tpng` for PNG
+   - Updates DiagramReference objects:
+     - Sets actual_paths with real file locations
+     - Updates status to "generated" or "failed"
 
 3. **Create content files** with diagram context (content agents write markdown)
-   - Content agents receive prompts with paths to the built diagram assets
-   - Agents write markdown files directly using Write tool
+   - Orchestrator dynamically creates full prompt by combining:
+     - ContentFile.base_prompt (instructions without diagram list)
+     - DiagramReference objects for ContentFile.diagram_refs (with actual paths)
+   - Content agents receive the combined prompt with actual diagram paths
+   - Agents use **Write tool** to save markdown files
    - Markdown files reference the generated SVG/PNG files
-   - Example: markdown_maintainer writes "content/overview.md"
+   - Example: t2d-markdown-maintainer writes "content/overview.md"
+
+4. **Generate final outputs** (orchestrator runs documentation tools via Bash)
+   - The orchestrator uses **Bash tool** to run:
+     - `mkdocs build` to generate MkDocs site
+     - `marp content/slides.md -o presentation.html` for HTML presentations
+     - `marp content/slides.md --pdf` for PDF export
+     - `marp content/slides.md --pptx` for PowerPoint export
+   - Creates final documentation site and presentation files
+
+### Tool Usage Summary
+- **MCP tools**: Read/write/validate recipe YAML files (recipe.yaml, recipe.t2d.yaml)
+- **Write tool**: Create source files (.d2, .mmd, .puml) and markdown files
+- **Bash tool**: Run CLI commands (d2, mmdc, plantuml) to build diagrams
+- **Read tool**: Read PRD files, existing content, etc.
 
 #### Example: Complete Diagram Workflow
 ```
 Step 1 - Generator Agent (t2d-d2-generator):
   Input:
+    agent: "t2d-d2-generator"
     instructions: "Create a C4 Container diagram showing microservices..."
     output_file: "docs/assets/system.d2"
+    output_formats: ["svg", "png"]
 
   Agent Actions:
     1. Interprets the instructions
@@ -674,23 +748,40 @@ Step 1 - Generator Agent (t2d-d2-generator):
   Output:
     File written: "docs/assets/system.d2"
 
-Step 2 - Build Step (orchestrator or build agent):
-  Uses Bash tool: Bash("d2 docs/assets/system.d2 docs/assets/system.svg")
+Step 2 - Build Step (orchestrator handles multiple formats):
+  For multiple output formats, orchestrator either:
+
+  Option A - Multiple CLI calls:
+    Bash("d2 docs/assets/system.d2 docs/assets/system.svg")
+    Bash("d2 docs/assets/system.d2 docs/assets/system.png --format png")
+
+  Option B - Single CLI call (if tool supports):
+    Bash("d2 docs/assets/system.d2 --outputs docs/assets/system.svg,docs/assets/system.png")
 
   Output:
-    File created by d2 CLI: "docs/assets/system.svg"
+    Files created by d2 CLI:
+    - "docs/assets/system.svg"
+    - "docs/assets/system.png"
 
-Step 3 - Content Generation (markdown_maintainer):
-  Input:
-    agent_prompt: "Create documentation..."
-    diagram_context: [{
-      id: "system-architecture",
-      file_path: "docs/assets/system.svg"
-    }]
+Step 3 - Content Generation (t2d-markdown-maintainer):
+  Orchestrator dynamically constructs prompt:
+    base_prompt (from ContentFile): "Create technical documentation..."
+    +
+    diagram_context (from DiagramReferences with actual_paths):
+      "Available diagrams:
+       1. system-architecture (C4 Container): E-Commerce Architecture
+          SVG: docs/assets/system.svg
+          PNG: docs/assets/system.png
+       2. shopping-flow (Sequence): Shopping Flow
+          SVG: docs/assets/shopping-flow.svg"
+
+  Input to Agent:
+    agent: "t2d-markdown-maintainer"
+    combined_prompt: [base_prompt + formatted diagram list]
 
   Agent Actions:
     1. Creates markdown content
-    2. Embeds diagram: ![Architecture](docs/assets/system.svg)
+    2. Embeds diagrams: ![Architecture](docs/assets/system.svg)
     3. Uses Write tool: Write("content/overview.md", markdown_content)
 
   Output:
@@ -703,7 +794,7 @@ Step 3 - Content Generation (markdown_maintainer):
 1. Must have at least one diagram specification
 2. PRD content OR reference required (not both)
 3. Documentation config must specify valid paths
-4. Recipe name must be unique within batch
+4. Recipe name must be unique within project
 
 ### DiagramSpecification Validation
 1. ID must be unique within recipe
@@ -726,7 +817,7 @@ Step 3 - Content Generation (markdown_maintainer):
 ## Indexes and Performance
 
 ### Primary Indexes
-- Recipe.name (unique within batch)
+- Recipe.name (unique)
 - DiagramSpecification.id (unique within recipe)
 - OutputAsset.file_path (unique)
 - ProcessingLog.id (unique)
