@@ -1,18 +1,64 @@
-# mise configuration for t2d-kit
-# Manages all tool dependencies for the diagram pipeline
-
 [tools]
-# Core languages
 python = "3.11"
 node = "20"
 go = "1.21"
+java = "openjdk-17"
+"npm:@mermaid-js/mermaid-cli" = "latest"
+"go:oss.terrastruct.com/d2" = "latest"
 
+[tasks.setup-plantuml]
+description = "Download and setup PlantUML"
+run = """
+mkdir -p ~/.local/bin
+curl -L https://github.com/plantuml/plantuml/releases/download/v1.2024.0/plantuml-1.2024.0.jar -o ~/.local/bin/plantuml.jar
+echo '#!/bin/bash\njava -jar ~/.local/bin/plantuml.jar "$@"' > ~/.local/bin/plantuml
+chmod +x ~/.local/bin/plantuml
+"""
 
-# Diagram generation tools
-"npm:@mermaid-js/mermaid-cli" = "latest"  # Provides mmdc command
-"go:oss.terrastruct.com/d2" = "latest"     # Provides d2 command
+[tasks.install-deps]
+description = "Install Python dependencies"
+run = "pip install -e .[dev]"
 
-# Optional: Python package management
-# uv = "latest"  # If using uv for Python packages
+[tasks.setup]
+description = "Complete project setup"
+depends = ["setup-plantuml", "install-deps"]
+run = "echo 'Setup complete!'"
 
+[tasks.lint]
+description = "Run linters"
+run = """
+ruff check .
+black --check .
+mypy src/t2d_kit
+"""
 
+[tasks.format]
+description = "Format code"
+run = """
+ruff check --fix .
+black .
+"""
+
+[tasks.test]
+description = "Run tests"
+run = "pytest tests/"
+
+[tasks.test-cov]
+description = "Run tests with coverage"
+run = "pytest tests/ --cov=src/t2d_kit --cov-report=term-missing"
+
+[tasks.verify]
+description = "Verify all tools are installed"
+run = """
+echo "Checking tools..."
+python --version
+node --version
+go version
+java -version
+d2 --version || echo "d2 not installed - run: go install oss.terrastruct.com/d2"
+mmdc --version || echo "mermaid-cli not installed - run: npm install -g @mermaid-js/mermaid-cli"
+test -f ~/.local/bin/plantuml.jar && echo "PlantUML installed" || echo "PlantUML not installed - run: mise run setup-plantuml"
+"""
+
+[env]
+PYTHONPATH = "src"

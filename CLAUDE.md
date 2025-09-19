@@ -1,175 +1,187 @@
-# Claude Code Assistant Context
+# Claude Code Context: t2d-kit
 
-**Project**: t2d-kit - Multi-Framework Diagram Pipeline
-**Type**: CLI Tool with Python Library Core
-**Current Branch**: 001-i-want-to
+## Project Overview
 
-## Quick Summary
-t2d-kit is a command-line tool that processes YAML recipes to generate documentation and presentations with auto-routed diagrams. The system uses self-sufficient Claude Code agents that complete their entire lifecycle independently - NO ORCHESTRATOR NEEDED. Each agent handles its complete workflow: generator agents create source AND build assets, content agents create markdown AND build final outputs. The only Python code is a minimal CLI wrapper and FastMCP server. Agents coordinate through files and natural Claude delegation via "use proactively" descriptions.
+t2d-kit is a Multi-Framework Diagram Pipeline that transforms Product Requirements Documents (PRDs) into comprehensive diagrams and documentation using self-organizing Claude Code agents.
 
-## Tech Stack
-- **Minimal Python**: CLI wrapper + FastMCP server
-- **Core Engine**: Self-sufficient Claude Code agents (no orchestrator)
-- **MCP Server**: FastMCP for YAML validation and manipulation
-- **Diagram CLIs**: D2, Mermaid CLI (mmdc), PlantUML
-- **Documentation**: MkDocs with native Mermaid support
-- **Presentations**: Marp (not MarpKit) for slide generation
-- **Distribution**: uvx with src layout
-- **Package Structure**: Modern src/ layout with importlib.resources
+## Architecture
 
-## Key Commands
+### Simplified Agent Architecture
+- **No Orchestrator**: Agents self-organize based on "use proactively" instructions
+- **Natural Delegation**: Claude automatically selects the right agent
+- **File-Based Coordination**: Agents communicate through `.t2d-state/` directory
+- **Complete Autonomy**: Each agent handles its entire workflow independently
+
+### Core Components
+
+1. **MCP Server** (`src/t2d_kit/mcp/`)
+   - FastMCP-based server for recipe management
+   - Tools: read_user_recipe, write_processed_recipe, validate_recipe, watch_recipe_changes
+   - Integrates with Claude Desktop
+
+2. **CLI** (`src/t2d_kit/cli/`)
+   - Commands: setup, mcp, verify
+   - Manages agent installation and environment setup
+
+3. **Models** (`src/t2d_kit/models/`)
+   - Pydantic v2 models with strict validation
+   - T2DBaseModel base class with enhanced validation
+   - UserRecipe, ProcessedRecipe, DiagramSpecification, etc.
+
+4. **Agents** (`src/t2d_kit/agents/`)
+   - 6 self-sufficient agents (transform, d2, mermaid, plantuml, docs, slides)
+   - Each agent has complete lifecycle management
+   - Activated by "use proactively" triggers
+
+## Key Design Decisions
+
+### Two-File Recipe System
+- `recipe.yaml`: User-maintained, simple, high-level
+- `recipe.t2d.yaml`: Agent-generated, detailed, executable
+- Separation of user intent from implementation details
+
+### Agent Invocation Patterns
+```
+User: "Transform my recipe"
+→ t2d-transform agent activates automatically
+
+User: "Generate all diagrams"
+→ Multiple generator agents activate in parallel
+```
+
+### State Management
+- File-based state in `.t2d-state/` directory
+- JSON files for each processing stage
+- Error recovery with backup files
+- No complex in-memory state
+
+## Development Patterns
+
+### When Adding New Features
+1. Update models in `enhanced-models.md` specification first
+2. Implement model in `src/t2d_kit/models/`
+3. Add MCP tool if needed
+4. Update agent descriptions for proactive activation
+
+### Testing Approach
+- TDD: Write failing tests first
+- Unit tests for models and tools
+- Integration tests for workflows
+- Performance tests for requirements (<200ms validation)
+
+### Agent Development
+Agents should:
+- Be self-sufficient (complete workflow)
+- Use "use proactively" in description
+- Handle errors gracefully
+- Report completion clearly
+
+## File Organization
+
+```
+src/t2d_kit/
+├── models/          # Data models (Pydantic)
+│   ├── base.py     # T2DBaseModel
+│   ├── user_recipe.py
+│   ├── processed_recipe.py
+│   └── ...
+├── mcp/            # MCP server
+│   └── server.py   # FastMCP tools
+├── cli/            # CLI commands
+│   ├── main.py
+│   ├── setup.py
+│   └── verify.py
+└── agents/         # Claude Code agents
+    ├── t2d-transform.md
+    ├── t2d-d2-generator.md
+    └── ...
+```
+
+## Performance Requirements
+- Recipe validation: < 200ms
+- Diagram generation: < 5s per diagram
+- Support 10+ diagrams per recipe
+- Parallel processing where possible
+
+## Integration Points
+
+### Claude Desktop
+- MCP server runs in stdio mode
+- Config in `claude_desktop_config.json`
+- Agents installed to `~/.claude/agents/`
+
+### External Tools
+- **mise**: Manages tool versions (Python, Node, Go, Java)
+- **D2**: Modern diagram renderer
+- **Mermaid CLI (mmdc)**: Web-compatible diagrams
+- **PlantUML**: Enterprise UML diagrams
+
+## Common Workflows
+
+### Recipe Transformation
+1. User creates `recipe.yaml`
+2. Transform agent reads and analyzes PRD
+3. Generates detailed `recipe.t2d.yaml`
+4. Creates state in `.t2d-state/processing.json`
+
+### Diagram Generation
+1. Generator agents read `recipe.t2d.yaml`
+2. Filter for their framework (D2, Mermaid, PlantUML)
+3. Generate source files and render assets
+4. Update state files with completion
+
+### Documentation Generation
+1. Docs agent reads processed recipe
+2. Gathers generated diagrams
+3. Creates markdown with embedded diagrams
+4. Integrates with existing MkDocs sites
+
+## Error Handling
+
+### State Recovery
+- Backup files for critical state
+- Partial recovery from corrupted JSON
+- Clean state directory with `cleanup_old_states()`
+
+### Agent Failures
+- Continue processing other diagrams
+- Report partial success
+- Clear error messages in state files
+
+## Best Practices
+
+1. **Keep Agents Simple**: One responsibility per agent
+2. **Use File State**: Don't pass complex objects
+3. **Fail Gracefully**: Always try to produce partial output
+4. **Natural Language**: Support conversational activation
+5. **Validate Early**: Use Pydantic models for validation
+
+## Testing the System
+
 ```bash
-# Install
-uvx install t2d-kit
+# Verify installation
+t2d verify
 
-# Setup Claude agents
-t2d setup
+# Run unit tests
+pytest tests/unit/
 
-# Start MCP server
-t2d mcp .
+# Run integration tests
+pytest tests/integration/
 
-# Create starter recipe (optional)
-t2d setup --init
+# Run performance tests
+pytest tests/performance/
 
-# Transform recipe (in Claude)
-"Transform recipe.yaml"
-
-# Process recipe (in Claude)
-"Process recipe and generate all outputs"
-
-## Project Structure
-```
-t2d-kit/
-├── cli/
-│   └── main.py          # Minimal CLI wrapper (env setup, invoke agents)
-├── mcp/                 # MCP server for recipe file management
-│   ├── server.py        # Read/write/validate user recipes
-│   ├── models.py        # Pydantic models for validation
-│   └── config.json      # MCP server configuration
-├── agents/              # Self-sufficient Claude Code agents
-│   ├── t2d-transform.md        # Recipe transformer (complete lifecycle)
-│   ├── t2d-d2-generator.md     # D2: source → build → report
-│   ├── t2d-mermaid-generator.md # Mermaid: source → build → report
-│   ├── t2d-plantuml-generator.md # PlantUML: source → build → report
-│   ├── t2d-docs-generator.md   # Docs: markdown → MkDocs → report
-│   └── t2d-slides-generator.md # Slides: markdown → Marp → report
-│   ├── t2d-orchestrate.md      # Process recipe.t2d.yaml (routing + coordination)
-│   ├── t2d-d2-generator.md     # D2 diagram generator
-│   ├── t2d-mermaid-generator.md # Mermaid diagram generator
-│   ├── t2d-plantuml-generator.md # PlantUML diagram generator
-│   ├── t2d-markdown-maintainer.md # General markdown content
-│   ├── t2d-mkdocs-formatter.md # MkDocs-specific formatting
-│   └── t2d-marp-slides.md      # Marp presentation slides
-├── commands/            # Slash commands for Claude Desktop
-│   ├── t2d-transform    # /t2d-transform command script
-│   └── t2d-create       # /t2d-create command script
-└── examples/            # Example recipes
-    ├── recipe.yaml      # User recipe example
-    └── recipe.t2d.yaml  # Processed recipe example
-
-tests/
-├── contract/
-├── integration/
-└── unit/
+# Full test suite with coverage
+mise run test-cov
 ```
 
-## Key Features
-1. **Claude Orchestration**: Claude Code coordinates the entire workflow
-2. **Minimal Python**: Only CLI wrapper and MCP server
-3. **Claude Code Subagents**: Intelligent agents for all processing
-4. **Two-File Recipe System**: User recipe.yaml → Agent-generated recipe.t2d.yaml
-5. **Dual-mode Operation**: MCP for recipe editing, Desktop Commander for processing
-6. **Consistent Architecture**: Both MkDocs and MarpKit reference the same markdown files
-7. **Multi-format output**: SVG, PNG, inline markdown, collapsible source
-8. **Dual output**: Generate both documentation (MkDocs) and presentations (MarpKit)
-9. **Extensible**: Modify orchestration and agents via prompts, not code
+## Debugging Tips
 
-## Recipe Format
-```yaml
-recipe:
-  name: "Architecture"
-
-  # Markdown files maintained by subagents
-  content_files:
-    - id: overview
-      path: content/overview.md
-      agent: markdown
-    - id: architecture
-      path: content/architecture.md
-      agent: mkdocs
-    - id: slides
-      path: content/slides.md
-      agent: marp
-
-  diagram_specs:
-    - type: c4_context
-      framework: d2  # Auto-selected if omitted
-      instructions: "Specific diagram instructions"
-
-  outputs:
-    assets_dir: docs/assets
-
-    mkdocs:
-      config_file: mkdocs.yml
-      content_refs: [content/overview.md, content/architecture.md]
-
-    marpkit:
-      slide_files: [content/slides.md]
-      theme: gaia
-      export_pdf: true
-```
-
-## Framework Routing
-- C4 diagrams → D2
-- Sequence/Flowcharts → Mermaid
-- ERD → Mermaid
-- Gantt → Mermaid (only option)
-- Architecture → D2
-- Network → D2
-
-## Architecture Highlights
-
-### Claude-Centric Design
-- **Claude Orchestrator**: Main workflow coordination via Claude Code command
-- **Content Subagents**: Markdown maintenance via Claude Code prompts
-- **Minimal Python**: Only for diagram generation and YAML parsing
-- **Dynamic Workflow**: Claude adapts orchestration based on recipe content
-
-### Dual-Mode Operation
-- **Interactive Mode**: Claude Desktop + MCP for recipe creation/editing
-- **Processing Mode**: Desktop Commander headless for batch execution
-- **Claude Execution**: All orchestration and content generation via Claude Code
-
-### Workflow
-1. Create/edit recipe via MCP in Claude Desktop
-2. CLI invokes Claude orchestrator via Desktop Commander
-3. Claude orchestrator coordinates:
-   - Calls Python services for YAML parsing
-   - Calls Python generators for diagrams
-   - Calls Claude subagents for content
-   - Generates MkDocs/MarpKit configurations
-4. Both outputs reference the same markdown files
-
-## Current Phase
-Implementing Phase 1: Design artifacts complete with markdown-first approach. Ready for task breakdown.
-
-## Recent Changes
-- Claude Code is now the main orchestrator, not just subagents
-- Minimal Python services only for diagram generation
-- All workflow coordination handled by Claude
-- Orchestration logic defined in prompts, easily modifiable
-
-## Testing Strategy
-- Contract tests for all API endpoints
-- Unit tests for each service component
-- Integration tests for recipe processing
-- Framework-specific generator tests
-
-## Performance Goals
-- Sub-10 second generation for standard docs
-- <200ms recipe validation
-- <5s per diagram generation
-- Support 50+ recipes batch processing
+1. Check `.t2d-state/` for processing status
+2. Use `--verbose` flag for detailed output
+3. Examine MCP server logs for tool errors
+4. Verify agent activation with natural language tests
 
 ---
-*Context updated: 2025-01-16*
+
+*This document provides context for Claude Code when working with the t2d-kit project.*

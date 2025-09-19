@@ -11,7 +11,11 @@
       "mcp__ref-tools__ref_read_url",
       "Bash(d2:*)",
       "WebSearch",
-      "WebFetch(domain:d2lang.com)"
+      "WebFetch(domain:d2lang.com)",
+      "Bash(.specify/scripts/bash/check-task-prerequisites.sh:*)",
+      "Bash(python -m pytest tests/unit/test_user_recipe.py::TestUserRecipe::test_user_recipe_creation -v)",
+      "Bash(python:*)",
+      "Bash(python3 -m pytest tests/unit/test_user_recipe.py::TestUserRecipe::test_user_recipe_creation -v)"
     ]
   },
   "enabledMcpjsonServers": [
