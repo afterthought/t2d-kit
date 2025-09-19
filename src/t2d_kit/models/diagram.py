@@ -56,7 +56,7 @@ class DiagramSpecification(T2DBaseModel):
             return self
 
         # Framework compatibility matrix
-        framework_capabilities = {
+        framework_capabilities: dict[FrameworkType, dict[str, set[Any]]] = {
             FrameworkType.D2: {
                 "types": {
                     DiagramType.C4_CONTEXT,

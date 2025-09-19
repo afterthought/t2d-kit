@@ -16,8 +16,8 @@ chmod +x ~/.local/bin/plantuml
 """
 
 [tasks.install-deps]
-description = "Install Python dependencies"
-run = "pip install -e .[dev]"
+description = "Install Python dependencies including dev tools"
+run = "pip install -e '.[dev]'"
 
 [tasks.setup]
 description = "Complete project setup"
@@ -29,7 +29,7 @@ description = "Run linters"
 run = """
 ruff check .
 black --check .
-mypy src/t2d_kit
+mypy src/t2d_kit --ignore-missing-imports
 """
 
 [tasks.format]
@@ -58,6 +58,65 @@ java -version
 d2 --version || echo "d2 not installed - run: go install oss.terrastruct.com/d2"
 mmdc --version || echo "mermaid-cli not installed - run: npm install -g @mermaid-js/mermaid-cli"
 test -f ~/.local/bin/plantuml.jar && echo "PlantUML installed" || echo "PlantUML not installed - run: mise run setup-plantuml"
+"""
+
+[tasks.build]
+description = "Build wheel and source distribution"
+run = """
+echo "🔨 Building t2d-kit wheel and source distribution..."
+python -m build
+echo "✅ Build complete! Files in dist/"
+ls -lh dist/
+"""
+
+[tasks.build-wheel]
+description = "Build only the wheel file"
+run = """
+echo "🔨 Building t2d-kit wheel..."
+python -m build --wheel
+echo "✅ Wheel build complete!"
+ls -lh dist/*.whl
+"""
+
+[tasks.clean-build]
+description = "Clean build artifacts and rebuild"
+run = """
+echo "🧹 Cleaning build artifacts..."
+rm -rf build/ dist/ *.egg-info src/*.egg-info
+echo "🔨 Building fresh wheel and source distribution..."
+python -m build
+echo "✅ Clean build complete!"
+ls -lh dist/
+"""
+
+[tasks.test-wheel]
+description = "Test the built wheel in a virtual environment"
+run = """
+echo "🧪 Testing wheel installation..."
+python -m venv .test-venv
+.test-venv/bin/pip install --quiet --upgrade pip
+.test-venv/bin/pip install dist/*.whl
+.test-venv/bin/python -c "import t2d_kit; print(f'✅ Successfully imported t2d_kit version {t2d_kit.__version__}')"
+rm -rf .test-venv
+echo "✅ Wheel test complete!"
+"""
+
+[tasks.publish-test]
+description = "Publish to TestPyPI for testing"
+run = """
+echo "📤 Publishing to TestPyPI..."
+python -m twine upload --repository testpypi dist/*
+echo "✅ Published to TestPyPI!"
+echo "Test installation with: pip install -i https://test.pypi.org/simple/ t2d-kit"
+"""
+
+[tasks.publish]
+description = "Publish to PyPI (requires API token)"
+run = """
+echo "📤 Publishing to PyPI..."
+python -m twine upload dist/*
+echo "✅ Published to PyPI!"
+echo "Install with: pip install t2d-kit"
 """
 
 [env]

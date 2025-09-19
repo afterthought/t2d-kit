@@ -231,7 +231,7 @@ class MkDocsPageConfig(T2DBaseModel):
 
     def create_nav_entry(self, pages: list[str]) -> dict[str, Any]:
         """Create navigation entry for mkdocs.yml."""
-        nav_entry = {}
+        nav_entry: dict[str, Any] = {}
 
         if self.nav_parent:
             # Nested under parent

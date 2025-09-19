@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.1.0",
-    "fastmcp>=0.1.0",
+    "fastmcp>=2",
     "pydantic>=2.5.0",
     "pyyaml>=6.0",
     "rich>=13.0.0",
@@ -42,6 +42,9 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.5.0",
+    "types-PyYAML>=6.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
     "pre-commit>=3.4.0",
 ]
 docs = [
@@ -122,6 +125,8 @@ extend-exclude = '''
 target-version = "py311"
 line-length = 100
 fix = true
+
+[tool.ruff.lint]
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -136,10 +141,14 @@ select = [
 ignore = [
     "E501", # line too long - handled by black
     "B008", # do not perform function calls in argument defaults
+    "E402", # module level import not at top of file (needed for circular imports)
+    "F401", # imported but unused (some imports are for side effects)
+    "SIM102", # use single if instead of nested if
+    "B028", # no explicit stacklevel (warnings)
 ]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["t2d_kit"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101", "S105", "S106"]

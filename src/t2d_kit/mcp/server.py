@@ -159,7 +159,7 @@ async def watch_recipe_changes(directory: str = ".") -> dict[str, Any]:
     from pathlib import Path
 
     watch_dir = Path(directory)
-    recipe_files = []
+    recipe_files: list[Path] = []
 
     # Find all recipe files
     for pattern in ["recipe.yaml", "recipe.yml", "recipe.t2d.yaml", "recipe.t2d.yml"]:

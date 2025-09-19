@@ -90,7 +90,7 @@ class MermaidConfig(T2DBaseModel):
 
     def to_config_json(self) -> str:
         """Generate mermaid configuration JSON."""
-        config = {
+        config: dict[str, Any] = {
             "theme": self.theme,
             "securityLevel": self.security_level,
             "look": self.look_and_feel,
