@@ -11,45 +11,41 @@ from .base import ContentType, InstructionsField, NameField, PathField, T2DBaseM
 class ContentFile(T2DBaseModel):
     """Markdown files maintained by Claude Code agents."""
 
-    id: str = Field(pattern=r'^[a-zA-Z0-9_-]+$', min_length=1, max_length=100)
+    id: str = Field(pattern=r"^[a-zA-Z0-9_-]+$", min_length=1, max_length=100)
     path: PathField
     type: ContentType
-    agent: str = Field(pattern=r'^t2d-[a-z0-9-]+$')
+    agent: str = Field(pattern=r"^t2d-[a-z0-9-]+$")
     base_prompt: InstructionsField
     diagram_refs: list[str] = Field(default_factory=list)
     title: NameField | None = None
     last_updated: datetime
 
-    @field_validator('path')
+    @field_validator("path")
     @classmethod
     def validate_markdown_extension(cls, v: str) -> str:
         """Ensure content files are markdown."""
         path = Path(v)
-        if path.suffix not in {'.md', '.markdown'}:
-            raise ValueError('Content files must be markdown (.md or .markdown)')
+        if path.suffix not in {".md", ".markdown"}:
+            raise ValueError("Content files must be markdown (.md or .markdown)")
         return v
 
-    @field_validator('agent')
+    @field_validator("agent")
     @classmethod
     def validate_agent_type(cls, v: str) -> str:
         """Ensure agent is a valid content agent."""
-        valid_agents = {
-            't2d-markdown-maintainer',
-            't2d-mkdocs-formatter',
-            't2d-marp-slides'
-        }
+        valid_agents = {"t2d-markdown-maintainer", "t2d-mkdocs-formatter", "t2d-marp-slides"}
         if v not in valid_agents:
-            raise ValueError(f'Agent must be one of: {valid_agents}')
+            raise ValueError(f"Agent must be one of: {valid_agents}")
         return v
 
-    @field_validator('base_prompt')
+    @field_validator("base_prompt")
     @classmethod
     def validate_base_prompt_content(cls, v: str) -> str:
         """Ensure base prompt is appropriate for content generation."""
-        if 'diagram' in v.lower() and ('![' in v or 'path' in v.lower()):
+        if "diagram" in v.lower() and ("![" in v or "path" in v.lower()):
             raise ValueError(
-                'Base prompt should not contain specific diagram references or paths. '
-                'Diagram context is added dynamically at invocation time.'
+                "Base prompt should not contain specific diagram references or paths. "
+                "Diagram context is added dynamically at invocation time."
             )
         return v
 
@@ -67,7 +63,7 @@ Guidelines:
 - Consider the content type ({self.type.value}) when structuring the output
 """
 
-    def format_diagram_context(self, diagram_references: list['DiagramReference']) -> str:
+    def format_diagram_context(self, diagram_references: list["DiagramReference"]) -> str:
         """Format diagram references for inclusion in agent prompts."""
         if not diagram_references:
             return "No diagrams available."

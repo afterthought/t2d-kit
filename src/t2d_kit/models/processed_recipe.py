@@ -26,13 +26,13 @@ class DiagramReference(T2DBaseModel):
     description: str | None = Field(None, max_length=500)
     status: str = "pending"  # pending, generated, failed
 
-    @field_validator('status')
+    @field_validator("status")
     @classmethod
     def validate_status(cls, v: str) -> str:
         """Validate generation status."""
-        valid_statuses = {'pending', 'generated', 'failed'}
+        valid_statuses = {"pending", "generated", "failed"}
         if v not in valid_statuses:
-            raise ValueError(f'Status must be one of: {valid_statuses}')
+            raise ValueError(f"Status must be one of: {valid_statuses}")
         return v
 
 
@@ -51,22 +51,22 @@ class ProcessedRecipe(T2DBaseModel):
     version: VersionField
     source_recipe: PathField
     generated_at: datetime
-    content_files: list['ContentFile'] = Field(min_length=1)
-    diagram_specs: list['DiagramSpecification'] = Field(min_length=1)
+    content_files: list["ContentFile"] = Field(min_length=1)
+    diagram_specs: list["DiagramSpecification"] = Field(min_length=1)
     diagram_refs: list[DiagramReference] = Field(min_length=1)
     outputs: OutputConfig
     generation_notes: list[str] | None = None
 
-    @field_validator('generated_at')
+    @field_validator("generated_at")
     @classmethod
     def validate_generation_time(cls, v: datetime) -> datetime:
         """Ensure generation time is not in the future."""
         if v > datetime.now():
-            raise ValueError('Generation time cannot be in the future')
+            raise ValueError("Generation time cannot be in the future")
         return v
 
-    @model_validator(mode='after')
-    def validate_diagram_consistency(self) -> 'ProcessedRecipe':
+    @model_validator(mode="after")
+    def validate_diagram_consistency(self) -> "ProcessedRecipe":
         """Ensure diagram specs and refs are consistent."""
         spec_ids = {spec.id for spec in self.diagram_specs}
         ref_ids = {ref.id for ref in self.diagram_refs}
@@ -83,8 +83,8 @@ class ProcessedRecipe(T2DBaseModel):
 
         return self
 
-    @model_validator(mode='after')
-    def validate_content_diagram_refs(self) -> 'ProcessedRecipe':
+    @model_validator(mode="after")
+    def validate_content_diagram_refs(self) -> "ProcessedRecipe":
         """Ensure content files reference valid diagrams."""
         valid_diagram_ids = {spec.id for spec in self.diagram_specs}
 

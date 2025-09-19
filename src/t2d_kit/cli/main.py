@@ -5,6 +5,10 @@ from rich.console import Console
 
 from t2d_kit._version import __version__
 
+from .mcp_cmd import mcp_command
+from .setup import setup_command
+from .verify import verify_command
+
 console = Console()
 
 
@@ -17,11 +21,6 @@ def cli():
     """
     pass
 
-
-# Import commands to register them
-from .mcp_cmd import mcp_command
-from .setup import setup_command
-from .verify import verify_command
 
 # Register commands
 cli.add_command(setup_command)

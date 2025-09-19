@@ -31,6 +31,7 @@ from t2d_kit.models.user_recipe import (
 # Try to import pytest-benchmark, fall back to timing if not available
 try:
     import pytest_benchmark
+
     HAS_BENCHMARK = True
 except ImportError:
     HAS_BENCHMARK = False
@@ -69,43 +70,45 @@ class TestRecipeValidationPerformance:
             "version": "1.0.0",
             "prd": {
                 "content": "# Simple PRD\n\nBasic requirements for testing.",
-                "format": "markdown"
+                "format": "markdown",
             },
             "instructions": {
                 "diagrams": [
                     {
                         "type": "system_architecture",
                         "description": "High-level system overview",
-                        "framework_preference": "d2"
+                        "framework_preference": "d2",
                     }
                 ],
                 "documentation": {
                     "style": "technical",
                     "detail_level": "detailed",
-                    "include_code_examples": True
-                }
-            }
+                    "include_code_examples": True,
+                },
+            },
         }
 
     def _create_complex_recipe(self, num_diagrams: int = 10) -> dict[str, Any]:
         """Create a complex recipe with multiple diagrams."""
         diagrams = []
         for i in range(num_diagrams):
-            diagrams.append({
-                "type": f"diagram_type_{i}",
-                "description": f"Complex diagram {i} with detailed requirements",
-                "framework_preference": "d2" if i % 2 == 0 else "mermaid"
-            })
+            diagrams.append(
+                {
+                    "type": f"diagram_type_{i}",
+                    "description": f"Complex diagram {i} with detailed requirements",
+                    "framework_preference": "d2" if i % 2 == 0 else "mermaid",
+                }
+            )
 
         return {
             "name": f"Complex Recipe {num_diagrams} Diagrams",
             "version": "1.0.0",
             "prd": {
-                "content": "# Complex PRD\n\n" + "\n".join([
-                    f"## Section {i}\n\nDetailed requirements for section {i}."
-                    for i in range(20)
-                ]),
-                "format": "markdown"
+                "content": "# Complex PRD\n\n"
+                + "\n".join(
+                    [f"## Section {i}\n\nDetailed requirements for section {i}." for i in range(20)]
+                ),
+                "format": "markdown",
             },
             "instructions": {
                 "diagrams": diagrams,
@@ -114,23 +117,23 @@ class TestRecipeValidationPerformance:
                     "detail_level": "detailed",
                     "sections": [f"section_{i}" for i in range(10)],
                     "include_code_examples": True,
-                    "include_diagrams_inline": True
+                    "include_diagrams_inline": True,
                 },
                 "presentation": {
                     "audience": "Technical team",
                     "max_slides": 50,
                     "style": "technical",
                     "include_speaker_notes": True,
-                    "time_limit": 30
+                    "time_limit": 30,
                 },
-                "focus_areas": [f"focus_area_{i}" for i in range(5)]
+                "focus_areas": [f"focus_area_{i}" for i in range(5)],
             },
             "preferences": {
                 "default_framework": "d2",
                 "diagram_style": "clean",
                 "color_scheme": "modern",
-                "theme": "professional"
-            }
+                "theme": "professional",
+            },
         }
 
     def test_simple_recipe_validation_performance(self, benchmark=None):
@@ -151,7 +154,9 @@ class TestRecipeValidationPerformance:
                 result = validate_recipe()
 
             assert result.name == "Test Recipe"
-            assert timer.elapsed < 0.2, f"Recipe validation took {timer.elapsed:.3f}s, must be under 0.2s"
+            assert (
+                timer.elapsed < 0.2
+            ), f"Recipe validation took {timer.elapsed:.3f}s, must be under 0.2s"
 
     def test_complex_recipe_validation_performance(self, benchmark=None):
         """Test complex recipe validation with 10+ diagrams."""
@@ -169,7 +174,9 @@ class TestRecipeValidationPerformance:
 
             assert len(result.instructions.diagrams) == 12
             # Complex recipes should still validate reasonably quickly
-            assert timer.elapsed < 1.0, f"Complex recipe validation took {timer.elapsed:.3f}s, should be under 1.0s"
+            assert (
+                timer.elapsed < 1.0
+            ), f"Complex recipe validation took {timer.elapsed:.3f}s, should be under 1.0s"
 
     def test_recipe_validation_scaling(self):
         """Test how validation performance scales with recipe complexity."""
@@ -188,8 +195,10 @@ class TestRecipeValidationPerformance:
         # Validation time should not grow exponentially
         # Allow for some growth but ensure it's reasonable
         for i in range(1, len(times)):
-            growth_factor = times[i] / times[i-1]
-            assert growth_factor < 5.0, f"Validation time grew by {growth_factor:.1f}x from {diagram_counts[i-1]} to {diagram_counts[i]} diagrams"
+            growth_factor = times[i] / times[i - 1]
+            assert (
+                growth_factor < 5.0
+            ), f"Validation time grew by {growth_factor:.1f}x from {diagram_counts[i-1]} to {diagram_counts[i]} diagrams"
 
     def test_batch_recipe_validation_performance(self, benchmark=None):
         """Test validating multiple recipes in batch."""
@@ -207,7 +216,9 @@ class TestRecipeValidationPerformance:
 
             assert len(results) == 10
             avg_time = timer.elapsed / 10
-            assert avg_time < 0.05, f"Average recipe validation took {avg_time:.3f}s, should be under 0.05s"
+            assert (
+                avg_time < 0.05
+            ), f"Average recipe validation took {avg_time:.3f}s, should be under 0.05s"
 
 
 class MockStateManager:
@@ -271,7 +282,7 @@ class MockStateManager:
                 "hits": self.hits,
                 "misses": self.misses,
                 "hit_rate": hit_rate,
-                "total_items": len(self.cache)
+                "total_items": len(self.cache),
             }
 
 
@@ -281,14 +292,14 @@ class TestStateManagerPerformance:
     def setup_method(self):
         """Set up test fixtures."""
         self.state_manager = MockStateManager()
-        self.sample_recipe = UserRecipe(**{
-            "name": "Performance Test Recipe",
-            "version": "1.0.0",
-            "prd": {"content": "Test content", "format": "markdown"},
-            "instructions": {
-                "diagrams": [{"type": "test_diagram", "description": "Test"}]
+        self.sample_recipe = UserRecipe(
+            **{
+                "name": "Performance Test Recipe",
+                "version": "1.0.0",
+                "prd": {"content": "Test content", "format": "markdown"},
+                "instructions": {"diagrams": [{"type": "test_diagram", "description": "Test"}]},
             }
-        })
+        )
 
     def test_cache_get_performance(self, benchmark=None):
         """Test cache retrieval performance."""
@@ -309,10 +320,13 @@ class TestStateManagerPerformance:
 
             assert result == "value_50"
             avg_time = timer.elapsed / 1000
-            assert avg_time < 0.0001, f"Average cache get took {avg_time:.6f}s, should be under 0.0001s"
+            assert (
+                avg_time < 0.0001
+            ), f"Average cache get took {avg_time:.6f}s, should be under 0.0001s"
 
     def test_cache_set_performance(self, benchmark=None):
         """Test cache storage performance."""
+
         def set_cache_item():
             self.state_manager.set("perf_test", self.sample_recipe)
 
@@ -324,7 +338,9 @@ class TestStateManagerPerformance:
                     self.state_manager.set(f"perf_test_{i}", self.sample_recipe)
 
             avg_time = timer.elapsed / 1000
-            assert avg_time < 0.001, f"Average cache set took {avg_time:.6f}s, should be under 0.001s"
+            assert (
+                avg_time < 0.001
+            ), f"Average cache set took {avg_time:.6f}s, should be under 0.001s"
 
     def test_concurrent_cache_access(self):
         """Test cache performance under concurrent access."""
@@ -356,7 +372,9 @@ class TestStateManagerPerformance:
         ops_per_second = total_operations / timer.elapsed
 
         print(f"Concurrent performance: {ops_per_second:.0f} ops/sec")
-        assert ops_per_second > 10000, f"Concurrent cache performance: {ops_per_second:.0f} ops/sec, should be > 10000"
+        assert (
+            ops_per_second > 10000
+        ), f"Concurrent cache performance: {ops_per_second:.0f} ops/sec, should be > 10000"
 
     def test_cache_memory_efficiency(self):
         """Test cache memory usage and eviction."""
@@ -379,7 +397,9 @@ class TestStateManagerPerformance:
 
         # Verify LRU behavior - oldest items should be evicted
         assert state_manager.get("key_0") is None, "Oldest item should be evicted"
-        assert state_manager.get(f"key_{cache_size + 19}") is not None, "Newest item should be present"
+        assert (
+            state_manager.get(f"key_{cache_size + 19}") is not None
+        ), "Newest item should be present"
 
 
 class TestLargeRecipeHandling:
@@ -387,33 +407,41 @@ class TestLargeRecipeHandling:
 
     def test_large_recipe_creation_performance(self, benchmark=None):
         """Test creating recipes with many diagrams."""
+
         def create_large_recipe():
             diagrams = []
             for i in range(15):
-                diagrams.append({
-                    "type": f"large_diagram_{i}",
-                    "description": f"Large diagram {i} with extensive requirements and detailed specifications",
-                    "framework_preference": "d2" if i % 3 == 0 else "mermaid" if i % 3 == 1 else "plantuml"
-                })
+                diagrams.append(
+                    {
+                        "type": f"large_diagram_{i}",
+                        "description": f"Large diagram {i} with extensive requirements and detailed specifications",
+                        "framework_preference": (
+                            "d2" if i % 3 == 0 else "mermaid" if i % 3 == 1 else "plantuml"
+                        ),
+                    }
+                )
 
             return UserRecipe(
                 name="Large Recipe Test",
                 version="1.0.0",
                 prd={
-                    "content": "# Large Recipe\n\n" + "\n".join([
-                        f"## Requirement {i}\n\nDetailed requirement {i} with multiple paragraphs of content."
-                        for i in range(50)
-                    ]),
-                    "format": "markdown"
+                    "content": "# Large Recipe\n\n"
+                    + "\n".join(
+                        [
+                            f"## Requirement {i}\n\nDetailed requirement {i} with multiple paragraphs of content."
+                            for i in range(50)
+                        ]
+                    ),
+                    "format": "markdown",
                 },
                 instructions={
                     "diagrams": diagrams,
                     "documentation": {
                         "style": "technical",
                         "sections": [f"section_{i}" for i in range(20)],
-                        "detail_level": "detailed"
-                    }
-                }
+                        "detail_level": "detailed",
+                    },
+                },
             )
 
         if HAS_BENCHMARK and benchmark:
@@ -424,7 +452,9 @@ class TestLargeRecipeHandling:
                 recipe = create_large_recipe()
 
             assert len(recipe.instructions.diagrams) == 15
-            assert timer.elapsed < 0.5, f"Large recipe creation took {timer.elapsed:.3f}s, should be under 0.5s"
+            assert (
+                timer.elapsed < 0.5
+            ), f"Large recipe creation took {timer.elapsed:.3f}s, should be under 0.5s"
 
     def test_large_recipe_serialization_performance(self):
         """Test serialization/deserialization of large recipes."""
@@ -434,18 +464,18 @@ class TestLargeRecipeHandling:
             "version": "1.0.0",
             "prd": {
                 "content": "# Large Content\n\n" + "Large content section. " * 1000,
-                "format": "markdown"
+                "format": "markdown",
             },
             "instructions": {
                 "diagrams": [
                     {
                         "type": f"serial_diagram_{i}",
                         "description": f"Serialization test diagram {i}",
-                        "framework_preference": "d2"
+                        "framework_preference": "d2",
                     }
                     for i in range(25)
                 ]
-            }
+            },
         }
 
         recipe = UserRecipe(**large_recipe_data)
@@ -455,14 +485,18 @@ class TestLargeRecipeHandling:
             serialized = recipe.model_dump()
 
         serialization_time = timer.elapsed
-        assert serialization_time < 0.1, f"Serialization took {serialization_time:.3f}s, should be under 0.1s"
+        assert (
+            serialization_time < 0.1
+        ), f"Serialization took {serialization_time:.3f}s, should be under 0.1s"
 
         # Test deserialization
         with PerformanceTimer() as timer:
             deserialized = UserRecipe(**serialized)
 
         deserialization_time = timer.elapsed
-        assert deserialization_time < 0.1, f"Deserialization took {deserialization_time:.3f}s, should be under 0.1s"
+        assert (
+            deserialization_time < 0.1
+        ), f"Deserialization took {deserialization_time:.3f}s, should be under 0.1s"
 
         assert deserialized.name == recipe.name
         assert len(deserialized.instructions.diagrams) == len(recipe.instructions.diagrams)
@@ -486,18 +520,18 @@ class TestLargeRecipeHandling:
                     "version": "1.0.0",
                     "prd": {
                         "content": f"# Recipe {batch}_{i}\n\n" + "Content section. " * 500,
-                        "format": "markdown"
+                        "format": "markdown",
                     },
                     "instructions": {
                         "diagrams": [
                             {
                                 "type": f"memory_diagram_{j}",
                                 "description": f"Memory test diagram {j}",
-                                "framework_preference": "d2"
+                                "framework_preference": "d2",
                             }
                             for j in range(20)
                         ]
-                    }
+                    },
                 }
                 batch_recipes.append(UserRecipe(**recipe_data))
             recipes.extend(batch_recipes)
@@ -508,7 +542,9 @@ class TestLargeRecipeHandling:
         print(f"Memory usage increased by {memory_increase:.1f}MB for {len(recipes)} large recipes")
 
         # Memory increase should be reasonable (less than 500MB for this test)
-        assert memory_increase < 500, f"Memory usage increased by {memory_increase:.1f}MB, should be under 500MB"
+        assert (
+            memory_increase < 500
+        ), f"Memory usage increased by {memory_increase:.1f}MB, should be under 500MB"
 
 
 class TestParallelProcessingEfficiency:
@@ -527,24 +563,26 @@ class TestParallelProcessingEfficiency:
         """Create test recipe data."""
         recipes = []
         for i in range(count):
-            recipes.append({
-                "name": f"Parallel Test Recipe {i}",
-                "version": "1.0.0",
-                "prd": {
-                    "content": f"# Recipe {i}\n\nContent for recipe {i}.",
-                    "format": "markdown"
-                },
-                "instructions": {
-                    "diagrams": [
-                        {
-                            "type": f"parallel_diagram_{j}",
-                            "description": f"Parallel diagram {j}",
-                            "framework_preference": "d2"
-                        }
-                        for j in range(5)
-                    ]
+            recipes.append(
+                {
+                    "name": f"Parallel Test Recipe {i}",
+                    "version": "1.0.0",
+                    "prd": {
+                        "content": f"# Recipe {i}\n\nContent for recipe {i}.",
+                        "format": "markdown",
+                    },
+                    "instructions": {
+                        "diagrams": [
+                            {
+                                "type": f"parallel_diagram_{j}",
+                                "description": f"Parallel diagram {j}",
+                                "framework_preference": "d2",
+                            }
+                            for j in range(5)
+                        ]
+                    },
                 }
-            })
+            )
         return recipes
 
     def test_sequential_vs_parallel_validation(self):
@@ -554,19 +592,15 @@ class TestParallelProcessingEfficiency:
 
         # Sequential processing
         with PerformanceTimer() as sequential_timer:
-            sequential_results = [
-                self._cpu_intensive_validation(data) for data in recipes_data
-            ]
+            sequential_results = [self._cpu_intensive_validation(data) for data in recipes_data]
 
         # Parallel processing with ThreadPoolExecutor
-        with PerformanceTimer() as parallel_timer:
-            with ThreadPoolExecutor(max_workers=4) as executor:
-                parallel_results = list(executor.map(self._cpu_intensive_validation, recipes_data))
+        with PerformanceTimer() as parallel_timer, ThreadPoolExecutor(max_workers=4) as executor:
+            parallel_results = list(executor.map(self._cpu_intensive_validation, recipes_data))
 
         # Parallel processing with ProcessPoolExecutor
-        with PerformanceTimer() as process_timer:
-            with ProcessPoolExecutor(max_workers=4) as executor:
-                process_results = list(executor.map(self._cpu_intensive_validation, recipes_data))
+        with PerformanceTimer() as process_timer, ProcessPoolExecutor(max_workers=4) as executor:
+            process_results = list(executor.map(self._cpu_intensive_validation, recipes_data))
 
         assert len(sequential_results) == recipe_count
         assert len(parallel_results) == recipe_count
@@ -585,10 +619,13 @@ class TestParallelProcessingEfficiency:
 
         # Should show some improvement, but not requiring specific values
         # due to system-dependent performance characteristics
-        assert process_speedup > 1.0, f"Process parallelization should show speedup, got {process_speedup:.2f}x"
+        assert (
+            process_speedup > 1.0
+        ), f"Process parallelization should show speedup, got {process_speedup:.2f}x"
 
     def test_async_recipe_processing(self):
         """Test asynchronous recipe processing performance."""
+
         async def async_validate_recipe(recipe_data: dict[str, Any]) -> UserRecipe:
             """Async validation with simulated I/O delay."""
             await asyncio.sleep(0.01)  # Simulate I/O
@@ -627,7 +664,9 @@ class TestParallelProcessingEfficiency:
         speedup = sequential_timer.elapsed / concurrent_timer.elapsed
         print(f"Async speedup: {speedup:.2f}x")
 
-        assert speedup > 5.0, f"Async concurrency should show significant speedup, got {speedup:.2f}x"
+        assert (
+            speedup > 5.0
+        ), f"Async concurrency should show significant speedup, got {speedup:.2f}x"
 
     def test_resource_usage_under_load(self):
         """Test system resource usage under parallel processing load."""
@@ -641,7 +680,7 @@ class TestParallelProcessingEfficiency:
         recipes_data = self._create_test_recipes(50)
 
         initial_memory = process.memory_info().rss / 1024 / 1024  # MB
-        cpu_percent_before = process.cpu_percent()
+        process.cpu_percent()
 
         with PerformanceTimer() as timer, ThreadPoolExecutor(max_workers=8) as executor:
             results = list(executor.map(self._cpu_intensive_validation, recipes_data))
@@ -658,7 +697,9 @@ class TestParallelProcessingEfficiency:
 
         assert len(results) == 50
         # Memory usage should remain reasonable
-        assert memory_increase < 200, f"Memory increase {memory_increase:.1f}MB should be under 200MB"
+        assert (
+            memory_increase < 200
+        ), f"Memory increase {memory_increase:.1f}MB should be under 200MB"
 
 
 class TestPerformanceBenchmarks:
@@ -667,6 +708,7 @@ class TestPerformanceBenchmarks:
     @pytest.mark.skipif(not HAS_BENCHMARK, reason="pytest-benchmark not available")
     def test_end_to_end_recipe_processing_benchmark(self, benchmark):
         """Benchmark complete recipe processing workflow."""
+
         def full_recipe_workflow():
             # Create recipe
             recipe_data = {
@@ -674,26 +716,23 @@ class TestPerformanceBenchmarks:
                 "version": "1.0.0",
                 "prd": {
                     "content": "# End-to-End Test\n\nComplete workflow benchmark.",
-                    "format": "markdown"
+                    "format": "markdown",
                 },
                 "instructions": {
                     "diagrams": [
                         {
                             "type": "e2e_system_architecture",
                             "description": "System architecture diagram",
-                            "framework_preference": "d2"
+                            "framework_preference": "d2",
                         },
                         {
                             "type": "e2e_data_flow",
                             "description": "Data flow diagram",
-                            "framework_preference": "mermaid"
-                        }
+                            "framework_preference": "mermaid",
+                        },
                     ],
-                    "documentation": {
-                        "style": "technical",
-                        "detail_level": "detailed"
-                    }
-                }
+                    "documentation": {"style": "technical", "detail_level": "detailed"},
+                },
             }
 
             # Validate recipe
@@ -710,7 +749,7 @@ class TestPerformanceBenchmarks:
                         "path": "docs/index.md",
                         "type": "markdown",
                         "content": "# Documentation\n\nGenerated content.",
-                        "diagram_refs": ["e2e_system_architecture", "e2e_data_flow"]
+                        "diagram_refs": ["e2e_system_architecture", "e2e_data_flow"],
                     }
                 ],
                 "diagram_specs": [
@@ -719,33 +758,31 @@ class TestPerformanceBenchmarks:
                         "framework": "d2",
                         "spec_content": "direction: right\napi -> db",
                         "output_formats": ["svg", "png"],
-                        "style_config": {}
+                        "style_config": {},
                     },
                     {
                         "id": "e2e_data_flow",
                         "framework": "mermaid",
                         "spec_content": "graph TD\nA --> B",
                         "output_formats": ["svg"],
-                        "style_config": {}
-                    }
+                        "style_config": {},
+                    },
                 ],
                 "diagram_refs": [
                     {
                         "id": "e2e_system_architecture",
                         "title": "System Architecture",
                         "type": "system_architecture",
-                        "expected_path": "docs/assets/system_architecture.svg"
+                        "expected_path": "docs/assets/system_architecture.svg",
                     },
                     {
                         "id": "e2e_data_flow",
                         "title": "Data Flow",
                         "type": "data_flow",
-                        "expected_path": "docs/assets/data_flow.svg"
-                    }
+                        "expected_path": "docs/assets/data_flow.svg",
+                    },
                 ],
-                "outputs": {
-                    "assets_dir": "docs/assets"
-                }
+                "outputs": {"assets_dir": "docs/assets"},
             }
 
             return recipe, processed_data
@@ -763,9 +800,7 @@ class TestPerformanceBenchmarks:
             "name": "Baseline Recipe",
             "version": "1.0.0",
             "prd": {"content": "# Simple test", "format": "markdown"},
-            "instructions": {
-                "diagrams": [{"type": "baseline_test", "description": "Baseline"}]
-            }
+            "instructions": {"diagrams": [{"type": "baseline_test", "description": "Baseline"}]},
         }
 
         # Measure baseline performance
@@ -790,7 +825,7 @@ class TestPerformanceBenchmarks:
             "timestamp": datetime.now().isoformat(),
             "avg_validation_time": avg_time,
             "max_validation_time": max_time,
-            "test_iterations": 10
+            "test_iterations": 10,
         }
 
         print("Baseline established:", baseline_results)
@@ -803,6 +838,7 @@ def measure_memory_usage():
         import os
 
         import psutil
+
         process = psutil.Process(os.getpid())
         return process.memory_info().rss / 1024 / 1024
     except ImportError:
@@ -815,13 +851,11 @@ def stress_test_validation(iterations: int = 1000):
         "name": "Stress Test Recipe",
         "version": "1.0.0",
         "prd": {"content": "# Stress test", "format": "markdown"},
-        "instructions": {
-            "diagrams": [{"type": "stress_test", "description": "Stress testing"}]
-        }
+        "instructions": {"diagrams": [{"type": "stress_test", "description": "Stress testing"}]},
     }
 
     with PerformanceTimer() as timer:
-        for i in range(iterations):
+        for _i in range(iterations):
             UserRecipe(**recipe_data)
 
     avg_time = timer.elapsed / iterations
@@ -831,7 +865,7 @@ def stress_test_validation(iterations: int = 1000):
         "iterations": iterations,
         "total_time": timer.elapsed,
         "avg_time_per_operation": avg_time,
-        "operations_per_second": ops_per_second
+        "operations_per_second": ops_per_second,
     }
 
 

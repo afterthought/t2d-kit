@@ -2,6 +2,7 @@
 T011: Test StateManager for managing application state and caching.
 This test will fail initially until the StateManager is implemented.
 """
+
 from t2d_kit.core.state_manager import StateManager
 from t2d_kit.models.processed_recipe import ProcessedRecipe
 from t2d_kit.models.user_recipe import UserRecipe
@@ -14,9 +15,9 @@ class TestStateManager:
         """Test that StateManager can be initialized."""
         state_manager = StateManager()
         assert state_manager is not None
-        assert hasattr(state_manager, 'cache')
-        assert hasattr(state_manager, 'get_user_recipe')
-        assert hasattr(state_manager, 'set_user_recipe')
+        assert hasattr(state_manager, "cache")
+        assert hasattr(state_manager, "get_user_recipe")
+        assert hasattr(state_manager, "set_user_recipe")
 
     def test_state_manager_singleton_pattern(self):
         """Test that StateManager follows singleton pattern."""
@@ -30,7 +31,7 @@ class TestStateManager:
             "name": "Cached Recipe",
             "description": "For caching test",
             "components": ["cache_comp"],
-            "connections": []
+            "connections": [],
         }
         recipe = UserRecipe(**recipe_data)
         recipe_id = "cache_test_123"
@@ -55,20 +56,17 @@ class TestStateManager:
             "name": "For Processing",
             "description": "To be processed",
             "components": ["proc_comp"],
-            "connections": []
+            "connections": [],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
         processed_data = {
             "nodes": [{"id": "proc_comp", "label": "Process Component", "shape": "rectangle"}],
             "edges": [],
-            "layout": "grid"
+            "layout": "grid",
         }
 
-        processed_recipe = ProcessedRecipe(
-            user_recipe=user_recipe,
-            processed_data=processed_data
-        )
+        processed_recipe = ProcessedRecipe(user_recipe=user_recipe, processed_data=processed_data)
 
         state_manager = StateManager()
         state_manager.set_processed_recipe("proc_123", processed_recipe)
@@ -84,7 +82,7 @@ class TestStateManager:
             "name": "To Invalidate",
             "description": "Will be invalidated",
             "components": ["invalid_comp"],
-            "connections": []
+            "connections": [],
         }
         recipe = UserRecipe(**recipe_data)
 
@@ -108,7 +106,7 @@ class TestStateManager:
                 "name": f"Recipe {i}",
                 "description": f"Recipe number {i}",
                 "components": [f"comp{i}"],
-                "connections": []
+                "connections": [],
             }
             recipe = UserRecipe(**recipe_data)
             state_manager.set_user_recipe(f"recipe_{i}", recipe)
@@ -124,7 +122,7 @@ class TestStateManager:
             "name": "TTL Recipe",
             "description": "Will expire",
             "components": ["ttl_comp"],
-            "connections": []
+            "connections": [],
         }
         recipe = UserRecipe(**recipe_data)
 
@@ -136,6 +134,7 @@ class TestStateManager:
 
         # Should be expired after TTL
         import time
+
         time.sleep(0.15)
         assert state_manager.get_user_recipe("ttl_123") is None
 
@@ -149,7 +148,7 @@ class TestStateManager:
                 "name": f"Clear Recipe {i}",
                 "description": f"To be cleared {i}",
                 "components": [f"clear_comp{i}"],
-                "connections": []
+                "connections": [],
             }
             recipe = UserRecipe(**recipe_data)
             state_manager.set_user_recipe(f"clear_{i}", recipe)
@@ -176,7 +175,7 @@ class TestStateManager:
             "name": "Stats Recipe",
             "description": "For statistics",
             "components": ["stats_comp"],
-            "connections": []
+            "connections": [],
         }
         recipe = UserRecipe(**recipe_data)
         state_manager.set_user_recipe("stats_123", recipe)

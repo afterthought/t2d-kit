@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import Field, field_validator
 
@@ -13,12 +13,9 @@ from .base import T2DBaseModel
 class StateManager(T2DBaseModel):
     """Manages file-based state for agent coordination."""
 
-    state_dir: Path = Field(
-        default=Path(".t2d-state"),
-        description="Directory for state files"
-    )
+    state_dir: Path = Field(default=Path(".t2d-state"), description="Directory for state files")
 
-    @field_validator('state_dir')
+    @field_validator("state_dir")
     @classmethod
     def ensure_state_dir(cls, v: Path) -> Path:
         """Create state directory if it doesn't exist."""
@@ -73,7 +70,7 @@ class StateManager(T2DBaseModel):
                 lines = state_file.read_text().splitlines()
                 for i in range(len(lines), 0, -1):
                     try:
-                        partial = '\n'.join(lines[:i])
+                        partial = "\n".join(lines[:i])
                         return json.loads(partial)
                     except json.JSONDecodeError:
                         continue
@@ -120,7 +117,9 @@ class ProcessingState(T2DBaseModel):
     errors: list[str] = Field(default_factory=list)
 
     # Current phase
-    phase: Literal["transforming", "generating", "documenting", "complete", "error"] = "transforming"
+    phase: Literal["transforming", "generating", "documenting", "complete", "error"] = (
+        "transforming"
+    )
 
     def add_completed_diagram(self, diagram_id: str) -> None:
         """Mark a diagram as completed."""
@@ -150,7 +149,7 @@ class ProcessingState(T2DBaseModel):
         """Check if there are any errors."""
         return len(self.errors) > 0
 
-    def get_progress_summary(self) -> dict[str, any]:
+    def get_progress_summary(self) -> dict[str, Any]:
         """Get a summary of processing progress."""
         return {
             "phase": self.phase,
@@ -160,7 +159,7 @@ class ProcessingState(T2DBaseModel):
             "is_complete": self.is_complete(),
             "has_errors": self.has_errors(),
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
         }
 
 

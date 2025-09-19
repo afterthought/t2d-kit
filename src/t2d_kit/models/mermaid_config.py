@@ -13,110 +13,79 @@ class MermaidConfig(T2DBaseModel):
 
     # Theme configuration
     theme: Literal[
-        "default", "dark", "forest", "neutral",
-        "base", "minimal", "neo", "future", "vintage"
-    ] = Field(
-        default="default",
-        description="Mermaid theme to apply"
-    )
+        "default", "dark", "forest", "neutral", "base", "minimal", "neo", "future", "vintage"
+    ] = Field(default="default", description="Mermaid theme to apply")
 
     # Custom theme variables
     theme_variables: dict[str, str] | None = Field(
-        default=None,
-        description="Custom theme CSS variables"
+        default=None, description="Custom theme CSS variables"
     )
 
     # Layout configuration
     look_and_feel: Literal["classic", "handDrawn"] = Field(
-        default="classic",
-        description="Visual style of the diagram"
+        default="classic", description="Visual style of the diagram"
     )
 
     # Security level
     security_level: Literal["strict", "loose", "antiscript"] = Field(
-        default="strict",
-        description="Security level for rendering"
+        default="strict", description="Security level for rendering"
     )
 
     # Diagram-specific settings
     flowchart_config: dict[str, Any] | None = Field(
-        default=None,
-        description="Flowchart-specific configuration"
+        default=None, description="Flowchart-specific configuration"
     )
 
     sequence_config: dict[str, Any] | None = Field(
-        default=None,
-        description="Sequence diagram configuration"
+        default=None, description="Sequence diagram configuration"
     )
 
     gantt_config: dict[str, Any] | None = Field(
-        default=None,
-        description="Gantt chart configuration"
+        default=None, description="Gantt chart configuration"
     )
 
-    er_config: dict[str, Any] | None = Field(
-        default=None,
-        description="ER diagram configuration"
-    )
+    er_config: dict[str, Any] | None = Field(default=None, description="ER diagram configuration")
 
-    pie_config: dict[str, Any] | None = Field(
-        default=None,
-        description="Pie chart configuration"
-    )
+    pie_config: dict[str, Any] | None = Field(default=None, description="Pie chart configuration")
 
     state_config: dict[str, Any] | None = Field(
-        default=None,
-        description="State diagram configuration"
+        default=None, description="State diagram configuration"
     )
 
     # Rendering options
-    width: int | None = Field(
-        default=None,
-        gt=0,
-        description="Diagram width in pixels"
-    )
+    width: int | None = Field(default=None, gt=0, description="Diagram width in pixels")
 
-    height: int | None = Field(
-        default=None,
-        gt=0,
-        description="Diagram height in pixels"
-    )
+    height: int | None = Field(default=None, gt=0, description="Diagram height in pixels")
 
     background_color: str | None = Field(
-        default="white",
-        description="Background color (CSS color value)"
+        default="white", description="Background color (CSS color value)"
     )
 
     # Output options
     puppeteer_config: dict[str, Any] | None = Field(
-        default=None,
-        description="Puppeteer configuration for rendering"
+        default=None, description="Puppeteer configuration for rendering"
     )
 
     # Font configuration
-    font_family: str | None = Field(
-        default=None,
-        description="Override default font family"
-    )
+    font_family: str | None = Field(default=None, description="Override default font family")
 
     # Accessibility
-    wrap: bool = Field(
-        default=False,
-        description="Enable text wrapping in nodes"
-    )
+    wrap: bool = Field(default=False, description="Enable text wrapping in nodes")
 
-    @model_validator(mode='after')
-    def apply_diagram_defaults(self) -> 'MermaidConfig':
+    @model_validator(mode="after")
+    def apply_diagram_defaults(self) -> "MermaidConfig":
         """Apply sensible defaults based on look_and_feel."""
         if self.look_and_feel == "handDrawn":
             if not self.theme_variables:
                 self.theme_variables = {}
             # Apply hand-drawn style variables
-            self.theme_variables.update({
-                "fontFamily": "Kalam, cursive",
-                "primaryBorderColor": "#666",
-                "primaryColor": "#f9f9f9"
-            })
+            self.theme_variables.update(
+                {
+                    "fontFamily": "Kalam, cursive",
+                    "primaryBorderColor": "#666",
+                    "primaryColor": "#f9f9f9",
+                }
+            )
         return self
 
     def to_config_json(self) -> str:
@@ -124,7 +93,7 @@ class MermaidConfig(T2DBaseModel):
         config = {
             "theme": self.theme,
             "securityLevel": self.security_level,
-            "look": self.look_and_feel
+            "look": self.look_and_feel,
         }
 
         # Add theme variables
@@ -171,7 +140,10 @@ class MermaidConfig(T2DBaseModel):
         # Note: Configuration file would be written separately
         # and passed with --configFile flag
         config_json = self.to_config_json()
-        if config_json != '{"theme": "default", "securityLevel": "strict", "look": "classic", "wrap": false}':
+        if (
+            config_json
+            != '{"theme": "default", "securityLevel": "strict", "look": "classic", "wrap": false}'
+        ):
             args.extend(["--configFile", "<generated-config.json>"])
 
         return args
@@ -186,7 +158,7 @@ class MermaidConfig(T2DBaseModel):
                 "rankSpacing": 50,
                 "diagramPadding": 8,
                 "useMaxWidth": True,
-                "htmlLabels": True
+                "htmlLabels": True,
             },
             "sequence": {
                 "diagramMarginX": 50,
@@ -202,7 +174,7 @@ class MermaidConfig(T2DBaseModel):
                 "bottomMarginAdj": 1,
                 "useMaxWidth": True,
                 "rightAngles": False,
-                "showSequenceNumbers": False
+                "showSequenceNumbers": False,
             },
             "gantt": {
                 "numberSectionStyles": 4,
@@ -213,7 +185,7 @@ class MermaidConfig(T2DBaseModel):
                 "fontSize": 11,
                 "fontFamily": '"Open-Sans", sans-serif',
                 "sectionFontSize": 11,
-                "leftPadding": 75
+                "leftPadding": 75,
             },
             "er": {
                 "diagramPadding": 20,
@@ -224,13 +196,9 @@ class MermaidConfig(T2DBaseModel):
                 "stroke": "gray",
                 "fill": "honeydew",
                 "fontSize": 12,
-                "useMaxWidth": True
-            },
-            "pie": {
                 "useMaxWidth": True,
-                "textPosition": 0.75,
-                "legendPosition": "right"
             },
+            "pie": {"useMaxWidth": True, "textPosition": 0.75, "legendPosition": "right"},
             "state": {
                 "dividerMargin": 10,
                 "sizeUnit": 5,
@@ -247,8 +215,8 @@ class MermaidConfig(T2DBaseModel):
                 "edgeLengthFactor": "20",
                 "compositTitleSize": 35,
                 "radius": 5,
-                "useMaxWidth": True
-            }
+                "useMaxWidth": True,
+            },
         }
 
     def apply_diagram_type_defaults(self, diagram_type: str) -> None:
@@ -277,7 +245,7 @@ class MermaidConfig(T2DBaseModel):
                 "primaryBorderColor": "#0073e6",
                 "lineColor": "#666666",
                 "secondaryColor": "#f0f8ff",
-                "tertiaryColor": "#e6f3ff"
+                "tertiaryColor": "#e6f3ff",
             },
             "dark": {
                 "primaryColor": "#2d3748",
@@ -285,7 +253,7 @@ class MermaidConfig(T2DBaseModel):
                 "primaryBorderColor": "#4a5568",
                 "lineColor": "#a0aec0",
                 "secondaryColor": "#1a202c",
-                "tertiaryColor": "#2d3748"
+                "tertiaryColor": "#2d3748",
             },
             "colorful": {
                 "primaryColor": "#ff6b6b",
@@ -293,8 +261,8 @@ class MermaidConfig(T2DBaseModel):
                 "primaryBorderColor": "#ff6b6b",
                 "lineColor": "#4ecdc4",
                 "secondaryColor": "#45b7d1",
-                "tertiaryColor": "#96ceb4"
-            }
+                "tertiaryColor": "#96ceb4",
+            },
         }
         return style_themes.get(style, {})
 

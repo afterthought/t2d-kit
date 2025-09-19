@@ -11,15 +11,10 @@ console = Console()
 
 @click.command(name="mcp")
 @click.argument(
-    "working_dir",
-    default=".",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True)
+    "working_dir", default=".", type=click.Path(exists=True, file_okay=False, dir_okay=True)
 )
 @click.option(
-    "--port",
-    default=0,
-    help="Port to run the MCP server on (0 for stdio mode)",
-    type=int
+    "--port", default=0, help="Port to run the MCP server on (0 for stdio mode)", type=int
 )
 def mcp_command(working_dir: str, port: int):
     """Start the MCP server for recipe management.
@@ -42,6 +37,7 @@ def mcp_command(working_dir: str, port: int):
     else:
         # Stdio mode for Claude Desktop
         import os
+
         os.chdir(work_path)
 
         # Import and run the server

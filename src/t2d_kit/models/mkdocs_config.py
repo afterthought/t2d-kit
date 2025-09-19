@@ -14,180 +14,135 @@ class MkDocsPageConfig(T2DBaseModel):
 
     # Output configuration
     output_dir: Path = Field(
-        default=Path("docs"),
-        description="Directory where markdown pages will be generated"
+        default=Path("docs"), description="Directory where markdown pages will be generated"
     )
 
     pages_subdir: Path | None = Field(
         default=None,
-        description="Subdirectory within output_dir for these pages (e.g., 'api', 'architecture')"
+        description="Subdirectory within output_dir for these pages (e.g., 'api', 'architecture')",
     )
 
     # Page metadata (for frontmatter)
     page_template: str | None = Field(
-        default=None,
-        description="Template name if the site uses custom templates"
+        default=None, description="Template name if the site uses custom templates"
     )
 
     page_category: str | None = Field(
-        default=None,
-        description="Category or section these pages belong to"
+        default=None, description="Category or section these pages belong to"
     )
 
     page_tags: list[str] | None = Field(
-        default=None,
-        description="Tags to apply to generated pages"
+        default=None, description="Tags to apply to generated pages"
     )
 
     page_authors: list[str] | None = Field(
-        default=None,
-        description="Authors to credit in page metadata"
+        default=None, description="Authors to credit in page metadata"
     )
 
     # Navigation hints
     nav_parent: str | None = Field(
-        default=None,
-        description="Parent section in nav where these pages should appear"
+        default=None, description="Parent section in nav where these pages should appear"
     )
 
     nav_position: int | None = Field(
-        default=None,
-        description="Position/weight in navigation ordering"
+        default=None, description="Position/weight in navigation ordering"
     )
 
     nav_title_prefix: str | None = Field(
-        default=None,
-        description="Prefix to add to page titles in navigation"
+        default=None, description="Prefix to add to page titles in navigation"
     )
 
     # Diagram integration
     diagrams_dir: str = Field(
-        default="diagrams",
-        description="Relative path from page location to diagrams directory"
+        default="diagrams", description="Relative path from page location to diagrams directory"
     )
 
     diagram_format: Literal["svg", "png", "both"] = Field(
-        default="svg",
-        description="Preferred diagram format for embedding"
+        default="svg", description="Preferred diagram format for embedding"
     )
 
     diagram_classes: list[str] | None = Field(
-        default=None,
-        description="CSS classes to apply to diagram images"
+        default=None, description="CSS classes to apply to diagram images"
     )
 
     # Material theme features
     use_admonitions: bool = Field(
-        default=True,
-        description="Use Material admonition syntax for callouts"
+        default=True, description="Use Material admonition syntax for callouts"
     )
 
     use_content_tabs: bool = Field(
-        default=False,
-        description="Use Material content tabs for multi-version content"
+        default=False, description="Use Material content tabs for multi-version content"
     )
 
-    use_annotations: bool = Field(
-        default=False,
-        description="Use Material annotations feature"
-    )
+    use_annotations: bool = Field(default=False, description="Use Material annotations feature")
 
-    use_grids: bool = Field(
-        default=False,
-        description="Use Material grids for layout"
-    )
+    use_grids: bool = Field(default=False, description="Use Material grids for layout")
 
     # Code block configuration
     code_highlight: bool = Field(
-        default=True,
-        description="Enable syntax highlighting in code blocks"
+        default=True, description="Enable syntax highlighting in code blocks"
     )
 
-    code_line_numbers: bool = Field(
-        default=False,
-        description="Show line numbers in code blocks"
-    )
+    code_line_numbers: bool = Field(default=False, description="Show line numbers in code blocks")
 
-    code_copy_button: bool = Field(
-        default=True,
-        description="Add copy button to code blocks"
-    )
+    code_copy_button: bool = Field(default=True, description="Add copy button to code blocks")
 
     # Page generation options
-    include_toc: bool = Field(
-        default=True,
-        description="Include table of contents in pages"
-    )
+    include_toc: bool = Field(default=True, description="Include table of contents in pages")
 
-    toc_depth: int = Field(
-        default=3,
-        ge=1,
-        le=6,
-        description="Maximum heading level for TOC"
-    )
+    toc_depth: int = Field(default=3, ge=1, le=6, description="Maximum heading level for TOC")
 
     include_edit_link: bool = Field(
-        default=False,
-        description="Include edit link (requires repo_url in main mkdocs.yml)"
+        default=False, description="Include edit link (requires repo_url in main mkdocs.yml)"
     )
 
     include_created_date: bool = Field(
-        default=False,
-        description="Include creation date in page metadata"
+        default=False, description="Include creation date in page metadata"
     )
 
     include_updated_date: bool = Field(
-        default=True,
-        description="Include last updated date in page metadata"
+        default=True, description="Include last updated date in page metadata"
     )
 
     # Index page generation
     generate_index: bool = Field(
-        default=True,
-        description="Generate an index page for the documentation set"
+        default=True, description="Generate an index page for the documentation set"
     )
 
-    index_title: str = Field(
-        default="Documentation",
-        description="Title for the index page"
-    )
+    index_title: str = Field(default="Documentation", description="Title for the index page")
 
     index_description: str | None = Field(
-        default=None,
-        description="Description for the index page"
+        default=None, description="Description for the index page"
     )
 
     # Cross-references
     cross_reference_base: str | None = Field(
-        default=None,
-        description="Base path for cross-references between generated pages"
+        default=None, description="Base path for cross-references between generated pages"
     )
 
     enable_relative_links: bool = Field(
-        default=True,
-        description="Use relative links between generated pages"
+        default=True, description="Use relative links between generated pages"
     )
 
     # Integration hints
     mkdocs_yml_path: Path | None = Field(
-        default=None,
-        description="Path to existing mkdocs.yml to read configuration from"
+        default=None, description="Path to existing mkdocs.yml to read configuration from"
     )
 
     inherit_theme_config: bool = Field(
-        default=True,
-        description="Inherit theme configuration from main site"
+        default=True, description="Inherit theme configuration from main site"
     )
 
     custom_css_classes: dict[str, str] | None = Field(
-        default=None,
-        description="Custom CSS classes to apply to elements"
+        default=None, description="Custom CSS classes to apply to elements"
     )
 
-    def generate_frontmatter(self,
-                           title: str,
-                           description: str | None = None,
-                           extra_metadata: dict[str, Any] | None = None) -> str:
+    def generate_frontmatter(
+        self,
+        title: str,
+        description: str | None = None,
+        extra_metadata: dict[str, Any] | None = None,
+    ) -> str:
         """Generate frontmatter for a page."""
         fm = ["---"]
         fm.append(f"title: {title}")
@@ -243,10 +198,7 @@ class MkDocsPageConfig(T2DBaseModel):
         else:
             return f"![{alt_text}]({rel_path}){classes}"
 
-    def get_admonition(self,
-                      type: str,
-                      title: str | None = None,
-                      content: str = "") -> str:
+    def get_admonition(self, type: str, title: str | None = None, content: str = "") -> str:
         """Generate Material admonition syntax."""
         if not self.use_admonitions:
             return f"**{title or type.upper()}**: {content}"
@@ -254,7 +206,7 @@ class MkDocsPageConfig(T2DBaseModel):
         if title:
             return f'!!! {type} "{title}"\n    {content}'
         else:
-            return f'!!! {type}\n    {content}'
+            return f"!!! {type}\n    {content}"
 
     def get_content_tab(self, tabs: dict[str, str]) -> str:
         """Generate Material content tabs syntax."""
@@ -285,22 +237,18 @@ class MkDocsPageConfig(T2DBaseModel):
             # Nested under parent
             nav_entry[self.nav_parent] = []
             for page in pages:
-                page_title = page.replace('.md', '').replace('-', ' ').title()
+                page_title = page.replace(".md", "").replace("-", " ").title()
                 if self.nav_title_prefix:
                     page_title = f"{self.nav_title_prefix} {page_title}"
 
                 if self.pages_subdir:
-                    nav_entry[self.nav_parent].append({
-                        page_title: f"{self.pages_subdir}/{page}"
-                    })
+                    nav_entry[self.nav_parent].append({page_title: f"{self.pages_subdir}/{page}"})
                 else:
-                    nav_entry[self.nav_parent].append({
-                        page_title: page
-                    })
+                    nav_entry[self.nav_parent].append({page_title: page})
         else:
             # Top level
             for page in pages:
-                page_title = page.replace('.md', '').replace('-', ' ').title()
+                page_title = page.replace(".md", "").replace("-", " ").title()
                 if self.nav_title_prefix:
                     page_title = f"{self.nav_title_prefix} {page_title}"
 
@@ -311,9 +259,13 @@ class MkDocsPageConfig(T2DBaseModel):
 
         return nav_entry
 
-    def get_code_block_syntax(self, language: str, code: str,
-                             title: str | None = None,
-                             highlight_lines: list[int] | None = None) -> str:
+    def get_code_block_syntax(
+        self,
+        language: str,
+        code: str,
+        title: str | None = None,
+        highlight_lines: list[int] | None = None,
+    ) -> str:
         """Generate code block with optional enhancements."""
         options = []
 
@@ -321,7 +273,7 @@ class MkDocsPageConfig(T2DBaseModel):
             options.append(f'title="{title}"')
 
         if self.code_line_numbers:
-            options.append("linenums=\"1\"")
+            options.append('linenums="1"')
 
         if highlight_lines:
             options.append(f"hl_lines=\"{' '.join(map(str, highlight_lines))}\"")
@@ -348,11 +300,14 @@ class MkDocsPageConfig(T2DBaseModel):
 
         return grid_html
 
-    def generate_index_page(self, pages: list[str], descriptions: dict[str, str] | None = None) -> str:
+    def generate_index_page(
+        self, pages: list[str], descriptions: dict[str, str] | None = None
+    ) -> str:
         """Generate an index page for the documentation set."""
         content = self.generate_frontmatter(
             title=self.index_title,
-            description=self.index_description or f"Generated documentation for {self.index_title.lower()}"
+            description=self.index_description
+            or f"Generated documentation for {self.index_title.lower()}",
         )
 
         content += f"# {self.index_title}\n\n"
@@ -363,7 +318,7 @@ class MkDocsPageConfig(T2DBaseModel):
         content += "## Contents\n\n"
 
         for page in pages:
-            page_name = page.replace('.md', '').replace('-', ' ').title()
+            page_name = page.replace(".md", "").replace("-", " ").title()
             page_link = page if not self.pages_subdir else f"{self.pages_subdir}/{page}"
 
             description = ""

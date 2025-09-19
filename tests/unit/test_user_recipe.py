@@ -2,6 +2,7 @@
 T006: Test UserRecipe model validation and functionality.
 This test will fail initially until the UserRecipe model is implemented.
 """
+
 import pytest
 
 from t2d_kit.models.user_recipe import UserRecipe
@@ -16,10 +17,7 @@ class TestUserRecipe:
             "name": "Simple Flow",
             "description": "A basic data flow diagram",
             "components": ["database", "api", "frontend"],
-            "connections": [
-                {"from": "database", "to": "api"},
-                {"from": "api", "to": "frontend"}
-            ]
+            "connections": [{"from": "database", "to": "api"}, {"from": "api", "to": "frontend"}],
         }
 
         recipe = UserRecipe(**recipe_data)
@@ -30,11 +28,7 @@ class TestUserRecipe:
 
     def test_user_recipe_validation_missing_name(self):
         """Test that UserRecipe raises error when name is missing."""
-        recipe_data = {
-            "description": "Missing name",
-            "components": ["api"],
-            "connections": []
-        }
+        recipe_data = {"description": "Missing name", "components": ["api"], "connections": []}
 
         with pytest.raises(ValueError, match="name.*required"):
             UserRecipe(**recipe_data)
@@ -45,7 +39,7 @@ class TestUserRecipe:
             "name": "Empty Recipe",
             "description": "No components",
             "components": [],
-            "connections": []
+            "connections": [],
         }
 
         with pytest.raises(ValueError, match="components.*empty"):
@@ -57,7 +51,7 @@ class TestUserRecipe:
             "name": "Test Recipe",
             "description": "Test description",
             "components": ["a", "b"],
-            "connections": [{"from": "a", "to": "b"}]
+            "connections": [{"from": "a", "to": "b"}],
         }
 
         recipe = UserRecipe(**recipe_data)
@@ -74,7 +68,7 @@ class TestUserRecipe:
             "name": "From Dict",
             "description": "Created from dict",
             "components": ["x", "y"],
-            "connections": [{"from": "x", "to": "y"}]
+            "connections": [{"from": "x", "to": "y"}],
         }
 
         recipe = UserRecipe.from_dict(recipe_data)

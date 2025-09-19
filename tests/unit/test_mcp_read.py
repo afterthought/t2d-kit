@@ -2,6 +2,7 @@
 T009: Test MCP read operations for user recipes.
 This test will fail initially until the MCP read functionality is implemented.
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -17,9 +18,9 @@ class TestMCPRead:
         """Test that MCPReader can be initialized."""
         reader = MCPReader()
         assert reader is not None
-        assert hasattr(reader, 'read_user_recipe')
+        assert hasattr(reader, "read_user_recipe")
 
-    @patch('t2d_kit.mcp.read.mcp_client')
+    @patch("t2d_kit.mcp.read.mcp_client")
     def test_read_user_recipe_success(self, mock_client):
         """Test successful reading of user recipe via MCP."""
         # Mock MCP response
@@ -27,7 +28,7 @@ class TestMCPRead:
             "name": "Test Recipe",
             "description": "Test description",
             "components": ["component1", "component2"],
-            "connections": [{"from": "component1", "to": "component2"}]
+            "connections": [{"from": "component1", "to": "component2"}],
         }
         mock_client.call_tool.return_value = mock_recipe_data
 
@@ -39,11 +40,10 @@ class TestMCPRead:
         assert recipe.description == "Test description"
         assert len(recipe.components) == 2
         mock_client.call_tool.assert_called_once_with(
-            "read_user_recipe",
-            {"recipe_id": "recipe_id_123"}
+            "read_user_recipe", {"recipe_id": "recipe_id_123"}
         )
 
-    @patch('t2d_kit.mcp.read.mcp_client')
+    @patch("t2d_kit.mcp.read.mcp_client")
     def test_read_user_recipe_not_found(self, mock_client):
         """Test reading non-existent user recipe."""
         mock_client.call_tool.side_effect = Exception("Recipe not found")
@@ -52,7 +52,7 @@ class TestMCPRead:
         with pytest.raises(Exception, match="Recipe not found"):
             reader.read_user_recipe("nonexistent_id")
 
-    @patch('t2d_kit.mcp.read.mcp_client')
+    @patch("t2d_kit.mcp.read.mcp_client")
     def test_list_user_recipes(self, mock_client):
         """Test listing all user recipes."""
         mock_recipes = [
@@ -61,15 +61,15 @@ class TestMCPRead:
                 "name": "Recipe 1",
                 "description": "First recipe",
                 "components": ["a"],
-                "connections": []
+                "connections": [],
             },
             {
                 "id": "recipe2",
                 "name": "Recipe 2",
                 "description": "Second recipe",
                 "components": ["b"],
-                "connections": []
-            }
+                "connections": [],
+            },
         ]
         mock_client.call_tool.return_value = mock_recipes
 
@@ -82,14 +82,14 @@ class TestMCPRead:
         assert recipes[1].name == "Recipe 2"
         mock_client.call_tool.assert_called_once_with("list_user_recipes", {})
 
-    @patch('t2d_kit.mcp.read.mcp_client')
+    @patch("t2d_kit.mcp.read.mcp_client")
     def test_read_user_recipe_invalid_data(self, mock_client):
         """Test handling of invalid recipe data from MCP."""
         # Mock invalid response (missing required fields)
         mock_client.call_tool.return_value = {
             "description": "Missing name field",
             "components": [],
-            "connections": []
+            "connections": [],
         }
 
         reader = MCPReader()
@@ -101,11 +101,11 @@ class TestMCPRead:
         reader = MCPReader()
 
         # Test that reader has connection management methods
-        assert hasattr(reader, 'connect')
-        assert hasattr(reader, 'disconnect')
-        assert hasattr(reader, 'is_connected')
+        assert hasattr(reader, "connect")
+        assert hasattr(reader, "disconnect")
+        assert hasattr(reader, "is_connected")
 
-    @patch('t2d_kit.mcp.read.mcp_client')
+    @patch("t2d_kit.mcp.read.mcp_client")
     def test_search_user_recipes(self, mock_client):
         """Test searching user recipes by query."""
         mock_search_results = [
@@ -114,7 +114,7 @@ class TestMCPRead:
                 "name": "Search Result 1",
                 "description": "Contains search term",
                 "components": ["search_component"],
-                "connections": []
+                "connections": [],
             }
         ]
         mock_client.call_tool.return_value = mock_search_results
@@ -126,6 +126,5 @@ class TestMCPRead:
         assert isinstance(results[0], UserRecipe)
         assert results[0].name == "Search Result 1"
         mock_client.call_tool.assert_called_once_with(
-            "search_user_recipes",
-            {"query": "search term"}
+            "search_user_recipes", {"query": "search term"}
         )

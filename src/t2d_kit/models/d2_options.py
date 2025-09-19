@@ -14,113 +14,88 @@ class D2Options(T2DBaseModel):
 
     # Layout engines
     layout_engine: Literal["dagre", "elk", "tala"] = Field(
-        default="dagre",
-        description="D2 layout engine to use"
+        default="dagre", description="D2 layout engine to use"
     )
 
     # Themes
-    theme: Literal["neutral-default", "neutral-grey", "flagship-terrastruct", "cool-classics", "mixed-berry-blue", "grape-soda", "aubergine", "colorblind-clear", "vanilla-nitro-cola", "orange-creamsicle", "shirley-temple", "earth-tones", "everglade", "buttered-toast"] | None = Field(
-        default="neutral-default",
-        description="D2 theme to apply"
-    )
+    theme: (
+        Literal[
+            "neutral-default",
+            "neutral-grey",
+            "flagship-terrastruct",
+            "cool-classics",
+            "mixed-berry-blue",
+            "grape-soda",
+            "aubergine",
+            "colorblind-clear",
+            "vanilla-nitro-cola",
+            "orange-creamsicle",
+            "shirley-temple",
+            "earth-tones",
+            "everglade",
+            "buttered-toast",
+        ]
+        | None
+    ) = Field(default="neutral-default", description="D2 theme to apply")
 
     # Rendering options
-    sketch: bool = Field(
-        default=False,
-        description="Enable hand-drawn sketch mode"
-    )
+    sketch: bool = Field(default=False, description="Enable hand-drawn sketch mode")
 
-    pad: int = Field(
-        default=100,
-        ge=0,
-        description="Padding around the diagram in pixels"
-    )
+    pad: int = Field(default=100, ge=0, description="Padding around the diagram in pixels")
 
     # Animation options
     animate_interval: int | None = Field(
         default=None,
         ge=0,
-        description="Animation interval in milliseconds for multi-board diagrams"
+        description="Animation interval in milliseconds for multi-board diagrams",
     )
 
     # Size constraints
-    width: int | None = Field(
-        default=None,
-        gt=0,
-        description="Target width in pixels"
-    )
+    width: int | None = Field(default=None, gt=0, description="Target width in pixels")
 
-    height: int | None = Field(
-        default=None,
-        gt=0,
-        description="Target height in pixels"
-    )
+    height: int | None = Field(default=None, gt=0, description="Target height in pixels")
 
     # Export options
     scale: float = Field(
-        default=1.0,
-        gt=0,
-        le=4,
-        description="Scale factor for output (0.5 = 50%, 2 = 200%)"
+        default=1.0, gt=0, le=4, description="Scale factor for output (0.5 = 50%, 2 = 200%)"
     )
 
     # Advanced layout options
     direction: Literal["up", "down", "right", "left"] = Field(
-        default="down",
-        description="Primary direction for layout flow"
+        default="down", description="Primary direction for layout flow"
     )
 
     # Font configuration
-    font_family: str | None = Field(
-        default=None,
-        description="Override default font family"
-    )
+    font_family: str | None = Field(default=None, description="Override default font family")
 
-    font_size: int | None = Field(
-        default=None,
-        ge=8,
-        le=72,
-        description="Base font size in points"
-    )
+    font_size: int | None = Field(default=None, ge=8, le=72, description="Base font size in points")
 
     # Connection styling
     stroke_width: int | None = Field(
-        default=None,
-        ge=1,
-        le=10,
-        description="Default stroke width for connections"
+        default=None, ge=1, le=10, description="Default stroke width for connections"
     )
 
     # Multi-board options
     board_index: int | None = Field(
-        default=None,
-        ge=0,
-        description="Specific board index to render from multi-board diagram"
+        default=None, ge=0, description="Specific board index to render from multi-board diagram"
     )
 
     # Compiler options
-    force_appendix: bool = Field(
-        default=False,
-        description="Force rendering of appendix elements"
-    )
+    force_appendix: bool = Field(default=False, description="Force rendering of appendix elements")
 
-    center: bool = Field(
-        default=False,
-        description="Center the diagram in the viewport"
-    )
+    center: bool = Field(default=False, description="Center the diagram in the viewport")
 
-    @field_validator('layout_engine')
+    @field_validator("layout_engine")
     @classmethod
     def validate_tala_license(cls, v: str) -> str:
         """Warn if Tala is selected without license."""
-        if v == "tala":
-            # Check for TALA_LICENSE_KEY env var
-            if not os.environ.get("TALA_LICENSE_KEY"):
-                warnings.warn(
-                    "Tala layout engine requires a license key. "
-                    "Set TALA_LICENSE_KEY environment variable.",
-                    UserWarning
-                )
+        if v == "tala" and not os.environ.get("TALA_LICENSE_KEY"):
+            warnings.warn(
+                "Tala layout engine requires a license key. "
+                "Set TALA_LICENSE_KEY environment variable.",
+                UserWarning,
+                stacklevel=2,
+            )
         return v
 
     def to_cli_args(self) -> list[str]:
@@ -191,11 +166,7 @@ class D2Options(T2DBaseModel):
 
     def get_output_flags(self, output_format: str) -> list[str]:
         """Get format-specific output flags."""
-        format_flags = {
-            "svg": [],
-            "png": ["--format", "png"],
-            "pdf": ["--format", "pdf"]
-        }
+        format_flags = {"svg": [], "png": ["--format", "png"], "pdf": ["--format", "pdf"]}
         return format_flags.get(output_format.lower(), [])
 
     def validate_compatibility(self) -> list[str]:

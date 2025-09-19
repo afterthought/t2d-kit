@@ -2,6 +2,7 @@
 T014: Integration test for MkDocs documentation generation.
 This test will fail initially until the MkDocs integration is implemented.
 """
+
 import tempfile
 from pathlib import Path
 from unittest.mock import patch
@@ -19,9 +20,9 @@ class TestMkDocsIntegration:
         """Test that MkDocsGenerator can be initialized."""
         generator = MkDocsGenerator()
         assert generator is not None
-        assert hasattr(generator, 'generate_docs')
-        assert hasattr(generator, 'create_mkdocs_config')
-        assert hasattr(generator, 'add_diagram_to_docs')
+        assert hasattr(generator, "generate_docs")
+        assert hasattr(generator, "create_mkdocs_config")
+        assert hasattr(generator, "add_diagram_to_docs")
 
     def test_create_mkdocs_config(self):
         """Test creating MkDocs configuration file."""
@@ -35,7 +36,7 @@ class TestMkDocsIntegration:
                 "site_description": "Text-to-Diagram Kit Documentation",
                 "site_author": "T2D Kit",
                 "theme": "material",
-                "plugins": ["search", "d2"]
+                "plugins": ["search", "d2"],
             }
 
             result_path = generator.create_mkdocs_config(config_path, project_config)
@@ -60,7 +61,7 @@ class TestMkDocsIntegration:
             project_info = {
                 "name": "Test Project",
                 "description": "Test documentation generation",
-                "version": "1.0.0"
+                "version": "1.0.0",
             }
 
             generator.generate_docs(docs_dir, project_info)
@@ -91,7 +92,7 @@ class TestMkDocsIntegration:
         diagram_spec = DiagramSpec(
             d2_content=d2_content,
             title="System Architecture",
-            description="Main system components and connections"
+            description="Main system components and connections",
         )
 
         generator = MkDocsGenerator()
@@ -103,9 +104,7 @@ class TestMkDocsIntegration:
             diagrams_dir.mkdir()
 
             result_files = generator.add_diagram_to_docs(
-                diagram_spec,
-                docs_dir,
-                diagram_name="architecture"
+                diagram_spec, docs_dir, diagram_name="architecture"
             )
 
             # Verify files were created
@@ -141,7 +140,7 @@ class TestMkDocsIntegration:
             diagram = DiagramSpec(
                 d2_content=d2_content,
                 title=f"Diagram {i+1}",
-                description=f"Test diagram number {i+1}"
+                description=f"Test diagram number {i+1}",
             )
             diagrams.append(diagram)
 
@@ -164,7 +163,7 @@ class TestMkDocsIntegration:
                 assert "Diagram 2" in content
                 assert "Diagram 3" in content
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_build_mkdocs_site(self, mock_subprocess):
         """Test building MkDocs site."""
         mock_subprocess.return_value.returncode = 0
@@ -180,14 +179,11 @@ class TestMkDocsIntegration:
             (docs_dir / "index.md").write_text("# Test Documentation")
 
             config_path = Path(temp_dir) / "mkdocs.yml"
-            config = {
-                "site_name": "Test Site",
-                "docs_dir": str(docs_dir)
-            }
-            with open(config_path, 'w') as f:
+            config = {"site_name": "Test Site", "docs_dir": str(docs_dir)}
+            with open(config_path, "w") as f:
                 yaml.dump(config, f)
 
-            site_dir = generator.build_site(config_path)
+            generator.build_site(config_path)
 
             mock_subprocess.assert_called_once()
             args = mock_subprocess.call_args[0][0]
@@ -204,8 +200,8 @@ class TestMkDocsIntegration:
                 "components": ["user", "ui", "backend"],
                 "endpoints": [
                     {"path": "/api/user", "method": "GET"},
-                    {"path": "/api/flow", "method": "POST"}
-                ]
+                    {"path": "/api/flow", "method": "POST"},
+                ],
             },
             {
                 "name": "data_flow",
@@ -214,9 +210,9 @@ class TestMkDocsIntegration:
                 "components": ["input", "processor", "output"],
                 "endpoints": [
                     {"path": "/api/data", "method": "POST"},
-                    {"path": "/api/process", "method": "PUT"}
-                ]
-            }
+                    {"path": "/api/process", "method": "PUT"},
+                ],
+            },
         ]
 
         generator = MkDocsGenerator()
@@ -248,22 +244,11 @@ class TestMkDocsIntegration:
 
             theme_config = {
                 "name": "material",
-                "palette": {
-                    "scheme": "default",
-                    "primary": "blue",
-                    "accent": "light blue"
-                },
-                "features": [
-                    "navigation.tabs",
-                    "navigation.sections",
-                    "toc.integrate"
-                ]
+                "palette": {"scheme": "default", "primary": "blue", "accent": "light blue"},
+                "features": ["navigation.tabs", "navigation.sections", "toc.integrate"],
             }
 
-            project_config = {
-                "site_name": "Custom Theme Test",
-                "theme": theme_config
-            }
+            project_config = {"site_name": "Custom Theme Test", "theme": theme_config}
 
             result_path = generator.create_mkdocs_config(config_path, project_config)
 
@@ -284,10 +269,10 @@ class TestMkDocsIntegration:
 
             custom_files = {
                 "css": ["custom.css", "d2-diagrams.css"],
-                "js": ["custom.js", "diagram-interactions.js"]
+                "js": ["custom.js", "diagram-interactions.js"],
             }
 
-            result_files = generator.add_custom_assets(docs_dir, custom_files)
+            generator.add_custom_assets(docs_dir, custom_files)
 
             # Verify asset directories and files
             assets_dir = docs_dir / "assets"
@@ -306,7 +291,7 @@ class TestMkDocsIntegration:
             for js_file in custom_files["js"]:
                 assert (js_dir / js_file).exists()
 
-    @patch('subprocess.run')
+    @patch("subprocess.run")
     def test_serve_mkdocs_development_server(self, mock_subprocess):
         """Test starting MkDocs development server."""
         mock_subprocess.return_value.returncode = 0
@@ -318,7 +303,7 @@ class TestMkDocsIntegration:
 
             # Create minimal config
             config = {"site_name": "Dev Server Test"}
-            with open(config_path, 'w') as f:
+            with open(config_path, "w") as f:
                 yaml.dump(config, f)
 
             generator.serve_dev_server(config_path, port=8001)

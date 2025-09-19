@@ -15,7 +15,8 @@
       "Bash(.specify/scripts/bash/check-task-prerequisites.sh:*)",
       "Bash(python -m pytest tests/unit/test_user_recipe.py::TestUserRecipe::test_user_recipe_creation -v)",
       "Bash(python:*)",
-      "Bash(python3 -m pytest tests/unit/test_user_recipe.py::TestUserRecipe::test_user_recipe_creation -v)"
+      "Bash(python3 -m pytest tests/unit/test_user_recipe.py::TestUserRecipe::test_user_recipe_creation -v)",
+      "Bash(pip install:*)"
     ]
   },
   "enabledMcpjsonServers": [

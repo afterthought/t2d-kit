@@ -13,151 +13,93 @@ class MarpConfig(T2DBaseModel):
 
     # Theme configuration
     theme: Literal[
-        "default", "gaia", "uncover",
+        "default",
+        "gaia",
+        "uncover",
         # Custom themes can be added
-    ] = Field(
-        default="default",
-        description="Marp theme to apply"
-    )
+    ] = Field(default="default", description="Marp theme to apply")
 
     custom_theme_path: Path | None = Field(
-        default=None,
-        description="Path to custom CSS theme file"
+        default=None, description="Path to custom CSS theme file"
     )
 
     # Global directives
-    marp: bool = Field(
-        default=True,
-        description="Enable Marp rendering"
-    )
+    marp: bool = Field(default=True, description="Enable Marp rendering")
 
     size: Literal["4:3", "16:9", "4K", "A4", "Letter"] = Field(
-        default="16:9",
-        description="Slide size/aspect ratio"
+        default="16:9", description="Slide size/aspect ratio"
     )
 
-    paginate: bool = Field(
-        default=True,
-        description="Show page numbers"
-    )
+    paginate: bool = Field(default=True, description="Show page numbers")
 
-    header: str | None = Field(
-        default=None,
-        description="Global header text for all slides"
-    )
+    header: str | None = Field(default=None, description="Global header text for all slides")
 
-    footer: str | None = Field(
-        default=None,
-        description="Global footer text for all slides"
-    )
+    footer: str | None = Field(default=None, description="Global footer text for all slides")
 
     # Style configuration
-    style: str | None = Field(
-        default=None,
-        description="Custom CSS styles"
-    )
+    style: str | None = Field(default=None, description="Custom CSS styles")
 
-    background_color: str | None = Field(
-        default=None,
-        description="Default background color"
-    )
+    background_color: str | None = Field(default=None, description="Default background color")
 
     background_image: str | None = Field(
-        default=None,
-        description="URL or path to background image"
+        default=None, description="URL or path to background image"
     )
 
     background_size: Literal["cover", "contain", "auto", "fit"] = Field(
-        default="cover",
-        description="Background image sizing"
+        default="cover", description="Background image sizing"
     )
 
     # Typography
-    font_family: str | None = Field(
-        default=None,
-        description="Primary font family"
-    )
+    font_family: str | None = Field(default=None, description="Primary font family")
 
-    font_size: str | None = Field(
-        default=None,
-        description="Base font size (e.g., '28px', '2em')"
-    )
+    font_size: str | None = Field(default=None, description="Base font size (e.g., '28px', '2em')")
 
     # Color scheme
-    color: str | None = Field(
-        default=None,
-        description="Default text color"
-    )
+    color: str | None = Field(default=None, description="Default text color")
 
     # Slide-specific directives
     class_: str | None = Field(
-        default=None,
-        alias="class",
-        description="CSS class to apply to slides"
+        default=None, alias="class", description="CSS class to apply to slides"
     )
 
     # Transition effects (for HTML export)
-    transition: Literal["none", "fade", "slide", "convex", "concave", "zoom", "linear"] | None = Field(
-        default=None,
-        description="Slide transition effect for HTML export"
+    transition: Literal["none", "fade", "slide", "convex", "concave", "zoom", "linear"] | None = (
+        Field(default=None, description="Slide transition effect for HTML export")
     )
 
     transition_speed: Literal["slow", "default", "fast"] = Field(
-        default="default",
-        description="Transition speed"
+        default="default", description="Transition speed"
     )
 
     # Export configurations
-    html_options: dict[str, Any] | None = Field(
-        default=None,
-        description="HTML export options"
-    )
+    html_options: dict[str, Any] | None = Field(default=None, description="HTML export options")
 
-    pdf_options: dict[str, Any] | None = Field(
-        default=None,
-        description="PDF export options"
-    )
+    pdf_options: dict[str, Any] | None = Field(default=None, description="PDF export options")
 
     pptx_options: dict[str, Any] | None = Field(
-        default=None,
-        description="PowerPoint export options"
+        default=None, description="PowerPoint export options"
     )
 
     # Advanced features
     math: Literal["katex", "mathjax", None] = Field(
-        default="katex",
-        description="Math rendering engine"
+        default="katex", description="Math rendering engine"
     )
 
-    emoji_shortcode: bool = Field(
-        default=True,
-        description="Enable emoji shortcodes like :smile:"
-    )
+    emoji_shortcode: bool = Field(default=True, description="Enable emoji shortcodes like :smile:")
 
-    html: bool = Field(
-        default=True,
-        description="Allow raw HTML in markdown"
-    )
+    html: bool = Field(default=True, description="Allow raw HTML in markdown")
 
     # Auto-play configuration (for HTML)
     auto_play: int | None = Field(
-        default=None,
-        ge=0,
-        description="Auto-advance slides after N seconds (0 = disabled)"
+        default=None, ge=0, description="Auto-advance slides after N seconds (0 = disabled)"
     )
 
-    loop: bool = Field(
-        default=False,
-        description="Loop presentation when auto-playing"
-    )
+    loop: bool = Field(default=False, description="Loop presentation when auto-playing")
 
     # Speaker notes
-    notes: bool = Field(
-        default=True,
-        description="Enable speaker notes"
-    )
+    notes: bool = Field(default=True, description="Enable speaker notes")
 
-    @field_validator('custom_theme_path')
+    @field_validator("custom_theme_path")
     @classmethod
     def validate_theme_exists(cls, v: Path | None) -> Path | None:
         """Check if custom theme file exists."""
@@ -204,7 +146,7 @@ class MarpConfig(T2DBaseModel):
                     fm.append(f"    font-size: {self.font_size};")
                 fm.append("  }")
             if self.style:
-                for line in self.style.strip().split('\n'):
+                for line in self.style.strip().split("\n"):
                     fm.append(f"  {line}")
 
         fm.append("---")
@@ -244,12 +186,7 @@ class MarpConfig(T2DBaseModel):
 
     def to_engine_config(self) -> dict[str, Any]:
         """Generate Marp engine configuration."""
-        config = {
-            "html": self.html,
-            "emoji": {
-                "shortcode": self.emoji_shortcode
-            }
-        }
+        config = {"html": self.html, "emoji": {"shortcode": self.emoji_shortcode}}
 
         if self.math:
             config["math"] = self.math
@@ -268,7 +205,7 @@ class MarpConfig(T2DBaseModel):
             "controlsLayout": "bottom-right",
             "controlsTutorial": True,
             "hash": True,
-            "respondToHashChanges": True
+            "respondToHashChanges": True,
         }
 
     def get_default_pdf_options(self) -> dict[str, Any]:
@@ -278,35 +215,25 @@ class MarpConfig(T2DBaseModel):
             "landscape": True,
             "printBackground": True,
             "displayHeaderFooter": True,
-            "margin": {
-                "top": "1cm",
-                "right": "1cm",
-                "bottom": "1cm",
-                "left": "1cm"
-            }
+            "margin": {"top": "1cm", "right": "1cm", "bottom": "1cm", "left": "1cm"},
         }
 
     def get_default_pptx_options(self) -> dict[str, Any]:
         """Get default PowerPoint export options."""
-        return {
-            "output_width": 1920,
-            "output_height": 1080
-        }
+        return {"output_width": 1920, "output_height": 1080}
 
     def apply_theme_defaults(self, theme_name: str) -> None:
         """Apply default settings for specific themes."""
         theme_defaults = {
             "gaia": {
                 "font_family": "'Avenir Next', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif",
-                "background_color": "#fafafa"
+                "background_color": "#fafafa",
             },
             "uncover": {
                 "font_family": "'Liberation Sans', 'Hiragino Sans', sans-serif",
-                "background_color": "#ffffff"
+                "background_color": "#ffffff",
             },
-            "default": {
-                "font_family": "'Helvetica Neue', Arial, sans-serif"
-            }
+            "default": {"font_family": "'Helvetica Neue', Arial, sans-serif"},
         }
 
         if theme_name in theme_defaults:
@@ -335,31 +262,16 @@ class SlideDirective(T2DBaseModel):
     class_: Literal["lead", "invert", "fit", "centered"] | None = Field(default=None, alias="class")
 
     # Background directives (per slide)
-    bg: str | None = Field(
-        default=None,
-        description="Background color or image URL"
-    )
+    bg: str | None = Field(default=None, description="Background color or image URL")
 
-    bg_color: str | None = Field(
-        default=None,
-        description="Background color"
-    )
+    bg_color: str | None = Field(default=None, description="Background color")
 
-    bg_image: str | None = Field(
-        default=None,
-        description="Background image URL"
-    )
+    bg_image: str | None = Field(default=None, description="Background image URL")
 
-    bg_size: str | None = Field(
-        default=None,
-        description="Background size"
-    )
+    bg_size: str | None = Field(default=None, description="Background size")
 
     # Pagination
-    paginate_skip: bool = Field(
-        default=False,
-        description="Skip page number on this slide"
-    )
+    paginate_skip: bool = Field(default=False, description="Skip page number on this slide")
 
     # Header/Footer overrides
     header: str | None = None

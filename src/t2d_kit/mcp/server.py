@@ -18,6 +18,7 @@ from t2d_kit.models import (
 # T025: Create FastMCP server initialization
 mcp = FastMCP("t2d-kit")
 
+
 # T026: Implement read_user_recipe MCP tool
 @mcp.tool()
 async def read_user_recipe(file_path: str) -> dict[str, Any]:
@@ -45,17 +46,12 @@ async def read_user_recipe(file_path: str) -> dict[str, Any]:
         recipe = UserRecipe(**recipe_data)
         return recipe.model_dump()
     except ValidationError as e:
-        return {
-            "error": "Recipe validation failed",
-            "details": e.errors()
-        }
+        return {"error": "Recipe validation failed", "details": e.errors()}
+
 
 # T027: Implement write_processed_recipe MCP tool
 @mcp.tool()
-async def write_processed_recipe(
-    file_path: str,
-    processed_data: dict[str, Any]
-) -> dict[str, Any]:
+async def write_processed_recipe(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
     """Write a processed recipe to a YAML file.
 
     Args:
@@ -72,29 +68,27 @@ async def write_processed_recipe(
     try:
         recipe = ProcessedRecipe(**processed_data)
     except ValidationError as e:
-        return {
-            "error": "Processed recipe validation failed",
-            "details": e.errors()
-        }
+        return {"error": "Processed recipe validation failed", "details": e.errors()}
 
     path = Path(file_path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
     # Write as YAML
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         yaml.safe_dump(
             recipe.model_dump(exclude_none=True),
             f,
             default_flow_style=False,
             sort_keys=False,
-            width=120
+            width=120,
         )
 
     return {
         "success": True,
         "file_path": str(path.absolute()),
-        "message": f"Processed recipe written to {path}"
+        "message": f"Processed recipe written to {path}",
     }
+
 
 # T028: Implement read_processed_recipe MCP tool
 @mcp.tool()
@@ -122,17 +116,12 @@ async def read_processed_recipe(file_path: str) -> dict[str, Any]:
         recipe = ProcessedRecipe(**recipe_data)
         return recipe.model_dump()
     except ValidationError as e:
-        return {
-            "error": "Processed recipe validation failed",
-            "details": e.errors()
-        }
+        return {"error": "Processed recipe validation failed", "details": e.errors()}
+
 
 # T029: Implement validate_recipe MCP tool
 @mcp.tool()
-async def validate_recipe(
-    recipe_data: dict[str, Any],
-    recipe_type: str = "user"
-) -> dict[str, Any]:
+async def validate_recipe(recipe_data: dict[str, Any], recipe_type: str = "user") -> dict[str, Any]:
     """Validate a recipe without reading/writing files.
 
     Args:
@@ -144,30 +133,16 @@ async def validate_recipe(
     """
     try:
         if recipe_type == "user":
-            recipe = UserRecipe(**recipe_data)
-            return {
-                "valid": True,
-                "type": "user",
-                "message": "User recipe is valid"
-            }
+            UserRecipe(**recipe_data)  # Validate the recipe
+            return {"valid": True, "type": "user", "message": "User recipe is valid"}
         elif recipe_type == "processed":
-            recipe = ProcessedRecipe(**recipe_data)
-            return {
-                "valid": True,
-                "type": "processed",
-                "message": "Processed recipe is valid"
-            }
+            ProcessedRecipe(**recipe_data)  # Validate the recipe
+            return {"valid": True, "type": "processed", "message": "Processed recipe is valid"}
         else:
-            return {
-                "valid": False,
-                "error": f"Unknown recipe type: {recipe_type}"
-            }
+            return {"valid": False, "error": f"Unknown recipe type: {recipe_type}"}
     except ValidationError as e:
-        return {
-            "valid": False,
-            "type": recipe_type,
-            "errors": e.errors()
-        }
+        return {"valid": False, "type": recipe_type, "errors": e.errors()}
+
 
 # T046: Implement recipe file watching
 @mcp.tool()
@@ -194,17 +169,20 @@ async def watch_recipe_changes(directory: str = ".") -> dict[str, Any]:
     file_info = []
     for file in recipe_files:
         stat = file.stat()
-        file_info.append({
-            "path": str(file.relative_to(watch_dir)),
-            "modified": time.ctime(stat.st_mtime),
-            "size": stat.st_size
-        })
+        file_info.append(
+            {
+                "path": str(file.relative_to(watch_dir)),
+                "modified": time.ctime(stat.st_mtime),
+                "size": stat.st_size,
+            }
+        )
 
     return {
         "directory": str(watch_dir.absolute()),
         "recipe_count": len(recipe_files),
-        "recipes": file_info
+        "recipes": file_info,
     }
+
 
 @mcp.resource("recipe://example/simple")
 async def example_recipe() -> str:
@@ -212,24 +190,17 @@ async def example_recipe() -> str:
     example = {
         "recipe": {
             "name": "Example System",
-            "prd": {
-                "content": "A simple system with users and orders..."
-            },
+            "prd": {"content": "A simple system with users and orders..."},
             "instructions": {
                 "diagrams": [
-                    {
-                        "type": "architecture",
-                        "description": "System architecture overview"
-                    }
+                    {"type": "architecture", "description": "System architecture overview"}
                 ],
-                "documentation": {
-                    "style": "technical",
-                    "audience": "developers"
-                }
-            }
+                "documentation": {"style": "technical", "audience": "developers"},
+            },
         }
     }
     return yaml.safe_dump(example, default_flow_style=False)
+
 
 def serve():
     """Serve the MCP server."""
@@ -253,6 +224,6 @@ def serve():
         print('  "t2d-kit": {', file=sys.stderr)
         print('    "command": "t2d",', file=sys.stderr)
         print('    "args": ["mcp", "."]', file=sys.stderr)
-        print('  }', file=sys.stderr)
+        print("  }", file=sys.stderr)
 
     mcp.run()

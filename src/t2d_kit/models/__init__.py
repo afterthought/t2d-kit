@@ -106,7 +106,6 @@ __all__ = [
     "DocStyle",
     "DetailLevel",
     "PresentationStyle",
-
     # User recipe models
     "UserRecipe",
     "PRDContent",
@@ -115,25 +114,20 @@ __all__ = [
     "DocumentationInstructions",
     "PresentationInstructions",
     "Preferences",
-
     # Processed recipe models
     "ProcessedRecipe",
     "DiagramReference",
     "OutputConfig",
-
     # Diagram models
     "DiagramSpecification",
-
     # Content models
     "ContentFile",
-
     # State management models
     "StateManager",
     "ProcessingState",
     "DiagramGenerationState",
     "ContentGenerationState",
     "AgentCoordinationState",
-
     # Framework-specific configuration models
     "D2Options",
     "MermaidConfig",

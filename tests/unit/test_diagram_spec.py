@@ -2,6 +2,7 @@
 T008: Test DiagramSpec model for D2 diagram specifications.
 This test will fail initially until the DiagramSpec model is implemented.
 """
+
 import pytest
 
 from t2d_kit.models.diagram_spec import DiagramSpec
@@ -28,9 +29,7 @@ class TestDiagramSpec:
         """
 
         spec = DiagramSpec(
-            d2_content=d2_content,
-            title="System Architecture",
-            description="Basic system diagram"
+            d2_content=d2_content, title="System Architecture", description="Basic system diagram"
         )
 
         assert spec.d2_content.strip() == d2_content.strip()
@@ -40,18 +39,12 @@ class TestDiagramSpec:
     def test_diagram_spec_validation_empty_content(self):
         """Test that DiagramSpec requires non-empty D2 content."""
         with pytest.raises(ValueError, match="d2_content.*empty"):
-            DiagramSpec(
-                d2_content="",
-                title="Empty Diagram"
-            )
+            DiagramSpec(d2_content="", title="Empty Diagram")
 
     def test_diagram_spec_validation_missing_title(self):
         """Test that DiagramSpec requires a title."""
         with pytest.raises(ValueError, match="title.*required"):
-            DiagramSpec(
-                d2_content="a -> b",
-                title=""
-            )
+            DiagramSpec(d2_content="a -> b", title="")
 
     def test_diagram_spec_parse_components(self):
         """Test that DiagramSpec can parse components from D2 content."""
@@ -61,10 +54,7 @@ class TestDiagramSpec:
         db: Database
         """
 
-        spec = DiagramSpec(
-            d2_content=d2_content,
-            title="Component Test"
-        )
+        spec = DiagramSpec(d2_content=d2_content, title="Component Test")
 
         components = spec.parse_components()
         assert "user" in components
@@ -80,10 +70,7 @@ class TestDiagramSpec:
         c -> a: connection3
         """
 
-        spec = DiagramSpec(
-            d2_content=d2_content,
-            title="Connection Test"
-        )
+        spec = DiagramSpec(d2_content=d2_content, title="Connection Test")
 
         connections = spec.parse_connections()
         assert len(connections) == 3
@@ -96,25 +83,17 @@ class TestDiagramSpec:
         valid_d2 = "a -> b: valid connection"
         invalid_d2 = "a -> -> b: invalid syntax"
 
-        valid_spec = DiagramSpec(
-            d2_content=valid_d2,
-            title="Valid Syntax"
-        )
+        valid_spec = DiagramSpec(d2_content=valid_d2, title="Valid Syntax")
         assert valid_spec.validate_syntax() is True
 
-        invalid_spec = DiagramSpec(
-            d2_content=invalid_d2,
-            title="Invalid Syntax"
-        )
+        invalid_spec = DiagramSpec(d2_content=invalid_d2, title="Invalid Syntax")
         assert invalid_spec.validate_syntax() is False
 
     def test_diagram_spec_to_dict(self):
         """Test that DiagramSpec can be serialized to dictionary."""
         d2_content = "component1 -> component2"
         spec = DiagramSpec(
-            d2_content=d2_content,
-            title="Serialization Test",
-            description="Test description"
+            d2_content=d2_content, title="Serialization Test", description="Test description"
         )
 
         result = spec.to_dict()

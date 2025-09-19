@@ -18,9 +18,9 @@ class TestTransformIntegration:
         """Test that TransformPipeline can be initialized."""
         pipeline = TransformPipeline()
         assert pipeline is not None
-        assert hasattr(pipeline, 'transform')
-        assert hasattr(pipeline, 'user_recipe_to_processed')
-        assert hasattr(pipeline, 'processed_to_diagram_spec')
+        assert hasattr(pipeline, "transform")
+        assert hasattr(pipeline, "user_recipe_to_processed")
+        assert hasattr(pipeline, "processed_to_diagram_spec")
 
     def test_end_to_end_transformation(self):
         """Test complete transformation from UserRecipe to DiagramSpec."""
@@ -32,8 +32,8 @@ class TestTransformIntegration:
             "connections": [
                 {"from": "frontend", "to": "api"},
                 {"from": "api", "to": "database"},
-                {"from": "api", "to": "cache"}
-            ]
+                {"from": "api", "to": "cache"},
+            ],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
@@ -57,10 +57,7 @@ class TestTransformIntegration:
             "name": "Processing Test",
             "description": "Test user to processed transformation",
             "components": ["web", "app", "db"],
-            "connections": [
-                {"from": "web", "to": "app"},
-                {"from": "app", "to": "db"}
-            ]
+            "connections": [{"from": "web", "to": "app"}, {"from": "app", "to": "db"}],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
@@ -80,24 +77,19 @@ class TestTransformIntegration:
             "name": "D2 Generation Test",
             "description": "Test processed to D2 transformation",
             "components": ["client", "server"],
-            "connections": [{"from": "client", "to": "server"}]
+            "connections": [{"from": "client", "to": "server"}],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
         processed_data = {
             "nodes": [
                 {"id": "client", "label": "Client App", "shape": "rectangle"},
-                {"id": "server", "label": "Server", "shape": "cylinder"}
+                {"id": "server", "label": "Server", "shape": "cylinder"},
             ],
-            "edges": [
-                {"from": "client", "to": "server", "label": "HTTP requests"}
-            ],
-            "layout": "hierarchical"
+            "edges": [{"from": "client", "to": "server", "label": "HTTP requests"}],
+            "layout": "hierarchical",
         }
-        processed_recipe = ProcessedRecipe(
-            user_recipe=user_recipe,
-            processed_data=processed_data
-        )
+        processed_recipe = ProcessedRecipe(user_recipe=user_recipe, processed_data=processed_data)
 
         pipeline = TransformPipeline()
         diagram_spec = pipeline.processed_to_diagram_spec(processed_recipe)
@@ -119,15 +111,14 @@ class TestTransformIntegration:
                 {"from": "a", "to": "b"},
                 {"from": "b", "to": "c"},
                 {"from": "c", "to": "d"},
-                {"from": "d", "to": "a"}  # Circular connection
-            ]
+                {"from": "d", "to": "a"},  # Circular connection
+            ],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
         pipeline = TransformPipeline()
         diagram_spec = pipeline.transform(
-            user_recipe,
-            layout_options={"type": "circular", "spacing": "wide"}
+            user_recipe, layout_options={"type": "circular", "spacing": "wide"}
         )
 
         assert isinstance(diagram_spec, DiagramSpec)
@@ -140,21 +131,18 @@ class TestTransformIntegration:
             "name": "Styling Test",
             "description": "Test styling transformation",
             "components": ["frontend", "backend"],
-            "connections": [{"from": "frontend", "to": "backend"}]
+            "connections": [{"from": "frontend", "to": "backend"}],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
         styling_options = {
             "theme": "dark",
             "colors": {"frontend": "blue", "backend": "green"},
-            "shapes": {"frontend": "rectangle", "backend": "cylinder"}
+            "shapes": {"frontend": "rectangle", "backend": "cylinder"},
         }
 
         pipeline = TransformPipeline()
-        diagram_spec = pipeline.transform(
-            user_recipe,
-            styling_options=styling_options
-        )
+        diagram_spec = pipeline.transform(user_recipe, styling_options=styling_options)
 
         assert isinstance(diagram_spec, DiagramSpec)
         # Verify styling was applied
@@ -169,10 +157,10 @@ class TestTransformIntegration:
             "name": "",  # Invalid: empty name
             "description": "Invalid recipe",
             "components": [],  # Invalid: empty components
-            "connections": []
+            "connections": [],
         }
 
-        pipeline = TransformPipeline()
+        TransformPipeline()
         with pytest.raises(ValueError):
             UserRecipe(**invalid_recipe_data)
 
@@ -182,7 +170,7 @@ class TestTransformIntegration:
             "name": "Caching Test",
             "description": "Test caching in pipeline",
             "components": ["cache_test"],
-            "connections": []
+            "connections": [],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
@@ -205,13 +193,13 @@ class TestTransformIntegration:
             "components": ["metric1", "metric2", "metric3"],
             "connections": [
                 {"from": "metric1", "to": "metric2"},
-                {"from": "metric2", "to": "metric3"}
-            ]
+                {"from": "metric2", "to": "metric3"},
+            ],
         }
         user_recipe = UserRecipe(**user_recipe_data)
 
         pipeline = TransformPipeline(collect_metrics=True)
-        diagram_spec = pipeline.transform(user_recipe)
+        pipeline.transform(user_recipe)
 
         metrics = pipeline.get_metrics()
         assert "transformation_time" in metrics

@@ -16,13 +16,8 @@ def check_command(cmd: str, name: str, version_flag: str = "--version") -> tuple
     """Check if a command is available and get its version."""
     if shutil.which(cmd):
         try:
-            result = subprocess.run(
-                [cmd, version_flag],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            version = result.stdout.strip().split('\n')[0]
+            result = subprocess.run([cmd, version_flag], capture_output=True, text=True, timeout=5)
+            version = result.stdout.strip().split("\n")[0]
             return True, version
         except Exception:
             return True, "installed (version unknown)"
@@ -30,11 +25,7 @@ def check_command(cmd: str, name: str, version_flag: str = "--version") -> tuple
 
 
 @click.command(name="verify")
-@click.option(
-    "--verbose",
-    is_flag=True,
-    help="Show detailed verification information"
-)
+@click.option("--verbose", is_flag=True, help="Show detailed verification information")
 def verify_command(verbose: bool):
     """Verify t2d-kit installation and dependencies.
 
@@ -57,7 +48,7 @@ def verify_command(verbose: bool):
         "t2d-mermaid-generator",
         "t2d-plantuml-generator",
         "t2d-docs-generator",
-        "t2d-slides-generator"
+        "t2d-slides-generator",
     ]
 
     agents_found = 0
@@ -68,7 +59,9 @@ def verify_command(verbose: bool):
     if agents_found == len(agent_names):
         results.append(("Claude Code agents", True, f"All {agents_found} agents installed"))
     else:
-        results.append(("Claude Code agents", False, f"{agents_found}/{len(agent_names)} installed"))
+        results.append(
+            ("Claude Code agents", False, f"{agents_found}/{len(agent_names)} installed")
+        )
         all_good = False
 
     # Check base tools
@@ -107,14 +100,19 @@ def verify_command(verbose: bool):
 
     # Check MCP server
     try:
-        from t2d_kit.mcp import mcp
-        results.append(("MCP server", True, "FastMCP configured"))
+        import importlib.util
+
+        spec = importlib.util.find_spec("t2d_kit.mcp")
+        if spec is not None:
+            results.append(("MCP server", True, "FastMCP configured"))
+        else:
+            results.append(("MCP server", False, "Module not found"))
+            all_good = False
     except ImportError:
         results.append(("MCP server", False, "Import error"))
         all_good = False
 
     # Check file-based state management
-    state_dir = Path(".t2d-state")
     results.append(("State management", True, "Ready (file-based)"))
 
     # Display results table
