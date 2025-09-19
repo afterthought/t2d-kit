@@ -50,9 +50,9 @@ async def read_user_recipe(file_path: str) -> dict[str, Any]:
 
 
 # T027: Implement write_processed_recipe MCP tool
-@mcp.tool()
-async def write_processed_recipe(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
-    """Write a processed recipe to a YAML file.
+
+async def _write_processed_recipe_impl(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
+    """Implementation of write_processed_recipe that can be tested independently.
 
     Args:
         file_path: Path where recipe.t2d.yaml will be written
@@ -88,6 +88,23 @@ async def write_processed_recipe(file_path: str, processed_data: dict[str, Any])
         "file_path": str(path.absolute()),
         "message": f"Processed recipe written to {path}",
     }
+
+
+@mcp.tool()
+async def write_processed_recipe(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
+    """Write a processed recipe to a YAML file.
+
+    Args:
+        file_path: Path where recipe.t2d.yaml will be written
+        processed_data: The processed recipe data to write
+
+    Returns:
+        Dict with success status and file path
+
+    Raises:
+        ValidationError: If the processed data is invalid
+    """
+    return await _write_processed_recipe_impl(file_path, processed_data)
 
 
 # T028: Implement read_processed_recipe MCP tool
