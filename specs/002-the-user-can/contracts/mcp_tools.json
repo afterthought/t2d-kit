@@ -1,0 +1,389 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Tools Contract",
+  "description": "Contract for MCP tools exposed by t2d-kit recipe manager",
+  "type": "object",
+  "properties": {
+    "tools": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/CreateRecipeTool"
+          },
+          {
+            "$ref": "#/definitions/EditRecipeTool"
+          },
+          {
+            "$ref": "#/definitions/ValidateRecipeTool"
+          },
+          {
+            "$ref": "#/definitions/DeleteRecipeTool"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "CreateRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "create_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Create a new t2d-kit recipe file. The tool validates the recipe and saves it as a YAML file."
+        },
+        "parameters": {
+          "$ref": "#/definitions/CreateRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/CreateRecipeResponse"
+        }
+      }
+    },
+    "CreateRecipeParams": {
+      "type": "object",
+      "required": ["name", "diagrams"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Recipe name (used as filename)"
+        },
+        "prd_content": {
+          "type": ["string", "null"],
+          "maxLength": 1048576,
+          "description": "PRD content to embed in recipe (max 1MB)"
+        },
+        "prd_file_path": {
+          "type": ["string", "null"],
+          "description": "Path to external PRD file (alternative to prd_content)"
+        },
+        "diagrams": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/DiagramRequest"
+          },
+          "description": "List of diagram specifications"
+        },
+        "documentation_config": {
+          "oneOf": [
+            {"$ref": "#/definitions/DocumentationConfig"},
+            {"type": "null"}
+          ],
+          "description": "Optional documentation generation settings"
+        },
+        "output_dir": {
+          "type": "string",
+          "default": "./recipes",
+          "description": "Directory to save the recipe file"
+        }
+      }
+    },
+    "DiagramRequest": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Diagram type (e.g., 'flowchart', 'sequence', 'erd')"
+        },
+        "description": {
+          "type": ["string", "null"],
+          "description": "What to show in this diagram"
+        },
+        "framework": {
+          "type": ["string", "null"],
+          "enum": ["mermaid", "d2", "plantuml", null],
+          "description": "Preferred framework"
+        },
+        "details": {
+          "type": ["string", "null"],
+          "description": "Additional instructions for generation"
+        }
+      }
+    },
+    "DocumentationConfig": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "type": "string",
+          "default": "technical",
+          "description": "Documentation style"
+        },
+        "audience": {
+          "type": "string",
+          "default": "developers",
+          "description": "Target audience"
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Sections to include"
+        },
+        "format": {
+          "type": "string",
+          "default": "mkdocs",
+          "enum": ["mkdocs", "markdown"],
+          "description": "Output format"
+        }
+      }
+    },
+    "CreateRecipeResponse": {
+      "type": "object",
+      "required": ["success", "recipe_name", "file_path", "validation_result", "message"],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "recipe_name": {
+          "type": "string"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "validation_result": {
+          "$ref": "#/definitions/ValidationResult"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "EditRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "edit_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Edit an existing recipe file. Updates specified fields and validates before saving."
+        },
+        "parameters": {
+          "$ref": "#/definitions/EditRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/EditRecipeResponse"
+        }
+      }
+    },
+    "EditRecipeParams": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recipe name to edit"
+        },
+        "prd_content": {
+          "type": ["string", "null"],
+          "description": "New PRD content"
+        },
+        "prd_file_path": {
+          "type": ["string", "null"],
+          "description": "New PRD file path"
+        },
+        "diagrams": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/definitions/DiagramRequest"
+          },
+          "description": "New diagram specifications"
+        },
+        "documentation_config": {
+          "oneOf": [
+            {"$ref": "#/definitions/DocumentationConfig"},
+            {"type": "null"}
+          ],
+          "description": "New documentation settings"
+        },
+        "validate_before_save": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate recipe before saving"
+        }
+      }
+    },
+    "EditRecipeResponse": {
+      "type": "object",
+      "required": ["success", "recipe_name", "file_path", "changes_applied", "message"],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "recipe_name": {
+          "type": "string"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "changes_applied": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "validation_result": {
+          "oneOf": [
+            {"$ref": "#/definitions/ValidationResult"},
+            {"type": "null"}
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidateRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "validate_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Validate a recipe file or content. Returns detailed validation results."
+        },
+        "parameters": {
+          "$ref": "#/definitions/ValidateRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/ValidationResult"
+        }
+      }
+    },
+    "ValidateRecipeParams": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": ["string", "null"],
+          "description": "Recipe name to validate from filesystem"
+        },
+        "content": {
+          "type": ["object", "null"],
+          "description": "Recipe content to validate directly"
+        }
+      },
+      "oneOf": [
+        {"required": ["name"]},
+        {"required": ["content"]}
+      ]
+    },
+    "DeleteRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "delete_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Delete a recipe file. Requires confirmation flag to be set."
+        },
+        "parameters": {
+          "$ref": "#/definitions/DeleteRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/DeleteRecipeResponse"
+        }
+      }
+    },
+    "DeleteRecipeParams": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recipe name to delete"
+        },
+        "confirm": {
+          "type": "boolean",
+          "default": false,
+          "description": "Confirmation flag (must be true to delete)"
+        }
+      }
+    },
+    "DeleteRecipeResponse": {
+      "type": "object",
+      "required": ["success", "recipe_name", "file_path", "message"],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "recipe_name": {
+          "type": "string"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidationResult": {
+      "type": "object",
+      "required": ["valid", "errors", "warnings", "validated_at", "duration_ms"],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidationError"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "ValidationError": {
+      "type": "object",
+      "required": ["field", "message", "error_type"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field path that failed validation"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "error_type": {
+          "type": "string",
+          "description": "Error category"
+        },
+        "suggestion": {
+          "type": ["string", "null"],
+          "description": "How to fix the error"
+        }
+      }
+    }
+  }
+}

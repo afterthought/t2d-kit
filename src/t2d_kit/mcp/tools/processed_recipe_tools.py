@@ -1,0 +1,345 @@
+"""MCP tools for managing processed recipes."""
+
+import os
+import time
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import yaml
+from fastmcp import FastMCP
+
+from t2d_kit.models.processed_recipe import (
+    DiagramReference,
+    ProcessedRecipe,
+    ProcessedRecipeContent,
+    UpdateProcessedRecipeParams,
+    UpdateProcessedRecipeResponse,
+    ValidateProcessedRecipeParams,
+    WriteProcessedRecipeParams,
+    WriteProcessedRecipeResponse,
+)
+from t2d_kit.models.user_recipe import MCPValidationError, MCPValidationResult
+
+DEFAULT_PROCESSED_DIR = Path("./.t2d-state/processed")
+
+
+async def register_processed_recipe_tools(
+    server: FastMCP,
+    processed_dir: Path | None = None
+) -> None:
+    """Register processed recipe tools with the MCP server.
+
+    Args:
+        server: FastMCP server instance
+        processed_dir: Directory for processed recipe files
+    """
+    if processed_dir is None:
+        processed_dir = DEFAULT_PROCESSED_DIR
+
+    # Ensure directory exists
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    @server.tool()
+    async def write_processed_recipe(params: WriteProcessedRecipeParams) -> WriteProcessedRecipeResponse:
+        """Write a complete processed recipe file.
+
+        Creates or overwrites a processed recipe file with the provided content.
+        This is typically called by the t2d-transform agent after analyzing a user recipe.
+
+        Args:
+            params: Complete processed recipe content and target path
+
+        Returns:
+            WriteProcessedRecipeResponse with success status and validation results
+        """
+        start_time = time.time()
+        recipe_path = Path(params.recipe_path)
+
+        # Ensure parent directory exists
+        recipe_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Validate if requested
+        validation_result = None
+        if params.validate:
+            try:
+                ProcessedRecipe.model_validate(params.content.model_dump())
+                validation_result = MCPValidationResult(
+                    valid=True,
+                    errors=[],
+                    warnings=[],
+                    duration_ms=(time.time() - start_time) * 1000
+                ).model_dump()
+            except Exception as e:
+                duration_ms = (time.time() - start_time) * 1000
+                validation_result = MCPValidationResult(
+                    valid=False,
+                    errors=[MCPValidationError(
+                        field="content",
+                        message=str(e),
+                        error_type="validation"
+                    )],
+                    warnings=[],
+                    duration_ms=duration_ms
+                ).model_dump()
+
+                return WriteProcessedRecipeResponse(
+                    success=False,
+                    recipe_path=str(recipe_path),
+                    validation_result=validation_result,
+                    message=f"Validation failed: {str(e)}"
+                )
+
+        # Write to file
+        try:
+            with open(recipe_path, "w") as f:
+                yaml.dump(
+                    params.content.model_dump(exclude_none=True),
+                    f,
+                    default_flow_style=False,
+                    sort_keys=False
+                )
+
+            return WriteProcessedRecipeResponse(
+                success=True,
+                recipe_path=str(recipe_path),
+                validation_result=validation_result or MCPValidationResult(
+                    valid=True,
+                    errors=[],
+                    warnings=[],
+                    duration_ms=(time.time() - start_time) * 1000
+                ).model_dump(),
+                message=f"Processed recipe written to {recipe_path}"
+            )
+
+        except Exception as e:
+            return WriteProcessedRecipeResponse(
+                success=False,
+                recipe_path=str(recipe_path),
+                validation_result=validation_result or MCPValidationResult(
+                    valid=False,
+                    errors=[MCPValidationError(
+                        field="file",
+                        message=f"Write failed: {str(e)}",
+                        error_type="io_error"
+                    )],
+                    warnings=[],
+                    duration_ms=(time.time() - start_time) * 1000
+                ).model_dump(),
+                message=f"Failed to write recipe: {str(e)}"
+            )
+
+    @server.tool()
+    async def update_processed_recipe(params: UpdateProcessedRecipeParams) -> UpdateProcessedRecipeResponse:
+        """Update sections of an existing processed recipe.
+
+        Updates specific sections of a processed recipe file.
+        Commonly used to update diagram status after generation.
+
+        Args:
+            params: Recipe path and sections to update
+
+        Returns:
+            UpdateProcessedRecipeResponse with sections updated
+        """
+        recipe_path = Path(params.recipe_path)
+
+        if not recipe_path.exists():
+            return UpdateProcessedRecipeResponse(
+                success=False,
+                recipe_path=str(recipe_path),
+                sections_updated=[],
+                message=f"Recipe not found: {recipe_path}"
+            )
+
+        # Load existing recipe
+        try:
+            with open(recipe_path) as f:
+                content = yaml.safe_load(f)
+            recipe = ProcessedRecipe.model_validate(content)
+        except Exception as e:
+            return UpdateProcessedRecipeResponse(
+                success=False,
+                recipe_path=str(recipe_path),
+                sections_updated=[],
+                message=f"Failed to load recipe: {str(e)}"
+            )
+
+        # Apply updates
+        sections_updated = []
+
+        if params.diagram_specs is not None:
+            recipe.diagram_specs = params.diagram_specs
+            sections_updated.append("diagram_specs")
+
+        if params.content_files is not None:
+            recipe.content_files = params.content_files
+            sections_updated.append("content_files")
+
+        if params.diagram_refs is not None:
+            recipe.diagram_refs = params.diagram_refs
+            sections_updated.append("diagram_refs")
+
+        if params.outputs is not None:
+            recipe.outputs = params.outputs
+            sections_updated.append("outputs")
+
+        if params.generation_notes is not None:
+            if recipe.generation_notes:
+                recipe.generation_notes.extend(params.generation_notes)
+            else:
+                recipe.generation_notes = params.generation_notes
+            sections_updated.append("generation_notes")
+
+        # Validate if requested
+        validation_result = None
+        if params.validate:
+            try:
+                ProcessedRecipe.model_validate(recipe.model_dump())
+                validation_result = {
+                    "valid": True,
+                    "errors": [],
+                    "warnings": []
+                }
+            except Exception as e:
+                validation_result = {
+                    "valid": False,
+                    "errors": [{"field": "recipe", "message": str(e)}],
+                    "warnings": []
+                }
+
+                return UpdateProcessedRecipeResponse(
+                    success=False,
+                    recipe_path=str(recipe_path),
+                    sections_updated=sections_updated,
+                    validation_result=validation_result,
+                    message=f"Validation failed after update: {str(e)}"
+                )
+
+        # Save updated recipe
+        try:
+            with open(recipe_path, "w") as f:
+                yaml.dump(
+                    recipe.model_dump(exclude_none=True),
+                    f,
+                    default_flow_style=False,
+                    sort_keys=False
+                )
+
+            return UpdateProcessedRecipeResponse(
+                success=True,
+                recipe_path=str(recipe_path),
+                sections_updated=sections_updated,
+                validation_result=validation_result,
+                message=f"Updated {len(sections_updated)} sections"
+            )
+
+        except Exception as e:
+            return UpdateProcessedRecipeResponse(
+                success=False,
+                recipe_path=str(recipe_path),
+                sections_updated=[],
+                message=f"Failed to save updates: {str(e)}"
+            )
+
+    @server.tool()
+    async def validate_processed_recipe(params: ValidateProcessedRecipeParams) -> MCPValidationResult:
+        """Validate a processed recipe file or content.
+
+        Performs comprehensive validation including cross-references between
+        diagram specs, refs, and content files.
+
+        Args:
+            params: Either a recipe path or content to validate
+
+        Returns:
+            MCPValidationResult with validation status and errors/warnings
+        """
+        start_time = time.time()
+        errors = []
+        warnings = []
+
+        # Load recipe content
+        if params.recipe_path:
+            recipe_path = Path(params.recipe_path)
+            if not recipe_path.exists():
+                duration_ms = (time.time() - start_time) * 1000
+                return MCPValidationResult(
+                    valid=False,
+                    errors=[MCPValidationError(
+                        field="recipe_path",
+                        message=f"Recipe not found: {recipe_path}",
+                        error_type="not_found",
+                        suggestion="Check the file path"
+                    )],
+                    warnings=[],
+                    duration_ms=duration_ms
+                )
+
+            try:
+                with open(recipe_path) as f:
+                    content = yaml.safe_load(f)
+            except Exception as e:
+                duration_ms = (time.time() - start_time) * 1000
+                return MCPValidationResult(
+                    valid=False,
+                    errors=[MCPValidationError(
+                        field="file",
+                        message=f"Failed to read recipe: {str(e)}",
+                        error_type="io_error",
+                        suggestion="Check file format and permissions"
+                    )],
+                    warnings=[],
+                    duration_ms=duration_ms
+                )
+        else:
+            content = params.content.model_dump() if params.content else {}
+
+        # Validate with Pydantic
+        try:
+            recipe = ProcessedRecipe.model_validate(content)
+
+            # Additional validation checks
+            if len(recipe.diagram_specs) > 50:
+                warnings.append("Recipe has more than 50 diagrams, may impact performance")
+
+            # Check for orphaned diagrams
+            referenced_diagrams = set()
+            for content_file in recipe.content_files:
+                referenced_diagrams.update(content_file.diagram_refs or [])
+
+            for spec in recipe.diagram_specs:
+                if spec.id not in referenced_diagrams:
+                    warnings.append(f"Diagram '{spec.id}' is not referenced by any content file")
+
+            # Check generation age
+            if recipe.generated_at:
+                # generated_at is already a datetime after validation
+                gen_time = recipe.generated_at
+                from datetime import timezone as tz
+                age_days = (datetime.now(gen_time.tzinfo or tz.utc) - gen_time).days
+                if age_days > 30:
+                    warnings.append(f"Recipe was generated {age_days} days ago, consider regenerating")
+
+            duration_ms = (time.time() - start_time) * 1000
+
+            return MCPValidationResult(
+                valid=True,
+                errors=errors,
+                warnings=warnings,
+                duration_ms=duration_ms
+            )
+
+        except Exception as e:
+            duration_ms = (time.time() - start_time) * 1000
+            return MCPValidationResult(
+                valid=False,
+                errors=[MCPValidationError(
+                    field="recipe",
+                    message=str(e),
+                    error_type="validation",
+                    suggestion="Check recipe structure and required fields"
+                )],
+                warnings=warnings,
+                duration_ms=duration_ms
+            )

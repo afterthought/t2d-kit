@@ -1,0 +1,319 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Resources Contract",
+  "description": "Contract for MCP resources exposed by t2d-kit recipe manager",
+  "type": "object",
+  "properties": {
+    "resources": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/DiagramTypesResource"
+          },
+          {
+            "$ref": "#/definitions/RecipeListResource"
+          },
+          {
+            "$ref": "#/definitions/RecipeDetailResource"
+          },
+          {
+            "$ref": "#/definitions/RecipeSchemaResource"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "DiagramTypesResource": {
+      "type": "object",
+      "required": ["uri", "name", "diagram_types"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^diagram-types://$",
+          "description": "Resource URI for diagram types"
+        },
+        "name": {
+          "type": "string",
+          "const": "Available Diagram Types"
+        },
+        "description": {
+          "type": "string"
+        },
+        "mimeType": {
+          "type": "string",
+          "const": "application/json"
+        },
+        "diagram_types": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DiagramTypeInfo"
+          }
+        },
+        "total_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "categories": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "DiagramTypeInfo": {
+      "type": "object",
+      "required": ["type_id", "name", "framework", "description", "example_usage", "supported_frameworks"],
+      "properties": {
+        "type_id": {
+          "type": "string",
+          "description": "Unique identifier for the diagram type"
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name"
+        },
+        "framework": {
+          "type": "string",
+          "enum": ["mermaid", "d2", "plantuml"],
+          "description": "Recommended framework"
+        },
+        "description": {
+          "type": "string",
+          "description": "What this diagram type is used for"
+        },
+        "example_usage": {
+          "type": "string",
+          "description": "Example description for this type"
+        },
+        "supported_frameworks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["mermaid", "d2", "plantuml"]
+          },
+          "description": "All frameworks that support this type"
+        }
+      }
+    },
+    "RecipeListResource": {
+      "type": "object",
+      "required": ["uri", "name", "recipes", "total_count", "directory"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^recipes://$",
+          "description": "Resource URI for recipe list"
+        },
+        "name": {
+          "type": "string",
+          "const": "Recipe Collection"
+        },
+        "recipes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/RecipeSummary"
+          }
+        },
+        "total_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "directory": {
+          "type": "string",
+          "description": "Recipe directory path"
+        }
+      }
+    },
+    "RecipeSummary": {
+      "type": "object",
+      "required": ["name", "file_path", "created_at", "modified_at", "size_bytes", "diagram_count", "has_prd", "validation_status"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Recipe name"
+        },
+        "file_path": {
+          "type": "string",
+          "description": "Path to recipe file"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of creation"
+        },
+        "modified_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of last modification"
+        },
+        "size_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "File size in bytes"
+        },
+        "diagram_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of diagrams defined"
+        },
+        "has_prd": {
+          "type": "boolean",
+          "description": "Whether PRD content is included"
+        },
+        "validation_status": {
+          "type": "string",
+          "enum": ["valid", "invalid", "unknown"],
+          "description": "Validation status"
+        }
+      }
+    },
+    "RecipeDetailResource": {
+      "type": "object",
+      "required": ["uri", "name", "content", "raw_yaml", "file_path", "metadata"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^recipes://[a-zA-Z][a-zA-Z0-9_-]*$",
+          "description": "Resource URI for specific recipe"
+        },
+        "name": {
+          "type": "string"
+        },
+        "content": {
+          "type": "object",
+          "description": "Parsed YAML content"
+        },
+        "raw_yaml": {
+          "type": "string",
+          "description": "Raw YAML text"
+        },
+        "validation_result": {
+          "$ref": "#/definitions/ValidationResult"
+        },
+        "file_path": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/definitions/RecipeSummary"
+        }
+      }
+    },
+    "RecipeSchemaResource": {
+      "type": "object",
+      "required": ["uri", "name", "version", "fields", "examples", "validation_rules"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "pattern": "^recipe-schema://$",
+          "description": "Resource URI for recipe schema"
+        },
+        "name": {
+          "type": "string",
+          "const": "Recipe Schema"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Schema version"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SchemaField"
+          }
+        },
+        "examples": {
+          "type": "object",
+          "description": "Example recipes"
+        },
+        "validation_rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Validation rule descriptions"
+        }
+      }
+    },
+    "SchemaField": {
+      "type": "object",
+      "required": ["name", "type", "required", "description"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string"
+        },
+        "default": {},
+        "constraints": {
+          "type": "object"
+        },
+        "example": {}
+      }
+    },
+    "ValidationResult": {
+      "type": "object",
+      "required": ["valid", "errors", "warnings", "validated_at", "duration_ms"],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidationError"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "ValidationError": {
+      "type": "object",
+      "required": ["field", "message", "error_type"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field path that failed validation"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "error_type": {
+          "type": "string",
+          "description": "Error category"
+        },
+        "suggestion": {
+          "type": "string",
+          "description": "How to fix the error"
+        }
+      }
+    }
+  }
+}

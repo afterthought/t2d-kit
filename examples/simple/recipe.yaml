@@ -1,0 +1,144 @@
+recipe:
+  name: "E-commerce System"
+
+  # PRD content describing the system
+  prd:
+    content: |
+      # E-commerce System PRD
+
+      ## Overview
+      A simple e-commerce system that manages users and their orders. The system provides
+      basic functionality for user registration, authentication, product browsing, and order management.
+
+      ## Core Features
+      - User registration and authentication
+      - Product catalog management
+      - Shopping cart functionality
+      - Order processing and tracking
+      - Basic inventory management
+
+      ## System Components
+      - **User Service**: Handles user registration, authentication, and profile management
+      - **Product Service**: Manages product catalog, inventory, and pricing
+      - **Order Service**: Processes orders, manages order lifecycle, and handles payments
+      - **Database**: Stores user data, product information, and order records
+
+      ## User Stories
+      - As a customer, I want to register an account so I can place orders
+      - As a customer, I want to browse products so I can find items to purchase
+      - As a customer, I want to add products to my cart so I can review before ordering
+      - As a customer, I want to place orders so I can purchase products
+      - As an admin, I want to manage products so I can maintain the catalog
+
+      ## Data Models
+
+      ### User
+      - id (primary key)
+      - email (unique)
+      - password_hash
+      - first_name
+      - last_name
+      - created_at
+      - updated_at
+
+      ### Product
+      - id (primary key)
+      - name
+      - description
+      - price
+      - inventory_count
+      - category_id
+      - created_at
+      - updated_at
+
+      ### Order
+      - id (primary key)
+      - user_id (foreign key)
+      - status (pending, confirmed, shipped, delivered, cancelled)
+      - total_amount
+      - created_at
+      - updated_at
+
+      ### OrderItem
+      - id (primary key)
+      - order_id (foreign key)
+      - product_id (foreign key)
+      - quantity
+      - unit_price
+
+  # Instructions for diagram and documentation generation
+  instructions:
+    diagrams:
+      - type: "architecture"
+        description: "High-level system architecture showing the main services and their interactions"
+        framework: "d2"
+        details: |
+          Show the User Service, Product Service, Order Service, and Database as main components.
+          Include API Gateway for external access and show data flow between services.
+
+      - type: "erd"
+        description: "Entity Relationship Diagram showing database schema"
+        framework: "mermaid"
+        details: |
+          Include User, Product, Order, and OrderItem entities with their relationships.
+          Show primary keys, foreign keys, and key attributes for each entity.
+
+      - type: "sequence"
+        description: "Order placement flow sequence diagram"
+        framework: "mermaid"
+        details: |
+          Show the complete flow from user authentication, cart management, to order placement.
+          Include interactions between User Service, Product Service, and Order Service.
+
+    documentation:
+      style: "technical"
+      audience: "developers"
+      sections:
+        - "System Overview"
+        - "Architecture Design"
+        - "Data Models"
+        - "API Specifications"
+        - "Deployment Guide"
+      format: "mkdocs"
+
+  # Content files to be maintained by agents
+  content_files:
+    - id: overview
+      path: docs/overview.md
+      agent: markdown
+      description: "System overview and feature summary"
+
+    - id: architecture
+      path: docs/architecture.md
+      agent: mkdocs
+      description: "Detailed architecture documentation with embedded diagrams"
+
+    - id: api_specs
+      path: docs/api.md
+      agent: markdown
+      description: "API endpoint specifications and examples"
+
+    - id: slides
+      path: docs/presentation.md
+      agent: marp
+      description: "Executive presentation slides for stakeholders"
+
+  # Output configuration
+  outputs:
+    assets_dir: docs/assets
+
+    mkdocs:
+      config_file: mkdocs.yml
+      site_name: "E-commerce System Documentation"
+      content_refs:
+        - docs/overview.md
+        - docs/architecture.md
+        - docs/api.md
+      theme: material
+
+    marp:
+      slide_files:
+        - docs/presentation.md
+      theme: gaia
+      export_pdf: true
+      export_pptx: false

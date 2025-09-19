@@ -41,7 +41,7 @@ black .
 
 [tasks.test]
 description = "Run tests"
-run = "pytest tests/test_smoke.py tests/unit/test_user_recipe_fixed.py -v"
+run = "pytest tests/"
 
 [tasks.test-all]
 description = "Run all tests (including failing ones)"

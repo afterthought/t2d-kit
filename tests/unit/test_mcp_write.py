@@ -203,7 +203,7 @@ class TestMCPWriteProcessedRecipe:
             "outputs": {"assets_dir": "assets"},
         }
 
-        with patch("builtins.open", mock_open()) as mock_file, \
+        with patch("builtins.open", mock_open()), \
              patch("pathlib.Path.mkdir"):
 
             result = await _write_processed_recipe_impl("/tmp/minimal.yaml", minimal_data)
@@ -217,7 +217,7 @@ class TestMCPWriteProcessedRecipe:
         processed_data = self.create_valid_processed_data()
         file_path = "/tmp/deep/nested/path/recipe.yaml"
 
-        with patch("builtins.open", mock_open()) as mock_file, \
+        with patch("builtins.open", mock_open()), \
              patch("pathlib.Path.mkdir") as mock_mkdir:
 
             result = await _write_processed_recipe_impl(file_path, processed_data)
@@ -230,7 +230,7 @@ class TestMCPWriteProcessedRecipe:
         """Test that YAML is properly formatted."""
         processed_data = self.create_valid_processed_data()
 
-        with patch("builtins.open", mock_open()) as mock_file, \
+        with patch("builtins.open", mock_open()), \
              patch("pathlib.Path.mkdir"), \
              patch("yaml.safe_dump") as mock_yaml_dump:
 

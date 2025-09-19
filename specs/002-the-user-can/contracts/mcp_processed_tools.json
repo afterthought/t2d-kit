@@ -1,0 +1,461 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MCP Processed Recipe Tools Contract",
+  "description": "Contract for MCP tools managing processed recipes in t2d-kit",
+  "type": "object",
+  "properties": {
+    "tools": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/WriteProcessedRecipeTool"
+          },
+          {
+            "$ref": "#/definitions/UpdateProcessedRecipeTool"
+          },
+          {
+            "$ref": "#/definitions/ValidateProcessedRecipeTool"
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "WriteProcessedRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "write_processed_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Write a complete processed recipe file (recipe.t2d.yaml) with detailed diagram specifications and content file definitions."
+        },
+        "parameters": {
+          "$ref": "#/definitions/WriteProcessedRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/WriteProcessedRecipeResponse"
+        }
+      }
+    },
+    "WriteProcessedRecipeParams": {
+      "type": "object",
+      "required": ["recipe_path", "content"],
+      "properties": {
+        "recipe_path": {
+          "type": "string",
+          "description": "Path to save the processed recipe (usually recipe.t2d.yaml)"
+        },
+        "content": {
+          "$ref": "#/definitions/ProcessedRecipeContent"
+        },
+        "validate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate before writing"
+        }
+      }
+    },
+    "ProcessedRecipeContent": {
+      "type": "object",
+      "required": ["name", "version", "source_recipe", "generated_at", "content_files", "diagram_specs", "diagram_refs", "outputs"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
+        "source_recipe": {
+          "type": "string",
+          "description": "Source user recipe path"
+        },
+        "generated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "content_files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/ContentFile"
+          }
+        },
+        "diagram_specs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/DiagramSpecification"
+          }
+        },
+        "diagram_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/DiagramReference"
+          }
+        },
+        "outputs": {
+          "$ref": "#/definitions/OutputConfig"
+        },
+        "generation_notes": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "DiagramSpecification": {
+      "type": "object",
+      "required": ["id", "type", "framework", "agent", "title", "instructions", "output_file", "output_formats"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique diagram identifier"
+        },
+        "type": {
+          "type": "string",
+          "description": "Diagram type"
+        },
+        "framework": {
+          "type": "string",
+          "enum": ["mermaid", "d2", "plantuml"],
+          "description": "Target framework"
+        },
+        "agent": {
+          "type": "string",
+          "pattern": "^t2d-[a-z0-9-]+$",
+          "description": "Agent responsible for generation"
+        },
+        "title": {
+          "type": "string",
+          "description": "Diagram title"
+        },
+        "instructions": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Generation instructions"
+        },
+        "output_file": {
+          "type": "string",
+          "description": "Output file path"
+        },
+        "output_formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["svg", "png", "pdf"]
+          },
+          "description": "Output formats"
+        },
+        "options": {
+          "type": ["object", "null"],
+          "description": "Framework-specific options"
+        }
+      }
+    },
+    "ContentFile": {
+      "type": "object",
+      "required": ["id", "path", "type", "agent", "base_prompt", "last_updated"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Content file identifier"
+        },
+        "path": {
+          "type": "string",
+          "description": "File path"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["documentation", "presentation"],
+          "description": "Content type"
+        },
+        "agent": {
+          "type": "string",
+          "pattern": "^t2d-[a-z0-9-]+$",
+          "description": "Agent responsible for maintenance"
+        },
+        "base_prompt": {
+          "type": "string",
+          "description": "Base prompt for content generation"
+        },
+        "diagram_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Referenced diagram IDs"
+        },
+        "title": {
+          "type": ["string", "null"],
+          "description": "Content title"
+        },
+        "last_updated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of last update"
+        }
+      }
+    },
+    "DiagramReference": {
+      "type": "object",
+      "required": ["id", "title", "type", "expected_path", "status"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Diagram identifier"
+        },
+        "title": {
+          "type": "string",
+          "description": "Diagram title"
+        },
+        "type": {
+          "type": "string",
+          "description": "Diagram type"
+        },
+        "expected_path": {
+          "type": "string",
+          "description": "Expected output path"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["pending", "generating", "complete", "failed"],
+          "description": "Generation status"
+        }
+      }
+    },
+    "OutputConfig": {
+      "type": "object",
+      "required": ["assets_dir"],
+      "properties": {
+        "assets_dir": {
+          "type": "string",
+          "description": "Directory for generated assets"
+        },
+        "mkdocs": {
+          "type": ["object", "null"],
+          "description": "MkDocs configuration"
+        },
+        "marp": {
+          "type": ["object", "null"],
+          "description": "Marp presentation config"
+        }
+      }
+    },
+    "WriteProcessedRecipeResponse": {
+      "type": "object",
+      "required": ["success", "recipe_path", "validation_result", "message"],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "recipe_path": {
+          "type": "string"
+        },
+        "validation_result": {
+          "$ref": "#/definitions/ValidationResult"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "UpdateProcessedRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "update_processed_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Update specific sections of an existing processed recipe file. Allows partial updates without rewriting the entire file."
+        },
+        "parameters": {
+          "$ref": "#/definitions/UpdateProcessedRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/UpdateProcessedRecipeResponse"
+        }
+      }
+    },
+    "UpdateProcessedRecipeParams": {
+      "type": "object",
+      "required": ["recipe_path"],
+      "properties": {
+        "recipe_path": {
+          "type": "string",
+          "description": "Path to the processed recipe file to update"
+        },
+        "diagram_specs": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/definitions/DiagramSpecification"
+          },
+          "description": "Updated diagram specifications"
+        },
+        "content_files": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/definitions/ContentFile"
+          },
+          "description": "Updated content file specifications"
+        },
+        "diagram_refs": {
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/definitions/DiagramReference"
+          },
+          "description": "Updated diagram references"
+        },
+        "outputs": {
+          "oneOf": [
+            {"$ref": "#/definitions/OutputConfig"},
+            {"type": "null"}
+          ],
+          "description": "Updated output configuration"
+        },
+        "generation_notes": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional generation notes"
+        },
+        "validate": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate after update"
+        }
+      }
+    },
+    "UpdateProcessedRecipeResponse": {
+      "type": "object",
+      "required": ["success", "recipe_path", "sections_updated", "message"],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "recipe_path": {
+          "type": "string"
+        },
+        "sections_updated": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validation_result": {
+          "oneOf": [
+            {"$ref": "#/definitions/ValidationResult"},
+            {"type": "null"}
+          ]
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "ValidateProcessedRecipeTool": {
+      "type": "object",
+      "required": ["name", "description", "parameters", "returns"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "validate_processed_recipe"
+        },
+        "description": {
+          "type": "string",
+          "const": "Validate a processed recipe file or content. Checks structure, references, and consistency."
+        },
+        "parameters": {
+          "$ref": "#/definitions/ValidateProcessedRecipeParams"
+        },
+        "returns": {
+          "$ref": "#/definitions/ValidationResult"
+        }
+      }
+    },
+    "ValidateProcessedRecipeParams": {
+      "type": "object",
+      "properties": {
+        "recipe_path": {
+          "type": ["string", "null"],
+          "description": "Path to processed recipe file to validate"
+        },
+        "content": {
+          "oneOf": [
+            {"$ref": "#/definitions/ProcessedRecipeContent"},
+            {"type": "null"}
+          ],
+          "description": "Processed recipe content to validate directly"
+        }
+      },
+      "oneOf": [
+        {"required": ["recipe_path"]},
+        {"required": ["content"]}
+      ]
+    },
+    "ValidationResult": {
+      "type": "object",
+      "required": ["valid", "errors", "warnings", "validated_at", "duration_ms"],
+      "properties": {
+        "valid": {
+          "type": "boolean"
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ValidationError"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "validated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "ValidationError": {
+      "type": "object",
+      "required": ["field", "message", "error_type"],
+      "properties": {
+        "field": {
+          "type": "string",
+          "description": "Field path that failed validation"
+        },
+        "message": {
+          "type": "string",
+          "description": "Error message"
+        },
+        "error_type": {
+          "type": "string",
+          "description": "Error category"
+        },
+        "suggestion": {
+          "type": ["string", "null"],
+          "description": "How to fix the error"
+        }
+      }
+    }
+  }
+}

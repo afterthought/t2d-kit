@@ -1,6 +1,7 @@
 """T016: UserRecipe model with enhanced validation."""
 
 import re
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -186,3 +187,134 @@ class UserRecipe(T2DBaseModel):
         if not self.instructions.diagrams:
             raise ValueError("Recipe must specify at least one diagram type")
         return self
+
+
+# MCP Tool Parameter Models
+from typing import Annotated, Dict, List, Optional
+
+
+class CreateRecipeParams(T2DBaseModel):
+    """Parameters for create_user_recipe MCP tool."""
+
+    name: Annotated[str, Field(
+        pattern=r"^[a-zA-Z][a-zA-Z0-9_-]*$",
+        min_length=1,
+        max_length=100,
+        description="Recipe name (used as filename)"
+    )]
+    prd_content: Annotated[str | None, Field(
+        None,
+        max_length=1048576,
+        description="PRD content to embed in recipe (max 1MB)"
+    )]
+    prd_file_path: Annotated[str | None, Field(
+        None,
+        description="Path to external PRD file (alternative to prd_content)"
+    )]
+    diagrams: Annotated[list[DiagramRequest], Field(
+        min_length=1,
+        description="List of diagram specifications"
+    )]
+    documentation_config: Annotated[DocumentationInstructions | None, Field(
+        None,
+        description="Optional documentation generation settings"
+    )]
+    output_dir: Annotated[str, Field(
+        "./recipes",
+        description="Directory to save the recipe file"
+    )]
+
+    @model_validator(mode="after")
+    def validate_prd_source(self) -> "CreateRecipeParams":
+        """Ensure exactly one PRD source."""
+        if not self.prd_content and not self.prd_file_path:
+            raise ValueError("Must provide either prd_content or prd_file_path")
+        if self.prd_content and self.prd_file_path:
+            raise ValueError("Cannot provide both prd_content and prd_file_path")
+        return self
+
+
+class EditRecipeParams(T2DBaseModel):
+    """Parameters for edit_user_recipe MCP tool."""
+
+    name: Annotated[str, Field(description="Recipe name to edit")]
+    prd_content: Annotated[str | None, Field(None, description="New PRD content")]
+    prd_file_path: Annotated[str | None, Field(None, description="New PRD file path")]
+    diagrams: Annotated[list[DiagramRequest] | None, Field(None, description="New diagram specifications")]
+    documentation_config: Annotated[DocumentationInstructions | None, Field(None, description="New documentation settings")]
+    validate_before_save: Annotated[bool, Field(True, description="Validate recipe before saving")]
+
+
+class ValidateRecipeParams(T2DBaseModel):
+    """Parameters for validate_user_recipe MCP tool."""
+
+    name: Annotated[str | None, Field(None, description="Recipe name to validate from filesystem")]
+    content: Annotated[UserRecipe | None, Field(None, description="Recipe content to validate directly")]
+
+    @model_validator(mode="after")
+    def validate_params(self) -> "ValidateRecipeParams":
+        """Ensure at least one is provided."""
+        if not self.name and not self.content:
+            raise ValueError("Must provide either name or content to validate")
+        return self
+
+
+class DeleteRecipeParams(T2DBaseModel):
+    """Parameters for delete_user_recipe MCP tool."""
+
+    name: Annotated[str, Field(description="Recipe name to delete")]
+    confirm: Annotated[bool, Field(
+        False,
+        description="Confirmation flag (must be true to delete)"
+    )]
+
+
+# Response Models for MCP
+
+class MCPValidationError(T2DBaseModel):
+    """Validation error detail for MCP responses."""
+
+    field: str = Field(..., description="Field path that failed validation")
+    message: str = Field(..., description="Error message")
+    error_type: str = Field(..., description="Error category")
+    suggestion: str | None = Field(None, description="How to fix the error")
+
+
+class MCPValidationResult(T2DBaseModel):
+    """Result of recipe validation for MCP."""
+
+    valid: bool
+    errors: list[MCPValidationError] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+    validated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat().replace("+00:00", "Z"))
+    duration_ms: float = Field(..., ge=0, description="Validation duration in milliseconds")
+
+
+class CreateRecipeResponse(T2DBaseModel):
+    """Response after creating a recipe."""
+
+    success: bool
+    recipe_name: str
+    file_path: str
+    validation_result: MCPValidationResult
+    message: str
+
+
+class EditRecipeResponse(T2DBaseModel):
+    """Response after editing a recipe."""
+
+    success: bool
+    recipe_name: str
+    file_path: str
+    changes_applied: dict[str, Any]
+    validation_result: MCPValidationResult | None = None
+    message: str
+
+
+class DeleteRecipeResponse(T2DBaseModel):
+    """Response after deleting a recipe."""
+
+    success: bool
+    recipe_name: str
+    file_path: str
+    message: str

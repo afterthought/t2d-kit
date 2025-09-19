@@ -18,7 +18,22 @@ class ContentFile(T2DBaseModel):
     base_prompt: InstructionsField
     diagram_refs: list[str] = Field(default_factory=list)
     title: NameField | None = None
-    last_updated: datetime
+    last_updated: datetime | str
+
+    @field_validator("last_updated")
+    @classmethod
+    def validate_last_updated(cls, v: datetime | str) -> datetime:
+        """Convert string to datetime if needed."""
+        if isinstance(v, str):
+            try:
+                # Handle ISO format with Z suffix
+                if v.endswith("Z"):
+                    v = v[:-1] + "+00:00"
+                from datetime import timezone
+                v = datetime.fromisoformat(v)
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Invalid datetime format: {v}") from e
+        return v
 
     @field_validator("path")
     @classmethod

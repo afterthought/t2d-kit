@@ -1,246 +1,72 @@
-"""FastMCP server implementation for t2d-kit.
+"""Main MCP server for t2d-kit."""
 
-This module provides MCP tools for recipe management and processing.
-"""
-
+import asyncio
+import os
+import sys
 from pathlib import Path
-from typing import Any
+from typing import Optional
 
-import yaml
 from fastmcp import FastMCP
-from pydantic import ValidationError
 
-from t2d_kit.models import (
-    ProcessedRecipe,
-    UserRecipe,
-)
-
-# T025: Create FastMCP server initialization
-mcp = FastMCP("t2d-kit")
+from .resources import register_resources
+from .tools import register_tools
 
 
-# T026: Implement read_user_recipe MCP tool
-@mcp.tool()
-async def read_user_recipe(file_path: str) -> dict[str, Any]:
-    """Read and validate a user recipe YAML file.
+def create_server(
+    recipe_dir: Path | None = None,
+    processed_dir: Path | None = None
+) -> FastMCP:
+    """Create and configure the MCP server.
 
     Args:
-        file_path: Path to the recipe.yaml file
+        recipe_dir: Directory for user recipes (defaults to ./recipes)
+        processed_dir: Directory for processed recipes (defaults to ./.t2d-state/processed)
 
     Returns:
-        Dict containing the validated user recipe data
-
-    Raises:
-        FileNotFoundError: If the recipe file doesn't exist
-        ValidationError: If the recipe data is invalid
+        Configured FastMCP server instance
     """
-    path = Path(file_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Recipe file not found: {file_path}")
+    # Create server with descriptive metadata
+    server = FastMCP("t2d-kit")
 
-    with open(path) as f:
-        recipe_data = yaml.safe_load(f)
+    # Set default directories
+    if recipe_dir is None:
+        recipe_dir = Path("./recipes")
+    if processed_dir is None:
+        processed_dir = Path("./.t2d-state/processed")
 
-    # Validate using Pydantic model
-    try:
-        recipe = UserRecipe(**recipe_data)
-        return recipe.model_dump()
-    except ValidationError as e:
-        return {"error": "Recipe validation failed", "details": e.errors()}
+    # Register components asynchronously
+    async def setup():
+        await register_resources(server, recipe_dir, processed_dir)
+        await register_tools(server, recipe_dir, processed_dir)
+
+    # Run setup
+    asyncio.run(setup())
+
+    return server
 
 
-# T027: Implement write_processed_recipe MCP tool
+def main():
+    """Main entry point for the MCP server.
 
-async def _write_processed_recipe_impl(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
-    """Implementation of write_processed_recipe that can be tested independently.
-
-    Args:
-        file_path: Path where recipe.t2d.yaml will be written
-        processed_data: The processed recipe data to write
-
-    Returns:
-        Dict with success status and file path
-
-    Raises:
-        ValidationError: If the processed data is invalid
+    This function is called when the server is run in stdio mode
+    by Claude Desktop or other MCP clients.
     """
-    # Validate the processed data
-    try:
-        recipe = ProcessedRecipe(**processed_data)
-    except ValidationError as e:
-        return {"error": "Processed recipe validation failed", "details": e.errors()}
+    # Get configuration from environment variables
+    recipe_dir = os.environ.get("T2D_RECIPE_DIR")
+    processed_dir = os.environ.get("T2D_PROCESSED_DIR")
 
-    path = Path(file_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
+    # Convert to Path objects if provided
+    if recipe_dir:
+        recipe_dir = Path(recipe_dir)
+    if processed_dir:
+        processed_dir = Path(processed_dir)
 
-    # Write as YAML
-    with open(path, "w") as f:
-        yaml.safe_dump(
-            recipe.model_dump(exclude_none=True),
-            f,
-            default_flow_style=False,
-            sort_keys=False,
-            width=120,
-        )
+    # Create and run server
+    server = create_server(recipe_dir, processed_dir)
 
-    return {
-        "success": True,
-        "file_path": str(path.absolute()),
-        "message": f"Processed recipe written to {path}",
-    }
+    # Run in stdio mode for Claude Desktop
+    server.run()
 
 
-@mcp.tool()
-async def write_processed_recipe(file_path: str, processed_data: dict[str, Any]) -> dict[str, Any]:
-    """Write a processed recipe to a YAML file.
-
-    Args:
-        file_path: Path where recipe.t2d.yaml will be written
-        processed_data: The processed recipe data to write
-
-    Returns:
-        Dict with success status and file path
-
-    Raises:
-        ValidationError: If the processed data is invalid
-    """
-    return await _write_processed_recipe_impl(file_path, processed_data)
-
-
-# T028: Implement read_processed_recipe MCP tool
-@mcp.tool()
-async def read_processed_recipe(file_path: str) -> dict[str, Any]:
-    """Read a processed recipe from a YAML file.
-
-    Args:
-        file_path: Path to the recipe.t2d.yaml file
-
-    Returns:
-        Dict containing the processed recipe data
-
-    Raises:
-        FileNotFoundError: If the recipe file doesn't exist
-        ValidationError: If the recipe data is invalid
-    """
-    path = Path(file_path)
-    if not path.exists():
-        raise FileNotFoundError(f"Processed recipe not found: {file_path}")
-
-    with open(path) as f:
-        recipe_data = yaml.safe_load(f)
-
-    try:
-        recipe = ProcessedRecipe(**recipe_data)
-        return recipe.model_dump()
-    except ValidationError as e:
-        return {"error": "Processed recipe validation failed", "details": e.errors()}
-
-
-# T029: Implement validate_recipe MCP tool
-@mcp.tool()
-async def validate_recipe(recipe_data: dict[str, Any], recipe_type: str = "user") -> dict[str, Any]:
-    """Validate a recipe without reading/writing files.
-
-    Args:
-        recipe_data: The recipe data to validate
-        recipe_type: Either "user" or "processed"
-
-    Returns:
-        Dict with validation status and any errors
-    """
-    try:
-        if recipe_type == "user":
-            UserRecipe(**recipe_data)  # Validate the recipe
-            return {"valid": True, "type": "user", "message": "User recipe is valid"}
-        elif recipe_type == "processed":
-            ProcessedRecipe(**recipe_data)  # Validate the recipe
-            return {"valid": True, "type": "processed", "message": "Processed recipe is valid"}
-        else:
-            return {"valid": False, "error": f"Unknown recipe type: {recipe_type}"}
-    except ValidationError as e:
-        return {"valid": False, "type": recipe_type, "errors": e.errors()}
-
-
-# T046: Implement recipe file watching
-@mcp.tool()
-async def watch_recipe_changes(directory: str = ".") -> dict[str, Any]:
-    """Watch for changes to recipe files in a directory.
-
-    Args:
-        directory: Directory to watch for recipe files
-
-    Returns:
-        Dict with list of recipe files found
-    """
-    import time
-    from pathlib import Path
-
-    watch_dir = Path(directory)
-    recipe_files: list[Path] = []
-
-    # Find all recipe files
-    for pattern in ["recipe.yaml", "recipe.yml", "recipe.t2d.yaml", "recipe.t2d.yml"]:
-        recipe_files.extend(watch_dir.glob(f"**/{pattern}"))
-
-    # Get modification times
-    file_info = []
-    for file in recipe_files:
-        stat = file.stat()
-        file_info.append(
-            {
-                "path": str(file.relative_to(watch_dir)),
-                "modified": time.ctime(stat.st_mtime),
-                "size": stat.st_size,
-            }
-        )
-
-    return {
-        "directory": str(watch_dir.absolute()),
-        "recipe_count": len(recipe_files),
-        "recipes": file_info,
-    }
-
-
-@mcp.resource("recipe://example/simple")
-async def example_recipe() -> str:
-    """Provide an example user recipe."""
-    example = {
-        "recipe": {
-            "name": "Example System",
-            "prd": {"content": "A simple system with users and orders..."},
-            "instructions": {
-                "diagrams": [
-                    {"type": "architecture", "description": "System architecture overview"}
-                ],
-                "documentation": {"style": "technical", "audience": "developers"},
-            },
-        }
-    }
-    return yaml.safe_dump(example, default_flow_style=False)
-
-
-def serve():
-    """Serve the MCP server."""
-    # T044: Connect MCP server to Claude Desktop config detection
-    import sys
-    from pathlib import Path
-
-    # Check for Claude Desktop config
-    claude_config_paths = [
-        Path.home() / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json",
-        Path.home() / ".config" / "Claude" / "claude_desktop_config.json",
-        Path.home() / "AppData" / "Roaming" / "Claude" / "claude_desktop_config.json",
-    ]
-
-    config_found = any(p.exists() for p in claude_config_paths)
-
-    if config_found and sys.stdout.isatty():
-        # Running in terminal but Claude Desktop config exists
-        print("Claude Desktop configuration detected.", file=sys.stderr)
-        print("To use with Claude Desktop, add to your config:", file=sys.stderr)
-        print('  "t2d-kit": {', file=sys.stderr)
-        print('    "command": "t2d",', file=sys.stderr)
-        print('    "args": ["mcp", "."]', file=sys.stderr)
-        print("  }", file=sys.stderr)
-
-    mcp.run()
+if __name__ == "__main__":
+    main()

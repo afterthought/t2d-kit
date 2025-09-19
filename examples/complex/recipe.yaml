@@ -1,0 +1,710 @@
+# Complex Microservices E-Commerce Platform Recipe
+# This recipe demonstrates advanced t2d-kit capabilities for a comprehensive system
+
+name: "E-Commerce Microservices Platform"
+description: "A complete microservices-based e-commerce platform with comprehensive documentation and diagrams"
+version: "1.0.0"
+
+# Comprehensive Product Requirements Document
+prd:
+  title: "MegaStore - Cloud-Native E-Commerce Platform"
+
+  overview: |
+    MegaStore is a scalable, cloud-native e-commerce platform designed to handle high-volume retail operations.
+    The system supports multi-tenant architecture, real-time inventory management, advanced analytics,
+    and seamless integration with third-party services.
+
+  business_objectives:
+    - "Achieve 99.9% uptime for critical customer-facing services"
+    - "Support 10,000+ concurrent users during peak shopping periods"
+    - "Enable sub-100ms response times for product catalog queries"
+    - "Provide real-time inventory synchronization across all channels"
+    - "Implement comprehensive fraud detection and prevention"
+    - "Support multiple payment methods and currencies"
+
+  target_audience:
+    primary: "Online retail customers seeking seamless shopping experiences"
+    secondary:
+      - "Retail business owners requiring enterprise-grade e-commerce solutions"
+      - "Third-party vendors and suppliers integrating with the platform"
+      - "Customer service representatives managing orders and support"
+
+  functional_requirements:
+    user_management:
+      - "User registration and authentication with OAuth2/OIDC support"
+      - "Profile management with preferences and order history"
+      - "Role-based access control for customers, vendors, and administrators"
+      - "Multi-factor authentication for enhanced security"
+
+    product_catalog:
+      - "Hierarchical product categorization with faceted search"
+      - "Real-time inventory tracking with low-stock alerts"
+      - "Product recommendations using machine learning algorithms"
+      - "Multi-language and multi-currency support"
+      - "Product reviews and ratings system"
+
+    shopping_cart:
+      - "Persistent cart across devices and sessions"
+      - "Promotional code and discount application"
+      - "Saved items and wishlist functionality"
+      - "Cart abandonment recovery workflows"
+
+    order_management:
+      - "Order placement with real-time inventory validation"
+      - "Order status tracking with notifications"
+      - "Returns and refunds processing"
+      - "Bulk order management for B2B customers"
+
+    payment_processing:
+      - "Multiple payment gateway integrations (Stripe, PayPal, etc.)"
+      - "Tokenized payment storage for repeat customers"
+      - "Fraud detection and risk assessment"
+      - "PCI DSS compliance for secure payment handling"
+
+    shipping_logistics:
+      - "Integration with multiple shipping providers"
+      - "Real-time shipping rate calculation"
+      - "Package tracking and delivery notifications"
+      - "International shipping with customs documentation"
+
+  non_functional_requirements:
+    performance:
+      - "API response times under 100ms for 95th percentile"
+      - "Database query optimization for sub-50ms response times"
+      - "CDN integration for static asset delivery"
+      - "Horizontal scaling capabilities for traffic spikes"
+
+    security:
+      - "End-to-end encryption for sensitive data"
+      - "Regular security audits and penetration testing"
+      - "GDPR and CCPA compliance for data privacy"
+      - "Rate limiting and DDoS protection"
+
+    reliability:
+      - "99.9% uptime SLA with automated failover"
+      - "Disaster recovery with RPO < 1 hour, RTO < 4 hours"
+      - "Circuit breaker patterns for service resilience"
+      - "Comprehensive monitoring and alerting"
+
+    scalability:
+      - "Auto-scaling based on CPU, memory, and custom metrics"
+      - "Database sharding for horizontal data scaling"
+      - "Event-driven architecture for loose coupling"
+      - "Caching strategies at multiple layers"
+
+  technical_architecture:
+    microservices:
+      - "User Service: Authentication, profiles, preferences"
+      - "Product Service: Catalog management, search, recommendations"
+      - "Inventory Service: Stock tracking, reservations, replenishment"
+      - "Cart Service: Shopping cart persistence and management"
+      - "Order Service: Order processing, status tracking, history"
+      - "Payment Service: Payment processing, tokenization, fraud detection"
+      - "Shipping Service: Logistics, tracking, delivery management"
+      - "Notification Service: Email, SMS, push notifications"
+      - "Analytics Service: User behavior, sales metrics, reporting"
+      - "Admin Service: Dashboard, configuration, user management"
+
+    data_stores:
+      - "PostgreSQL: Transactional data (users, orders, payments)"
+      - "MongoDB: Product catalog and content management"
+      - "Redis: Caching, session storage, real-time data"
+      - "Elasticsearch: Search indexing and analytics"
+      - "InfluxDB: Time-series metrics and monitoring data"
+
+    messaging:
+      - "Apache Kafka: Event streaming and service communication"
+      - "RabbitMQ: Task queues and reliable message delivery"
+      - "WebSocket: Real-time user notifications"
+
+    infrastructure:
+      - "Kubernetes: Container orchestration and service mesh"
+      - "Istio: Service mesh for traffic management and security"
+      - "Prometheus + Grafana: Monitoring and observability"
+      - "ELK Stack: Centralized logging and analysis"
+      - "HashiCorp Vault: Secrets management"
+
+  api_specifications:
+    rest_endpoints:
+      - "GET /api/v1/products - Product catalog with filtering"
+      - "POST /api/v1/cart/items - Add items to cart"
+      - "POST /api/v1/orders - Create new order"
+      - "GET /api/v1/orders/{id}/status - Order status tracking"
+      - "POST /api/v1/payments - Process payment"
+
+    websocket_events:
+      - "inventory.updated - Real-time stock changes"
+      - "order.status_changed - Order status notifications"
+      - "cart.abandoned - Cart abandonment triggers"
+
+    async_events:
+      - "user.registered - New user onboarding"
+      - "order.placed - Order fulfillment workflow"
+      - "payment.completed - Order confirmation"
+      - "shipment.tracking - Delivery updates"
+
+  success_metrics:
+    business_kpis:
+      - "Conversion rate: Target 3.5% from current 2.1%"
+      - "Average order value: Increase by 15% year-over-year"
+      - "Customer lifetime value: Improve retention by 20%"
+      - "Cart abandonment rate: Reduce from 70% to 60%"
+
+    technical_kpis:
+      - "API availability: 99.9% uptime"
+      - "Response time: 95th percentile under 100ms"
+      - "Error rate: Less than 0.1% of requests"
+      - "Time to recovery: Under 5 minutes for critical incidents"
+
+# Multiple diagram types showcasing different architectural views
+diagrams:
+  # C4 Context Diagram - System overview
+  - type: "c4_context"
+    title: "MegaStore System Context"
+    description: "High-level view of the e-commerce platform and its external interactions"
+    elements:
+      - name: "Customer"
+        type: "person"
+        description: "Online shoppers using the platform"
+      - name: "MegaStore Platform"
+        type: "system"
+        description: "Cloud-native e-commerce platform"
+      - name: "Payment Gateways"
+        type: "external_system"
+        description: "Stripe, PayPal, and other payment processors"
+      - name: "Shipping Providers"
+        type: "external_system"
+        description: "FedEx, UPS, DHL logistics services"
+      - name: "Email Service"
+        type: "external_system"
+        description: "SendGrid for transactional emails"
+      - name: "Analytics Platform"
+        type: "external_system"
+        description: "Google Analytics and business intelligence"
+    relationships:
+      - from: "Customer"
+        to: "MegaStore Platform"
+        description: "Browse products, place orders"
+      - from: "MegaStore Platform"
+        to: "Payment Gateways"
+        description: "Process payments securely"
+      - from: "MegaStore Platform"
+        to: "Shipping Providers"
+        description: "Calculate rates, track shipments"
+
+  # C4 Container Diagram - Service architecture
+  - type: "c4_container"
+    title: "MegaStore Container Architecture"
+    description: "Microservices containers and their interactions"
+    elements:
+      - name: "Web Application"
+        type: "container"
+        technology: "React, TypeScript"
+        description: "Customer-facing web interface"
+      - name: "Mobile App"
+        type: "container"
+        technology: "React Native"
+        description: "iOS and Android applications"
+      - name: "API Gateway"
+        type: "container"
+        technology: "Kong, Istio"
+        description: "Request routing and rate limiting"
+      - name: "User Service"
+        type: "container"
+        technology: "Node.js, PostgreSQL"
+        description: "Authentication and user management"
+      - name: "Product Service"
+        type: "container"
+        technology: "Python, MongoDB"
+        description: "Product catalog and search"
+      - name: "Order Service"
+        type: "container"
+        technology: "Java Spring Boot, PostgreSQL"
+        description: "Order processing and management"
+      - name: "Payment Service"
+        type: "container"
+        technology: "Go, PostgreSQL"
+        description: "Secure payment processing"
+      - name: "Message Broker"
+        type: "container"
+        technology: "Apache Kafka"
+        description: "Event streaming platform"
+    relationships:
+      - from: "Web Application"
+        to: "API Gateway"
+        description: "HTTPS requests"
+      - from: "API Gateway"
+        to: "User Service"
+        description: "Authentication APIs"
+      - from: "Order Service"
+        to: "Message Broker"
+        description: "Publishes order events"
+
+  # Sequence Diagram - Order processing flow
+  - type: "sequence"
+    title: "Order Processing Workflow"
+    description: "End-to-end order placement and fulfillment sequence"
+    participants:
+      - "Customer"
+      - "Web App"
+      - "API Gateway"
+      - "Cart Service"
+      - "Inventory Service"
+      - "Order Service"
+      - "Payment Service"
+      - "Notification Service"
+      - "Kafka"
+    interactions:
+      - from: "Customer"
+        to: "Web App"
+        message: "Click checkout"
+      - from: "Web App"
+        to: "API Gateway"
+        message: "POST /api/v1/orders"
+      - from: "API Gateway"
+        to: "Cart Service"
+        message: "Get cart items"
+      - from: "Cart Service"
+        to: "API Gateway"
+        message: "Return cart data"
+      - from: "API Gateway"
+        to: "Inventory Service"
+        message: "Reserve inventory"
+      - from: "Inventory Service"
+        to: "API Gateway"
+        message: "Reservation confirmed"
+      - from: "API Gateway"
+        to: "Order Service"
+        message: "Create order"
+      - from: "Order Service"
+        to: "Payment Service"
+        message: "Process payment"
+      - from: "Payment Service"
+        to: "Order Service"
+        message: "Payment confirmed"
+      - from: "Order Service"
+        to: "Kafka"
+        message: "Publish order.completed event"
+      - from: "Kafka"
+        to: "Notification Service"
+        message: "Order confirmation trigger"
+      - from: "Notification Service"
+        to: "Customer"
+        message: "Send order confirmation email"
+
+  # State Diagram - Order lifecycle
+  - type: "state"
+    title: "Order State Transitions"
+    description: "Order status lifecycle and valid state transitions"
+    states:
+      - name: "Created"
+        description: "Order initially created, pending payment"
+        type: "initial"
+      - name: "Payment Pending"
+        description: "Awaiting payment confirmation"
+      - name: "Payment Failed"
+        description: "Payment processing failed"
+      - name: "Confirmed"
+        description: "Payment successful, order confirmed"
+      - name: "Processing"
+        description: "Order being prepared for shipment"
+      - name: "Shipped"
+        description: "Order dispatched to customer"
+      - name: "Delivered"
+        description: "Order successfully delivered"
+        type: "final"
+      - name: "Cancelled"
+        description: "Order cancelled by customer or system"
+        type: "final"
+      - name: "Refunded"
+        description: "Order refunded after delivery"
+        type: "final"
+    transitions:
+      - from: "Created"
+        to: "Payment Pending"
+        trigger: "initiate_payment"
+      - from: "Payment Pending"
+        to: "Confirmed"
+        trigger: "payment_successful"
+      - from: "Payment Pending"
+        to: "Payment Failed"
+        trigger: "payment_failed"
+      - from: "Payment Failed"
+        to: "Cancelled"
+        trigger: "auto_cancel"
+      - from: "Confirmed"
+        to: "Processing"
+        trigger: "start_fulfillment"
+      - from: "Processing"
+        to: "Shipped"
+        trigger: "package_dispatched"
+      - from: "Shipped"
+        to: "Delivered"
+        trigger: "delivery_confirmed"
+      - from: "Confirmed"
+        to: "Cancelled"
+        trigger: "customer_cancellation"
+      - from: "Delivered"
+        to: "Refunded"
+        trigger: "process_refund"
+
+  # Entity Relationship Diagram - Data model
+  - type: "erd"
+    title: "Core Data Model"
+    description: "Primary entities and relationships in the e-commerce domain"
+    entities:
+      - name: "User"
+        attributes:
+          - "id (PK)"
+          - "email"
+          - "password_hash"
+          - "first_name"
+          - "last_name"
+          - "created_at"
+          - "last_login"
+      - name: "Product"
+        attributes:
+          - "id (PK)"
+          - "sku"
+          - "name"
+          - "description"
+          - "price"
+          - "category_id (FK)"
+          - "created_at"
+          - "updated_at"
+      - name: "Category"
+        attributes:
+          - "id (PK)"
+          - "name"
+          - "parent_id (FK)"
+          - "slug"
+          - "sort_order"
+      - name: "Order"
+        attributes:
+          - "id (PK)"
+          - "user_id (FK)"
+          - "status"
+          - "total_amount"
+          - "currency"
+          - "created_at"
+          - "updated_at"
+      - name: "OrderItem"
+        attributes:
+          - "id (PK)"
+          - "order_id (FK)"
+          - "product_id (FK)"
+          - "quantity"
+          - "unit_price"
+          - "total_price"
+      - name: "Inventory"
+        attributes:
+          - "id (PK)"
+          - "product_id (FK)"
+          - "quantity_available"
+          - "quantity_reserved"
+          - "reorder_point"
+          - "last_updated"
+      - name: "Payment"
+        attributes:
+          - "id (PK)"
+          - "order_id (FK)"
+          - "amount"
+          - "currency"
+          - "gateway"
+          - "transaction_id"
+          - "status"
+          - "created_at"
+    relationships:
+      - from: "User"
+        to: "Order"
+        type: "one_to_many"
+        description: "User can have multiple orders"
+      - from: "Order"
+        to: "OrderItem"
+        type: "one_to_many"
+        description: "Order contains multiple items"
+      - from: "Product"
+        to: "OrderItem"
+        type: "one_to_many"
+        description: "Product can be in multiple orders"
+      - from: "Category"
+        to: "Product"
+        type: "one_to_many"
+        description: "Category contains multiple products"
+      - from: "Product"
+        to: "Inventory"
+        type: "one_to_one"
+        description: "Product has inventory record"
+      - from: "Order"
+        to: "Payment"
+        type: "one_to_many"
+        description: "Order can have multiple payment attempts"
+
+  # Deployment Diagram - Infrastructure architecture
+  - type: "deployment"
+    title: "Kubernetes Deployment Architecture"
+    description: "Production deployment topology on Kubernetes"
+    nodes:
+      - name: "Load Balancer"
+        type: "device"
+        technology: "AWS ALB"
+        description: "External traffic distribution"
+        artifacts:
+          - "SSL Termination"
+          - "Health Checks"
+      - name: "Kubernetes Cluster"
+        type: "execution_environment"
+        technology: "EKS"
+        description: "Container orchestration platform"
+        artifacts:
+          - "Istio Service Mesh"
+          - "Prometheus Monitoring"
+      - name: "Web Tier"
+        type: "node"
+        technology: "Kubernetes Pods"
+        description: "Frontend and API services"
+        artifacts:
+          - "React Web App"
+          - "API Gateway"
+          - "User Service"
+          - "Product Service"
+      - name: "Business Tier"
+        type: "node"
+        technology: "Kubernetes Pods"
+        description: "Core business logic services"
+        artifacts:
+          - "Order Service"
+          - "Payment Service"
+          - "Inventory Service"
+          - "Notification Service"
+      - name: "Data Tier"
+        type: "node"
+        technology: "Managed Services"
+        description: "Persistent data storage"
+        artifacts:
+          - "RDS PostgreSQL"
+          - "DocumentDB"
+          - "ElastiCache Redis"
+          - "OpenSearch"
+      - name: "Message Queue"
+        type: "node"
+        technology: "MSK"
+        description: "Event streaming platform"
+        artifacts:
+          - "Kafka Brokers"
+          - "Schema Registry"
+    connections:
+      - from: "Load Balancer"
+        to: "Kubernetes Cluster"
+        protocol: "HTTPS"
+      - from: "Web Tier"
+        to: "Business Tier"
+        protocol: "gRPC/HTTP"
+      - from: "Business Tier"
+        to: "Data Tier"
+        protocol: "TCP/TLS"
+      - from: "Business Tier"
+        to: "Message Queue"
+        protocol: "Kafka Protocol"
+
+# Comprehensive documentation generation
+documentation:
+  architecture_doc:
+    title: "System Architecture Documentation"
+    sections:
+      - "Executive Summary"
+      - "System Overview"
+      - "Microservices Architecture"
+      - "Data Architecture"
+      - "Security Architecture"
+      - "Deployment Strategy"
+      - "Monitoring and Observability"
+      - "Disaster Recovery"
+
+  api_documentation:
+    title: "API Reference Documentation"
+    format: "OpenAPI 3.0"
+    include_examples: true
+    authentication_schemes:
+      - "OAuth2"
+      - "API Key"
+    rate_limiting: true
+
+  deployment_guide:
+    title: "Deployment and Operations Guide"
+    environments:
+      - "Development"
+      - "Staging"
+      - "Production"
+    sections:
+      - "Infrastructure Prerequisites"
+      - "Kubernetes Configuration"
+      - "Database Migrations"
+      - "Environment Variables"
+      - "Monitoring Setup"
+      - "Backup and Recovery"
+
+  runbook:
+    title: "Operations Runbook"
+    sections:
+      - "Common Issues and Solutions"
+      - "Incident Response Procedures"
+      - "Performance Tuning"
+      - "Security Incident Handling"
+      - "Capacity Planning"
+
+# Professional presentation configuration
+presentation:
+  title: "MegaStore E-Commerce Platform"
+  subtitle: "Scalable Microservices Architecture"
+
+  slides:
+    - title: "Executive Overview"
+      content:
+        - "Business objectives and success metrics"
+        - "High-level system capabilities"
+        - "Technical architecture benefits"
+
+    - title: "System Context"
+      diagram: "c4_context"
+      content:
+        - "External system integrations"
+        - "User personas and workflows"
+        - "Compliance and security requirements"
+
+    - title: "Microservices Architecture"
+      diagram: "c4_container"
+      content:
+        - "Service decomposition strategy"
+        - "Technology stack decisions"
+        - "Inter-service communication patterns"
+
+    - title: "Order Processing Flow"
+      diagram: "sequence"
+      content:
+        - "End-to-end transaction workflow"
+        - "Error handling and rollback procedures"
+        - "Performance optimization points"
+
+    - title: "Data Architecture"
+      diagram: "erd"
+      content:
+        - "Domain model design"
+        - "Data consistency strategies"
+        - "Scaling and partitioning approaches"
+
+    - title: "Deployment Strategy"
+      diagram: "deployment"
+      content:
+        - "Kubernetes-native architecture"
+        - "Auto-scaling and load balancing"
+        - "Blue-green deployment process"
+
+    - title: "Monitoring and Observability"
+      content:
+        - "Application performance monitoring"
+        - "Distributed tracing implementation"
+        - "SLA monitoring and alerting"
+
+    - title: "Security Framework"
+      content:
+        - "Zero-trust network architecture"
+        - "Data encryption at rest and in transit"
+        - "Compliance with PCI DSS and GDPR"
+
+    - title: "Implementation Roadmap"
+      content:
+        - "Phase 1: Core services and MVP"
+        - "Phase 2: Advanced features and optimization"
+        - "Phase 3: Analytics and machine learning"
+
+  theme: "professional"
+  template: "corporate"
+  include_speaker_notes: true
+
+# Advanced preferences and configuration
+preferences:
+  diagram_style:
+    color_scheme: "corporate_blue"
+    font_family: "Inter"
+    layout_direction: "top_to_bottom"
+    show_legends: true
+    include_metadata: true
+
+  code_generation:
+    include_interfaces: true
+    add_validation: true
+    generate_tests: true
+    include_documentation: true
+    follow_clean_architecture: true
+
+  documentation_style:
+    format: "markdown"
+    include_toc: true
+    cross_reference_links: true
+    include_glossary: true
+    add_appendices: true
+
+  export_options:
+    formats: ["pdf", "html", "docx"]
+    include_diagrams: true
+    high_resolution: true
+    include_source_code: true
+
+# Comprehensive exclusions to avoid unnecessary complexity
+exclusions:
+  implementation_details:
+    - "Specific vendor configurations"
+    - "Development environment setup"
+    - "Local debugging procedures"
+    - "Personal access credentials"
+
+  deprecated_technologies:
+    - "Legacy REST without versioning"
+    - "Synchronous inter-service calls for non-critical paths"
+    - "Monolithic database design patterns"
+    - "Hardcoded configuration values"
+
+  anti_patterns:
+    - "Shared databases between services"
+    - "Distributed transactions across services"
+    - "Synchronous cascading service calls"
+    - "Missing circuit breaker implementations"
+
+  security_exclusions:
+    - "Plain text password storage"
+    - "Unencrypted data transmission"
+    - "Missing input validation"
+    - "Hardcoded API keys or secrets"
+
+  performance_anti_patterns:
+    - "N+1 query problems"
+    - "Unbounded result sets"
+    - "Missing database indexing"
+    - "Synchronous I/O in critical paths"
+
+# Additional metadata and tags
+metadata:
+  complexity_level: "enterprise"
+  domain: "e-commerce"
+  architecture_pattern: "microservices"
+  deployment_target: "kubernetes"
+  team_size: "large"
+  timeline: "12-18 months"
+
+  tags:
+    - "microservices"
+    - "kubernetes"
+    - "event-driven"
+    - "cloud-native"
+    - "scalable"
+    - "high-availability"
+    - "security-focused"
+    - "api-first"
+
+  stakeholders:
+    - "CTO and Engineering Leadership"
+    - "Product Management Team"
+    - "DevOps and Platform Engineering"
+    - "Security and Compliance Teams"
+    - "QA and Testing Teams"
