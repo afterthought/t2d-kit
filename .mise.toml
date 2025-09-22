@@ -1,4 +1,6 @@
 [tools]
+claude = "latest"
+"pipx:git+https://github.com/github/spec-kit.git" = "latest"
 python = "3.11"
 node = "20"
 go = "1.21"
