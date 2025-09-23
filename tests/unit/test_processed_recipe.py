@@ -2,7 +2,7 @@
 T007: Test ProcessedRecipe model functionality.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -25,7 +25,7 @@ class TestProcessedRecipe:
             base_prompt="Generate comprehensive documentation for the system.",
             diagram_refs=["arch-diagram"],
             title="Test Documentation",
-            last_updated=datetime.now()
+            last_updated=datetime.now(timezone.utc)
         )
 
     def create_valid_diagram_spec(self) -> DiagramSpecification:
@@ -66,7 +66,7 @@ class TestProcessedRecipe:
             name="Test Recipe",
             version="1.0.0",
             source_recipe="recipes/test.yaml",
-            generated_at=datetime.now(),
+            generated_at=datetime.now(timezone.utc),
             content_files=[self.create_valid_content_file()],
             diagram_specs=[self.create_valid_diagram_spec()],
             diagram_refs=[self.create_valid_diagram_ref()],
@@ -87,7 +87,7 @@ class TestProcessedRecipe:
             name="Minimal Recipe",
             version="1.0.0",
             source_recipe="recipes/minimal.yaml",
-            generated_at=datetime.now(),
+            generated_at=datetime.now(timezone.utc),
             content_files=[self.create_valid_content_file()],
             diagram_specs=[self.create_valid_diagram_spec()],
             diagram_refs=[self.create_valid_diagram_ref()],
@@ -104,7 +104,7 @@ class TestProcessedRecipe:
                 name="Invalid Recipe",
                 version="1.0.0",
                 source_recipe="recipes/invalid.yaml",
-                generated_at=datetime.now(),
+                generated_at=datetime.now(timezone.utc),
                 content_files=[],  # Empty list should fail
                 diagram_specs=[self.create_valid_diagram_spec()],
                 diagram_refs=[self.create_valid_diagram_ref()],
@@ -118,7 +118,7 @@ class TestProcessedRecipe:
                 name="Invalid Recipe",
                 version="1.0.0",
                 source_recipe="recipes/invalid.yaml",
-                generated_at=datetime.now(),
+                generated_at=datetime.now(timezone.utc),
                 content_files=[self.create_valid_content_file()],
                 diagram_specs=[],  # Empty list should fail
                 diagram_refs=[self.create_valid_diagram_ref()],
@@ -132,7 +132,7 @@ class TestProcessedRecipe:
                 name="Invalid Recipe",
                 version="1.0.0",
                 source_recipe="recipes/invalid.yaml",
-                generated_at=datetime.now(),
+                generated_at=datetime.now(timezone.utc),
                 content_files=[self.create_valid_content_file()],
                 diagram_specs=[self.create_valid_diagram_spec()],
                 diagram_refs=[],  # Empty list should fail
@@ -141,7 +141,7 @@ class TestProcessedRecipe:
 
     def test_processed_recipe_validation_future_generation_time(self):
         """Test that ProcessedRecipe rejects future generation times."""
-        future_time = datetime.now() + timedelta(hours=1)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         with pytest.raises(ValueError, match="Generation time cannot be in the future"):
             ProcessedRecipe(
@@ -170,7 +170,7 @@ class TestProcessedRecipe:
                 name="Inconsistent Recipe",
                 version="1.0.0",
                 source_recipe="recipes/inconsistent.yaml",
-                generated_at=datetime.now(),
+                generated_at=datetime.now(timezone.utc),
                 content_files=[self.create_valid_content_file()],
                 diagram_specs=[spec],
                 diagram_refs=[ref],
@@ -188,7 +188,7 @@ class TestProcessedRecipe:
                 name="Invalid Refs Recipe",
                 version="1.0.0",
                 source_recipe="recipes/invalid_refs.yaml",
-                generated_at=datetime.now(),
+                generated_at=datetime.now(timezone.utc),
                 content_files=[content_file],
                 diagram_specs=[self.create_valid_diagram_spec()],
                 diagram_refs=[self.create_valid_diagram_ref()],
@@ -201,7 +201,7 @@ class TestProcessedRecipe:
             name="Serialization Test",
             version="2.1.0",
             source_recipe="recipes/serialization.yaml",
-            generated_at=datetime.now(),
+            generated_at=datetime.now(timezone.utc),
             content_files=[self.create_valid_content_file()],
             diagram_specs=[self.create_valid_diagram_spec()],
             diagram_refs=[self.create_valid_diagram_ref()],
