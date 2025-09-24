@@ -3,7 +3,7 @@
 Run with: python -m t2d_kit.mcp
 """
 
-from .server import serve
+from .server import main
 
 if __name__ == "__main__":
-    serve()
+    main()

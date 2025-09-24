@@ -1,17 +1,23 @@
 """Contract tests for user recipe MCP tools."""
 
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 import yaml
+from fastmcp import Context
 
 
 class TestUserRecipeTools:
     """Test user recipe tool contracts match specifications."""
 
+    @pytest.fixture
+    def mock_context(self):
+        """Create a mock Context object for tests."""
+        return AsyncMock(spec=Context)
+
     @pytest.mark.asyncio
-    async def test_create_user_recipe(self, mcp_server, mcp_context, temp_recipe_dir):
+    async def test_create_user_recipe(self, mcp_server, mock_context, temp_recipe_dir):
         """Test create_user_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_tools.json#CreateRecipeTool
@@ -38,7 +44,7 @@ class TestUserRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["create_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract
@@ -62,7 +68,7 @@ class TestUserRecipeTools:
         assert recipe_path.exists()
 
     @pytest.mark.asyncio
-    async def test_edit_user_recipe(self, mcp_server, mcp_context, temp_recipe_dir, mock_yaml_file):
+    async def test_edit_user_recipe(self, mcp_server, mock_context, temp_recipe_dir, mock_yaml_file):
         """Test edit_user_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_tools.json#EditRecipeTool
@@ -89,7 +95,7 @@ class TestUserRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["edit_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract
@@ -107,7 +113,7 @@ class TestUserRecipeTools:
             assert "validation_result" in result
 
     @pytest.mark.asyncio
-    async def test_validate_user_recipe(self, mcp_server, mcp_context, temp_recipe_dir, mock_yaml_file):
+    async def test_validate_user_recipe(self, mcp_server, mock_context, temp_recipe_dir, mock_yaml_file):
         """Test validate_user_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_tools.json#ValidateRecipeTool
@@ -121,7 +127,7 @@ class TestUserRecipeTools:
         params = ValidateRecipeParams(name="test-recipe")
         tools = await mcp_server.get_tools()
         tool = tools["validate_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract (ValidationResult)
@@ -142,7 +148,7 @@ class TestUserRecipeTools:
                 # suggestion is optional
 
     @pytest.mark.asyncio
-    async def test_delete_user_recipe(self, mcp_server, mcp_context, temp_recipe_dir, mock_yaml_file):
+    async def test_delete_user_recipe(self, mcp_server, mock_context, temp_recipe_dir, mock_yaml_file):
         """Test delete_user_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_tools.json#DeleteRecipeTool
@@ -161,7 +167,7 @@ class TestUserRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["delete_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract
@@ -176,7 +182,7 @@ class TestUserRecipeTools:
             assert not recipe_path.exists()
 
     @pytest.mark.asyncio
-    async def test_delete_requires_confirmation(self, mcp_server, mcp_context, temp_recipe_dir, mock_yaml_file):
+    async def test_delete_requires_confirmation(self, mcp_server, mock_context, temp_recipe_dir, mock_yaml_file):
         """Test that delete fails without confirmation."""
         from t2d_kit.mcp.tools.user_recipe_tools import register_user_recipe_tools
         from t2d_kit.models.user_recipe import DeleteRecipeParams
@@ -192,7 +198,7 @@ class TestUserRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["delete_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Should fail
@@ -200,7 +206,7 @@ class TestUserRecipeTools:
         assert "confirm" in result["message"].lower()
 
     @pytest.mark.asyncio
-    async def test_create_with_validation_errors(self, mcp_server, mcp_context, temp_recipe_dir):
+    async def test_create_with_validation_errors(self, mcp_server, mock_context, temp_recipe_dir):
         """Test create_user_recipe with invalid data."""
         from t2d_kit.mcp.tools.user_recipe_tools import register_user_recipe_tools
         from t2d_kit.models.user_recipe import CreateRecipeParams, DiagramRequest
@@ -227,7 +233,7 @@ class TestUserRecipeTools:
         # Call tool - should handle validation error
         tools = await mcp_server.get_tools()
         tool = tools["create_user_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Should indicate failure

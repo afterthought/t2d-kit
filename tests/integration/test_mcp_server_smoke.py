@@ -6,8 +6,10 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
+from fastmcp import Context
 
 
 class TestMCPServerSmoke:
@@ -177,8 +179,11 @@ class TestMCPServerSmoke:
             output_dir=str(recipe_dir)
         )
 
+        # Create mock context
+        mock_context = AsyncMock(spec=Context)
+
         # Execute the tool
-        result = await create_tool.fn(params)
+        result = await create_tool.fn(params, mock_context)
         assert result is not None
 
         # Verify the recipe file was created

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 import yaml
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 
 from t2d_kit.models.user_recipe import (
     CreateRecipeParams,
@@ -20,6 +20,7 @@ from t2d_kit.models.user_recipe import (
     MCPValidationError,
     MCPValidationResult,
     PRDContent,
+    PRDFormat,
     UserInstructions,
     UserRecipe,
     ValidateRecipeParams,
@@ -93,7 +94,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
     recipe_dir.mkdir(parents=True, exist_ok=True)
 
     @server.tool()
-    async def create_user_recipe(params: CreateRecipeParams) -> CreateRecipeResponse:
+    async def create_user_recipe(params: CreateRecipeParams, ctx: Context) -> CreateRecipeResponse:
         """Create a new user recipe file for t2d-kit diagram generation.
 
         Creates a new recipe YAML file with the provided PRD content and diagram specifications.
@@ -131,6 +132,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             CreateRecipeResponse with success status and validation results
         """
         start_time = time.time()
+        await ctx.info(f"Creating user recipe: {params.name}")
 
         # Create output directory if specified, otherwise use the passed recipe_dir
         # If output_dir is the default value, use recipe_dir instead
@@ -168,7 +170,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             prd = PRDContent(
                 content=params.prd_content if params.prd_content else None,
                 file_path=params.prd_file_path if params.prd_file_path else None,
-                format="markdown"
+                format=PRDFormat.MARKDOWN
             )
 
             # Build instructions
@@ -256,7 +258,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             )
 
     @server.tool()
-    async def validate_user_recipe(params: ValidateRecipeParams) -> MCPValidationResult:
+    async def validate_user_recipe(params: ValidateRecipeParams, ctx: Context) -> MCPValidationResult:
         """Validate a user recipe file or content.
 
         Performs comprehensive validation of recipe structure and content,
@@ -284,6 +286,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             MCPValidationResult with validation status and any errors/warnings
         """
         start_time = time.time()
+        await ctx.info(f"Validating user recipe: {params.name if params.name else 'provided content'}")
         errors = []
         warnings = []
 
@@ -327,7 +330,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         return _validate_recipe_content(content, start_time)
 
     @server.tool()
-    async def edit_user_recipe(params: EditRecipeParams) -> EditRecipeResponse:
+    async def edit_user_recipe(params: EditRecipeParams, ctx: Context) -> EditRecipeResponse:
         """Edit an existing user recipe.
 
         Updates specified fields in an existing recipe file.
@@ -360,6 +363,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             EditRecipeResponse with success status and changes applied
         """
         recipe_path = recipe_dir / f"{params.name}.yaml"
+        await ctx.info(f"Editing user recipe: {params.name}")
 
         if not recipe_path.exists():
             return EditRecipeResponse(
@@ -452,7 +456,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             )
 
     @server.tool()
-    async def delete_user_recipe(params: DeleteRecipeParams) -> DeleteRecipeResponse:
+    async def delete_user_recipe(params: DeleteRecipeParams, ctx: Context) -> DeleteRecipeResponse:
         """Delete a user recipe file.
 
         Permanently removes a recipe file from the filesystem.
@@ -474,6 +478,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         Returns:
             DeleteRecipeResponse with success status
         """
+        await ctx.info(f"Delete request for recipe: {params.name}")
         if not params.confirm:
             return DeleteRecipeResponse(
                 success=False,

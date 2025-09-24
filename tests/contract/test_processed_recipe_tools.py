@@ -2,16 +2,23 @@
 
 from datetime import UTC, datetime, timezone
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 import yaml
+from fastmcp import Context
 
 
 class TestProcessedRecipeTools:
     """Test processed recipe tool contracts match specifications."""
 
+    @pytest.fixture
+    def mock_context(self):
+        """Create a mock Context object for tests."""
+        return AsyncMock(spec=Context)
+
     @pytest.mark.asyncio
-    async def test_write_processed_recipe(self, mcp_server, mcp_context, temp_recipe_dir):
+    async def test_write_processed_recipe(self, mcp_server, mock_context, temp_recipe_dir):
         """Test write_processed_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_processed_tools.json#WriteProcessedRecipeTool
@@ -76,13 +83,13 @@ class TestProcessedRecipeTools:
         params = WriteProcessedRecipeParams(
             recipe_path=str(temp_recipe_dir / "test-system.t2d.yaml"),
             content=content,
-            validate=True
+            should_validate=True
         )
 
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["write_processed_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract
@@ -105,7 +112,7 @@ class TestProcessedRecipeTools:
             assert recipe_path.exists()
 
     @pytest.mark.asyncio
-    async def test_update_processed_recipe(self, mcp_server, mcp_context, temp_recipe_dir, mock_processed_yaml_file):
+    async def test_update_processed_recipe(self, mcp_server, mock_context, temp_recipe_dir, mock_processed_yaml_file):
         """Test update_processed_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_processed_tools.json#UpdateProcessedRecipeTool
@@ -128,13 +135,13 @@ class TestProcessedRecipeTools:
                 }
             ],
             generation_notes=["Diagram generation complete"],
-            validate=True
+            should_validate=True
         )
 
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["update_processed_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract
@@ -145,11 +152,11 @@ class TestProcessedRecipeTools:
         assert "message" in result
 
         # If validation requested, should have result
-        if params.validate:
+        if params.should_validate:
             assert "validation_result" in result
 
     @pytest.mark.asyncio
-    async def test_validate_processed_recipe(self, mcp_server, mcp_context, temp_recipe_dir, mock_processed_yaml_file):
+    async def test_validate_processed_recipe(self, mcp_server, mock_context, temp_recipe_dir, mock_processed_yaml_file):
         """Test validate_processed_recipe tool contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_processed_tools.json#ValidateProcessedRecipeTool
@@ -167,7 +174,7 @@ class TestProcessedRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["validate_processed_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Validate response contract (ValidationResult)
@@ -187,7 +194,7 @@ class TestProcessedRecipeTools:
                 assert "error_type" in error
 
     @pytest.mark.asyncio
-    async def test_validate_with_content(self, mcp_server, mcp_context, sample_processed_recipe):
+    async def test_validate_with_content(self, mcp_server, mock_context, sample_processed_recipe):
         """Test validate_processed_recipe with direct content."""
         from t2d_kit.mcp.tools.processed_recipe_tools import register_processed_recipe_tools
         from t2d_kit.models.processed_recipe import (
@@ -204,7 +211,7 @@ class TestProcessedRecipeTools:
         # Call tool
         tools = await mcp_server.get_tools()
         tool = tools["validate_processed_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Should validate successfully
@@ -212,7 +219,7 @@ class TestProcessedRecipeTools:
         assert result["duration_ms"] < 200  # Performance requirement
 
     @pytest.mark.asyncio
-    async def test_write_with_invalid_data(self, mcp_server, mcp_context, temp_recipe_dir):
+    async def test_write_with_invalid_data(self, mcp_server, mock_context, temp_recipe_dir):
         """Test write_processed_recipe with invalid data."""
         from t2d_kit.mcp.tools.processed_recipe_tools import register_processed_recipe_tools
         from t2d_kit.models.processed_recipe import (
@@ -250,13 +257,13 @@ class TestProcessedRecipeTools:
         params = WriteProcessedRecipeParams(
             recipe_path=str(temp_recipe_dir / "invalid.t2d.yaml"),
             content=content,
-            validate=True
+            should_validate=True
         )
 
         # Call tool - should handle validation error
         tools = await mcp_server.get_tools()
         tool = tools["write_processed_recipe"]
-        response = await tool.fn(params)
+        response = await tool.fn(params, mock_context)
         result = response.model_dump()
 
         # Should indicate failure

@@ -145,7 +145,7 @@ class WriteProcessedRecipeParams(T2DBaseModel):
     content: Annotated[ProcessedRecipeContent, Field(
         description="Complete processed recipe content"
     )]
-    validate: Annotated[bool, Field(
+    should_validate: Annotated[bool, Field(
         True,
         description="Validate before writing"
     )]
@@ -177,7 +177,7 @@ class UpdateProcessedRecipeParams(T2DBaseModel):
         None,
         description="Additional generation notes"
     )]
-    validate: Annotated[bool, Field(
+    should_validate: Annotated[bool, Field(
         True,
         description="Validate after update"
     )]

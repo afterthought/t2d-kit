@@ -5,11 +5,12 @@ Unit tests for MCP tool write operations.
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 import yaml
-from fastmcp import FastMCP
+from fastmcp import FastMCP, Context
 
 from t2d_kit.mcp.tools.user_recipe_tools import register_user_recipe_tools
 from t2d_kit.mcp.tools.processed_recipe_tools import register_processed_recipe_tools
@@ -35,8 +36,13 @@ class TestMCPUserRecipeTools:
         """Create a test MCP server."""
         return FastMCP("test-server")
 
+    @pytest.fixture
+    def mock_context(self):
+        """Create a mock Context object for tests."""
+        return AsyncMock(spec=Context)
+
     @pytest.mark.asyncio
-    async def test_create_user_recipe(self, mcp_server):
+    async def test_create_user_recipe(self, mcp_server, mock_context):
         """Test creating a new user recipe."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir)
@@ -65,7 +71,7 @@ class TestMCPUserRecipeTools:
             assert "create_user_recipe" in tools
 
             tool = tools["create_user_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify response
@@ -92,7 +98,7 @@ class TestMCPUserRecipeTools:
             created_path.unlink()
 
     @pytest.mark.asyncio
-    async def test_edit_user_recipe(self, mcp_server):
+    async def test_edit_user_recipe(self, mcp_server, mock_context):
         """Test editing an existing user recipe."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir)
@@ -127,7 +133,7 @@ class TestMCPUserRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["edit_user_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify response
@@ -144,7 +150,7 @@ class TestMCPUserRecipeTools:
             assert updated_content["instructions"]["diagrams"][0]["type"] == "architecture"
 
     @pytest.mark.asyncio
-    async def test_validate_user_recipe_by_name(self, mcp_server):
+    async def test_validate_user_recipe_by_name(self, mcp_server, mock_context):
         """Test validating a user recipe by name."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir)
@@ -167,7 +173,7 @@ class TestMCPUserRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["validate_user_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify validation result
@@ -177,7 +183,7 @@ class TestMCPUserRecipeTools:
             assert "validated_at" in result
 
     @pytest.mark.asyncio
-    async def test_validate_user_recipe_with_content(self, mcp_server):
+    async def test_validate_user_recipe_with_content(self, mcp_server, mock_context):
         """Test validating user recipe with direct content."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir)
@@ -205,7 +211,7 @@ class TestMCPUserRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["validate_user_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify validation result
@@ -213,7 +219,7 @@ class TestMCPUserRecipeTools:
             assert result["errors"] == []
 
     @pytest.mark.asyncio
-    async def test_create_recipe_with_invalid_data(self, mcp_server):
+    async def test_create_recipe_with_invalid_data(self, mcp_server, mock_context):
         """Test creating a recipe with invalid data."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir)
@@ -235,7 +241,7 @@ class TestMCPUserRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["create_user_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Should fail validation
@@ -251,6 +257,11 @@ class TestMCPProcessedRecipeTools:
     async def mcp_server(self):
         """Create a test MCP server."""
         return FastMCP("test-server")
+
+    @pytest.fixture
+    def mock_context(self):
+        """Create a mock Context object for tests."""
+        return AsyncMock(spec=Context)
 
     @pytest_asyncio.fixture
     async def valid_processed_content(self):
@@ -300,7 +311,7 @@ class TestMCPProcessedRecipeTools:
         )
 
     @pytest.mark.asyncio
-    async def test_write_processed_recipe(self, mcp_server, valid_processed_content):
+    async def test_write_processed_recipe(self, mcp_server, valid_processed_content, mock_context):
         """Test writing a processed recipe."""
         with tempfile.TemporaryDirectory() as temp_dir:
             processed_dir = Path(temp_dir)
@@ -311,14 +322,14 @@ class TestMCPProcessedRecipeTools:
             params = WriteProcessedRecipeParams(
                 recipe_path=str(processed_dir / "test.t2d.yaml"),
                 content=valid_processed_content,
-                validate=True
+                should_validate=True
             )
 
             tools = await mcp_server.get_tools()
             assert "write_processed_recipe" in tools
 
             tool = tools["write_processed_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify response
@@ -338,7 +349,7 @@ class TestMCPProcessedRecipeTools:
             assert len(saved_content["diagram_specs"]) == 1
 
     @pytest.mark.asyncio
-    async def test_update_processed_recipe(self, mcp_server, valid_processed_content):
+    async def test_update_processed_recipe(self, mcp_server, valid_processed_content, mock_context):
         """Test updating an existing processed recipe."""
         with tempfile.TemporaryDirectory() as temp_dir:
             processed_dir = Path(temp_dir)
@@ -361,12 +372,12 @@ class TestMCPProcessedRecipeTools:
                         "status": "generated"  # Changed from pending
                     }
                 ],
-                validate=True
+                should_validate=True
             )
 
             tools = await mcp_server.get_tools()
             tool = tools["update_processed_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify response
@@ -380,7 +391,7 @@ class TestMCPProcessedRecipeTools:
             assert updated_content["diagram_refs"][0]["status"] == "generated"
 
     @pytest.mark.asyncio
-    async def test_validate_processed_recipe_by_path(self, mcp_server, valid_processed_content):
+    async def test_validate_processed_recipe_by_path(self, mcp_server, valid_processed_content, mock_context):
         """Test validating a processed recipe by path."""
         with tempfile.TemporaryDirectory() as temp_dir:
             processed_dir = Path(temp_dir)
@@ -398,7 +409,7 @@ class TestMCPProcessedRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["validate_processed_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify validation result
@@ -407,7 +418,7 @@ class TestMCPProcessedRecipeTools:
             assert "duration_ms" in result
 
     @pytest.mark.asyncio
-    async def test_validate_processed_recipe_with_content(self, mcp_server, valid_processed_content):
+    async def test_validate_processed_recipe_with_content(self, mcp_server, valid_processed_content, mock_context):
         """Test validating processed recipe with direct content."""
         with tempfile.TemporaryDirectory() as temp_dir:
             processed_dir = Path(temp_dir)
@@ -421,7 +432,7 @@ class TestMCPProcessedRecipeTools:
 
             tools = await mcp_server.get_tools()
             tool = tools["validate_processed_recipe"]
-            response = await tool.fn(params)
+            response = await tool.fn(params, mock_context)
             result = response.model_dump()
 
             # Verify validation result
@@ -429,7 +440,7 @@ class TestMCPProcessedRecipeTools:
             assert result["errors"] == []
 
     @pytest.mark.asyncio
-    async def test_write_processed_recipe_with_invalid_data(self, mcp_server):
+    async def test_write_processed_recipe_with_invalid_data(self, mcp_server, mock_context):
         """Test that Pydantic validation prevents creating invalid processed recipes."""
         # Test: Pydantic validation catches invalid instructions (too short)
         with pytest.raises(Exception) as exc_info:
@@ -478,7 +489,7 @@ class TestMCPProcessedRecipeTools:
         assert "at least 5 words" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_tool_discovery(self, mcp_server):
+    async def test_tool_discovery(self, mcp_server, mock_context):
         """Test that all expected tools are registered."""
         with tempfile.TemporaryDirectory() as temp_dir:
             recipe_dir = Path(temp_dir) / "recipes"
