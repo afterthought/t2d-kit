@@ -138,9 +138,8 @@ class TestDiagramSpecification:
         )
         assert spec.framework == FrameworkType.D2
 
-        # Invalid D2 diagram type - the model validation detects this but has a bug in error formatting
-        # Since the model has a bug with .value on string enums, we expect an AttributeError
-        with pytest.raises(AttributeError, match="'str' object has no attribute 'value'"):
+        # Invalid D2 diagram type - should raise ValidationError
+        with pytest.raises(ValidationError, match="Framework d2 does not support diagram type sequence"):
             DiagramSpecification(
                 id="test-d2-invalid",
                 type=DiagramType.SEQUENCE,  # Not supported by D2
@@ -222,9 +221,8 @@ class TestDiagramSpecification:
 
     def test_diagram_specification_invalid_format_for_framework(self):
         """Test that invalid output formats for framework are rejected."""
-        # The model validation detects this but has a bug in error formatting
-        # Since the model has a bug with .value on string enums, we expect an AttributeError
-        with pytest.raises(AttributeError, match="'str' object has no attribute 'value'"):
+        # Invalid output format for Mermaid - should raise ValidationError
+        with pytest.raises(ValidationError, match="Framework mermaid does not support formats"):
             DiagramSpecification(
                 id="invalid-format",
                 type=DiagramType.SEQUENCE,

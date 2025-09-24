@@ -126,60 +126,66 @@ async def register_processed_recipe_resources(
             "content": resource.model_dump()
         }
 
-    @server.resource("processed-recipes://{recipe_name}")
-    async def get_processed_recipe(recipe_name: str) -> dict:
-        """Get a specific processed recipe by name.
+    # Register individual resources for each existing processed recipe
+    if processed_dir.exists() and processed_dir.is_dir():
+        for recipe_file in processed_dir.glob("*.t2d.yaml"):
+            recipe_name = recipe_file.stem.replace(".t2d", "")
 
-        Args:
-            recipe_name: Name of the recipe (without .t2d.yaml extension)
+            # Create a closure to capture the recipe_name
+            def create_processed_handler(name: str, path: Path):
+                @server.resource(f"processed-recipes://{name}")
+                async def get_specific_processed_recipe() -> dict:
+                    """Get a specific processed recipe by name.
 
-        Returns:
-            Full processed recipe content and metadata
-        """
-        # Construct path
-        recipe_path = processed_dir / f"{recipe_name}.t2d.yaml"
+                    Returns:
+                        Full processed recipe content and metadata
+                    """
+                    if not path.exists():
+                        raise FileNotFoundError(f"Processed recipe not found: {name}")
 
-        if not recipe_path.exists():
-            raise FileNotFoundError(f"Processed recipe not found: {recipe_name}")
+                    # Read content
+                    with open(path) as f:
+                        raw_yaml = f.read()
+                        content = yaml.safe_load(raw_yaml)
 
-        # Read content
-        with open(recipe_path) as f:
-            raw_yaml = f.read()
-            content = yaml.safe_load(raw_yaml)
+                    # Get metadata
+                    metadata = get_processed_metadata(path)
 
-        # Get metadata
-        metadata = get_processed_metadata(recipe_path)
+                    # Try to validate
+                    validation_result = None
+                    try:
+                        from t2d_kit.models.processed_recipe import ProcessedRecipe
+                        ProcessedRecipe.model_validate(content)
+                        validation_result = {
+                            "valid": True,
+                            "errors": [],
+                            "warnings": []
+                        }
+                    except Exception as e:
+                        validation_result = {
+                            "valid": False,
+                            "errors": [{"message": str(e)}],
+                            "warnings": []
+                        }
 
-        # Try to validate
-        validation_result = None
-        try:
-            from t2d_kit.models.processed_recipe import ProcessedRecipe
-            ProcessedRecipe.model_validate(content)
-            validation_result = {
-                "valid": True,
-                "errors": [],
-                "warnings": []
-            }
-        except Exception as e:
-            validation_result = {
-                "valid": False,
-                "errors": [{"message": str(e)}],
-                "warnings": []
-            }
+                    resource = ProcessedRecipeDetailResource(
+                        name=name,
+                        content=content,
+                        raw_yaml=raw_yaml,
+                        validation_result=validation_result,
+                        file_path=str(path.absolute()),
+                        metadata=metadata
+                    )
 
-        resource = ProcessedRecipeDetailResource(
-            name=recipe_name,
-            content=content,
-            raw_yaml=raw_yaml,
-            validation_result=validation_result,
-            file_path=str(recipe_path.absolute()),
-            metadata=metadata
-        )
+                    return {
+                        "uri": f"processed-recipes://{name}",
+                        "name": f"Processed Recipe: {name}",
+                        "description": f"Processed recipe with {metadata.diagram_count} diagram(s) and {metadata.content_file_count} content file(s)",
+                        "mimeType": "application/x-yaml",
+                        "content": resource.model_dump()
+                    }
 
-        return {
-            "uri": f"processed-recipes://{recipe_name}",
-            "name": f"Processed Recipe: {recipe_name}",
-            "description": f"Processed recipe with {metadata.diagram_count} diagram(s) and {metadata.content_file_count} content file(s)",
-            "mimeType": "application/x-yaml",
-            "content": resource.model_dump()
-        }
+                return get_specific_processed_recipe
+
+            # Register the handler for this specific recipe
+            create_processed_handler(recipe_name, recipe_file)

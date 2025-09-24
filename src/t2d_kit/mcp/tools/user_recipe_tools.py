@@ -94,10 +94,35 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
 
     @server.tool()
     async def create_user_recipe(params: CreateRecipeParams) -> CreateRecipeResponse:
-        """Create a new user recipe file.
+        """Create a new user recipe file for t2d-kit diagram generation.
 
         Creates a new recipe YAML file with the provided PRD content and diagram specifications.
         Validates the recipe before saving and returns validation results.
+
+        REQUIRED PARAMETERS:
+        - name: Recipe name (alphanumeric with hyphens/underscores, e.g., "my-system")
+        - diagrams: List of diagram requests, each with:
+          - type: Diagram type (e.g., "flowchart", "architecture", "sequence", "erd")
+          - description: Optional description of what to generate
+          - framework_preference: Optional ("d2", "mermaid", "plantuml", or "auto")
+        - prd_content OR prd_file_path: The PRD content (provide one, not both)
+
+        EXAMPLE:
+        {
+          "name": "ecommerce-platform",
+          "prd_content": "# E-commerce Platform\n\nA modern online shopping system...",
+          "diagrams": [
+            {
+              "type": "architecture",
+              "description": "System components and their relationships",
+              "framework_preference": "d2"
+            },
+            {
+              "type": "sequence",
+              "description": "Order processing workflow"
+            }
+          ]
+        }
 
         Args:
             params: Recipe creation parameters including name, PRD, and diagrams
@@ -107,8 +132,12 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         """
         start_time = time.time()
 
-        # Create output directory if specified
-        output_dir = Path(params.output_dir) if params.output_dir else recipe_dir
+        # Create output directory if specified, otherwise use the passed recipe_dir
+        # If output_dir is the default value, use recipe_dir instead
+        if params.output_dir == str(DEFAULT_RECIPE_DIR):
+            output_dir = recipe_dir
+        else:
+            output_dir = Path(params.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         # Construct recipe path
@@ -185,7 +214,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         try:
             with open(recipe_path, "w") as f:
                 yaml.dump(
-                    recipe.model_dump(exclude_none=True),
+                    recipe.model_dump(exclude_none=True, mode='json'),
                     f,
                     default_flow_style=False,
                     sort_keys=False
@@ -232,6 +261,21 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
 
         Performs comprehensive validation of recipe structure and content,
         checking all required fields and constraints.
+
+        PARAMETERS:
+        - name: Recipe name to validate from filesystem (e.g., "my-system")
+        OR
+        - content: Complete recipe object to validate
+
+        VALIDATION CHECKS:
+        - Recipe name format (alphanumeric with hyphens/underscores)
+        - Version follows semantic versioning (e.g., "1.0.0")
+        - PRD has either content or file_path (not both)
+        - At least one diagram is specified
+        - Diagram types are valid
+        - Framework preferences are valid (d2, mermaid, plantuml, auto)
+        - No path traversal in file paths
+        - PRD content size < 1MB
 
         Args:
             params: Either a recipe name to load from disk or recipe content to validate
@@ -288,6 +332,26 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
 
         Updates specified fields in an existing recipe file.
         Optionally validates the changes before saving.
+
+        REQUIRED:
+        - name: Recipe name to edit (must exist in recipes directory)
+
+        OPTIONAL UPDATES (provide any combination):
+        - prd_content: New PRD content (replaces file_path if set)
+        - prd_file_path: New PRD file path (replaces content if set)
+        - diagrams: New list of diagram specifications (replaces all diagrams)
+        - documentation_config: New documentation settings
+        - validate_before_save: Whether to validate before saving (default: true)
+
+        EXAMPLE:
+        {
+          "name": "my-system",
+          "diagrams": [
+            {"type": "architecture", "description": "Updated system design"},
+            {"type": "flowchart", "description": "New process flow"}
+          ],
+          "validate_before_save": true
+        }
 
         Args:
             params: Edit parameters including recipe name and fields to update
@@ -363,7 +427,7 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         try:
             with open(recipe_path, "w") as f:
                 yaml.dump(
-                    recipe.model_dump(exclude_none=True),
+                    recipe.model_dump(exclude_none=True, mode='json'),
                     f,
                     default_flow_style=False,
                     sort_keys=False
@@ -393,6 +457,16 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
 
         Permanently removes a recipe file from the filesystem.
         Requires confirmation flag to prevent accidental deletion.
+
+        PARAMETERS:
+        - name: Recipe name to delete (e.g., "my-system")
+        - confirm: Must be true to actually delete (safety mechanism)
+
+        EXAMPLE:
+        {
+          "name": "old-project",
+          "confirm": true
+        }
 
         Args:
             params: Recipe name and confirmation flag

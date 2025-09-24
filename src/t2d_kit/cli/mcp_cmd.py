@@ -41,7 +41,7 @@ def mcp_command(working_dir: str, port: int):
         os.chdir(work_path)
 
         # Import and run the server
-        from t2d_kit.mcp.server import serve
+        from t2d_kit.mcp.server import main
 
         # In stdio mode, we don't print to console (would interfere with protocol)
-        serve()
+        main()

@@ -140,7 +140,6 @@ class TestMCPResources:
             assert "description" in field
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Parameterized resources not yet supported in current FastMCP implementation")
     async def test_specific_recipe_resource(self, mcp_server, temp_recipe_dir, mock_yaml_file):
         """Test user-recipes://{name} specific recipe resource.
 

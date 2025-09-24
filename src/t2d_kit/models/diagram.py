@@ -118,15 +118,19 @@ class DiagramSpecification(T2DBaseModel):
 
             # Check diagram type compatibility
             if self.type not in capabilities["types"]:
+                # Handle both enum and string values
+                framework_val = self.framework.value if hasattr(self.framework, 'value') else self.framework
+                type_val = self.type.value if hasattr(self.type, 'value') else self.type
                 raise ValueError(
-                    f"Framework {self.framework.value} does not support diagram type {self.type.value}"
+                    f"Framework {framework_val} does not support diagram type {type_val}"
                 )
 
             # Check output format compatibility
             unsupported_formats = set(self.output_formats) - capabilities["formats"]
             if unsupported_formats:
+                framework_val = self.framework.value if hasattr(self.framework, 'value') else self.framework
                 raise ValueError(
-                    f"Framework {self.framework.value} does not support formats: {unsupported_formats}"
+                    f"Framework {framework_val} does not support formats: {unsupported_formats}"
                 )
 
         return self

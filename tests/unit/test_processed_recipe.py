@@ -231,3 +231,184 @@ class TestProcessedRecipe:
         assert len(recreated.diagram_specs) == len(original.diagram_specs)
         assert len(recreated.diagram_refs) == len(original.diagram_refs)
         assert recreated.generation_notes == original.generation_notes
+
+    def test_processed_recipe_from_user_recipe(self):
+        """Test creating ProcessedRecipe from UserRecipe with proper timezone handling."""
+        from t2d_kit.models.user_recipe import (
+            UserRecipe,
+            PRDContent,
+            UserInstructions,
+            DiagramRequest,
+            DocumentationInstructions
+        )
+        from t2d_kit.models.base import ContentType, DiagramType, FrameworkType, OutputFormat
+
+        # Create a UserRecipe
+        user_recipe = UserRecipe(
+            name="Test-Recipe",
+            version="1.0.0",
+            prd=PRDContent(
+                content="# Test PRD\n\nThis is a test Product Requirements Document.",
+                format="markdown"
+            ),
+            instructions=UserInstructions(
+                diagrams=[
+                    DiagramRequest(
+                        type="architecture",
+                        description="System architecture diagram",
+                        framework_preference="d2"
+                    )
+                ],
+                documentation=DocumentationInstructions(
+                    style="technical",
+                    audience="developers"
+                )
+            )
+        )
+
+        # Create ProcessedRecipe from UserRecipe
+        base_timestamp = datetime.now(timezone.utc)
+
+        processed_recipe = ProcessedRecipe(
+            name=user_recipe.name,
+            version=user_recipe.version,
+            source_recipe="recipes/test.yaml",
+            generated_at=base_timestamp,
+            content_files=[
+                ContentFile(
+                    id="test-doc",
+                    path="docs/test.md",
+                    type=ContentType.DOCUMENTATION,
+                    agent="t2d-markdown-maintainer",
+                    base_prompt="Generate documentation from PRD.",
+                    diagram_refs=["arch-001"],
+                    title="Test Documentation",
+                    last_updated=base_timestamp
+                )
+            ],
+            diagram_specs=[
+                DiagramSpecification(
+                    id="arch-001",
+                    type=DiagramType.ARCHITECTURE,
+                    framework=FrameworkType.D2,
+                    agent="t2d-d2-generator",
+                    title="System Architecture",
+                    instructions="Create architecture diagram from PRD content.",
+                    output_file="diagrams/architecture.d2",
+                    output_formats=[OutputFormat.SVG, OutputFormat.PNG]
+                )
+            ],
+            diagram_refs=[
+                DiagramReference(
+                    id="arch-001",
+                    title="System Architecture",
+                    type=DiagramType.ARCHITECTURE,
+                    expected_path="diagrams/architecture.d2",
+                    description="Main architecture diagram",
+                    status="pending"
+                )
+            ],
+            outputs=OutputConfig(
+                assets_dir="docs/assets",
+                mkdocs={"theme": "material"}
+            ),
+            generation_notes=["Transformed from user recipe", "Generated 1 diagrams"]
+        )
+
+        # Test that the processed recipe was created correctly
+        assert processed_recipe.name == user_recipe.name
+        assert processed_recipe.version == user_recipe.version
+        assert len(processed_recipe.content_files) == 1
+        assert len(processed_recipe.diagram_specs) == 1
+        assert len(processed_recipe.diagram_refs) == 1
+        assert processed_recipe.generation_notes == ["Transformed from user recipe", "Generated 1 diagrams"]
+
+        # Test timezone handling - generated_at should have timezone info
+        assert processed_recipe.generated_at.tzinfo is not None
+        assert processed_recipe.generated_at.tzinfo == timezone.utc
+
+        # Test datetime comparison - generated_at should not be in the future
+        current_time = datetime.now(timezone.utc)
+        assert processed_recipe.generated_at <= current_time
+
+        # Test serialization with timezone info
+        data = processed_recipe.model_dump()
+        recreated = ProcessedRecipe(**data)
+
+        # Both datetime objects should have timezone info and be comparable
+        assert recreated.generated_at.tzinfo is not None
+        assert recreated.generated_at == processed_recipe.generated_at
+
+    def test_processed_recipe_outputs(self):
+        """Test ProcessedRecipe outputs configuration with timezone-aware datetime handling."""
+        # Create a processed recipe with specific outputs configuration
+        base_timestamp = datetime.now(timezone.utc)
+
+        outputs_config = OutputConfig(
+            assets_dir="docs/assets",
+            mkdocs={
+                "theme": "material",
+                "plugins": ["search", "mermaid2"],
+                "nav": [
+                    {"Home": "index.md"},
+                    {"Architecture": "architecture.md"}
+                ]
+            },
+            marp={
+                "theme": "default",
+                "html": True,
+                "pdf": True
+            }
+        )
+
+        processed_recipe = ProcessedRecipe(
+            name="Outputs Test Recipe",
+            version="1.2.0",
+            source_recipe="recipes/outputs-test.yaml",
+            generated_at=base_timestamp,
+            content_files=[self.create_valid_content_file()],
+            diagram_specs=[self.create_valid_diagram_spec()],
+            diagram_refs=[self.create_valid_diagram_ref()],
+            outputs=outputs_config,
+            generation_notes=["Testing outputs configuration", "Added MkDocs and Marp configs"]
+        )
+
+        # Test outputs configuration is properly set
+        assert processed_recipe.outputs.assets_dir == "docs/assets"
+        assert processed_recipe.outputs.mkdocs["theme"] == "material"
+        assert processed_recipe.outputs.marp["theme"] == "default"
+        assert len(processed_recipe.outputs.mkdocs["plugins"]) == 2
+        assert len(processed_recipe.outputs.mkdocs["nav"]) == 2
+
+        # Test timezone-aware datetime handling
+        assert processed_recipe.generated_at.tzinfo is not None
+        assert processed_recipe.generated_at.tzinfo == timezone.utc
+
+        # Test that generated_at is not in the future
+        current_time = datetime.now(timezone.utc)
+        assert processed_recipe.generated_at <= current_time
+
+        # Test serialization and deserialization preserves outputs and timezone info
+        data = processed_recipe.model_dump()
+
+        # Verify outputs structure in serialized data
+        assert "outputs" in data
+        assert data["outputs"]["assets_dir"] == "docs/assets"
+        assert "mkdocs" in data["outputs"]
+        assert "marp" in data["outputs"]
+
+        # Recreate from serialized data
+        recreated = ProcessedRecipe(**data)
+
+        # Verify outputs configuration is preserved
+        assert recreated.outputs.assets_dir == processed_recipe.outputs.assets_dir
+        assert recreated.outputs.mkdocs == processed_recipe.outputs.mkdocs
+        assert recreated.outputs.marp == processed_recipe.outputs.marp
+
+        # Verify timezone information is preserved
+        assert recreated.generated_at.tzinfo is not None
+        assert recreated.generated_at == processed_recipe.generated_at
+
+        # Test that content file last_updated also has proper timezone handling
+        assert recreated.content_files[0].last_updated.tzinfo is not None
+        assert recreated.content_files[0].last_updated.tzinfo == timezone.utc

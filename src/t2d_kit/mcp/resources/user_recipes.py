@@ -74,6 +74,7 @@ async def register_user_recipe_resources(server: FastMCP, recipe_dir: Path | Non
     if recipe_dir is None:
         recipe_dir = DEFAULT_RECIPE_DIR
 
+    # Register a handler for the base URI pattern
     @server.resource("user-recipes://")
     async def list_user_recipes() -> dict:
         """Get list of all user recipes.
@@ -111,60 +112,67 @@ async def register_user_recipe_resources(server: FastMCP, recipe_dir: Path | Non
             "content": resource.model_dump()
         }
 
-    @server.resource("user-recipes://{recipe_name}")
-    async def get_user_recipe(recipe_name: str) -> dict:
-        """Get a specific user recipe by name.
+    # Register individual resources for each existing recipe
+    if recipe_dir.exists() and recipe_dir.is_dir():
+        for recipe_file in recipe_dir.glob("*.yaml"):
+            if not recipe_file.name.endswith(".t2d.yaml"):
+                recipe_name = recipe_file.stem
 
-        Args:
-            recipe_name: Name of the recipe (without .yaml extension)
+                # Create a closure to capture the recipe_name
+                def create_recipe_handler(name: str, path: Path):
+                    @server.resource(f"user-recipes://{name}")
+                    async def get_specific_recipe() -> dict:
+                        """Get a specific user recipe by name.
 
-        Returns:
-            Full recipe content and metadata
-        """
-        # Construct path
-        recipe_path = recipe_dir / f"{recipe_name}.yaml"
+                        Returns:
+                            Full recipe content and metadata
+                        """
+                        if not path.exists():
+                            raise FileNotFoundError(f"Recipe not found: {name}")
 
-        if not recipe_path.exists():
-            raise FileNotFoundError(f"Recipe not found: {recipe_name}")
+                        # Read content
+                        with open(path) as f:
+                            raw_yaml = f.read()
+                            content = yaml.safe_load(raw_yaml)
 
-        # Read content
-        with open(recipe_path) as f:
-            raw_yaml = f.read()
-            content = yaml.safe_load(raw_yaml)
+                        # Get metadata
+                        metadata = get_recipe_metadata(path)
 
-        # Get metadata
-        metadata = get_recipe_metadata(recipe_path)
+                        # Try to validate
+                        validation_result = None
+                        try:
+                            from t2d_kit.models.user_recipe import UserRecipe
+                            UserRecipe.model_validate(content)
+                            validation_result = {
+                                "valid": True,
+                                "errors": [],
+                                "warnings": []
+                            }
+                        except Exception as e:
+                            validation_result = {
+                                "valid": False,
+                                "errors": [{"message": str(e)}],
+                                "warnings": []
+                            }
 
-        # Try to validate
-        validation_result = None
-        try:
-            from t2d_kit.models.user_recipe import UserRecipe
-            UserRecipe.model_validate(content)
-            validation_result = {
-                "valid": True,
-                "errors": [],
-                "warnings": []
-            }
-        except Exception as e:
-            validation_result = {
-                "valid": False,
-                "errors": [{"message": str(e)}],
-                "warnings": []
-            }
+                        resource = RecipeDetailResource(
+                            name=name,
+                            content=content,
+                            raw_yaml=raw_yaml,
+                            validation_result=validation_result,
+                            file_path=str(path.absolute()),
+                            metadata=metadata
+                        )
 
-        resource = RecipeDetailResource(
-            name=recipe_name,
-            content=content,
-            raw_yaml=raw_yaml,
-            validation_result=validation_result,
-            file_path=str(recipe_path.absolute()),
-            metadata=metadata
-        )
+                        return {
+                            "uri": f"user-recipes://{name}",
+                            "name": f"User Recipe: {name}",
+                            "description": f"User recipe with {metadata.diagram_count} diagram(s)",
+                            "mimeType": "application/x-yaml",
+                            "content": resource.model_dump()
+                        }
 
-        return {
-            "uri": f"user-recipes://{recipe_name}",
-            "name": f"User Recipe: {recipe_name}",
-            "description": f"User recipe with {metadata.diagram_count} diagram(s)",
-            "mimeType": "application/x-yaml",
-            "content": resource.model_dump()
-        }
+                    return get_specific_recipe
+
+                # Register the handler for this specific recipe
+                create_recipe_handler(recipe_name, recipe_file)

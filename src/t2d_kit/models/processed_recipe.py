@@ -72,7 +72,14 @@ class ProcessedRecipe(T2DBaseModel):
             except (ValueError, TypeError) as e:
                 raise ValueError(f"Invalid datetime format: {v}") from e
 
-        if v > datetime.now(v.tzinfo if v.tzinfo else UTC):
+        # Ensure both datetimes have timezone info for comparison
+        if v.tzinfo is None:
+            # If input is naive, assume UTC
+            v = v.replace(tzinfo=UTC)
+
+        # Compare with current time in the same timezone
+        now = datetime.now(v.tzinfo)
+        if v > now:
             raise ValueError("Generation time cannot be in the future")
         return v
 

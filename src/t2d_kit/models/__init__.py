@@ -44,6 +44,9 @@ from .d2_options import (
 from .diagram import (
     DiagramSpecification,
 )
+from .diagram_spec import (
+    DiagramSpec,
+)
 from .marp_config import (
     MarpConfig,
     SlideDirective,
@@ -120,6 +123,7 @@ __all__ = [
     "OutputConfig",
     # Diagram models
     "DiagramSpecification",
+    "DiagramSpec",
     # Content models
     "ContentFile",
     # State management models
