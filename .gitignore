@@ -71,5 +71,4 @@ output/
 .mise.local.toml
 
 # uv
-uv.lock
 .pypirc

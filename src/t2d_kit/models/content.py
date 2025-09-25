@@ -48,7 +48,7 @@ class ContentFile(T2DBaseModel):
     @classmethod
     def validate_agent_type(cls, v: str) -> str:
         """Ensure agent is a valid content agent."""
-        valid_agents = {"t2d-markdown-maintainer", "t2d-mkdocs-formatter", "t2d-marp-slides"}
+        valid_agents = {"t2d-docs-generator", "t2d-slides-generator", "t2d-markdown-maintainer", "t2d-mkdocs-formatter", "t2d-marp-slides"}
         if v not in valid_agents:
             raise ValueError(f"Agent must be one of: {valid_agents}")
         return v

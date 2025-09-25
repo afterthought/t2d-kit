@@ -165,9 +165,7 @@ def save(name, type, data, force):
             recipe_path = USER_RECIPES_DIR / f"{name}.yaml"
         else:
             recipe = ProcessedRecipe.model_validate(recipe_data)
-            recipe.metadata.recipe_name = name
-            recipe.metadata.last_modified = datetime.now()
-            recipe.metadata.tool_version = "2.0.0"
+            recipe.name = name
             recipe_path = PROCESSED_RECIPES_DIR / f"{name}.t2d.yaml"
 
         # Create backup if file exists
@@ -267,7 +265,7 @@ def validate(name, type, json_output):
                 raise ValueError("Recipe must have at least one diagram")
         else:
             recipe = ProcessedRecipe.model_validate(data)
-            if not recipe.diagrams:
+            if not recipe.diagram_specs:
                 raise ValueError("Processed recipe must have at least one diagram")
 
         result = {
