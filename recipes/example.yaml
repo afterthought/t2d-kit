@@ -1,0 +1,10 @@
+name: example
+version: 1.0.0
+prd:
+  content: Simple example system
+  format: !!python/object/apply:t2d_kit.models.base.PRDFormat
+  - markdown
+instructions:
+  diagrams:
+  - type: architecture
+    description: System overview

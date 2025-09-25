@@ -82,12 +82,27 @@ def setup_command(level: str, agent_dir: str, force: bool):
             "t2d-slides-generator",
         ]
 
-        import t2d_kit.agents
+        # Try to read from source directory first (development mode)
+        # This ensures we always get the latest agent definitions
+        import t2d_kit
+        package_path = Path(t2d_kit.__file__).parent
+        source_agents_dir = package_path / "agents"
 
-        agent_files = resources.files(t2d_kit.agents)
+        # Fall back to package resources if source directory doesn't exist
+        use_source_dir = source_agents_dir.exists()
+
+        if not use_source_dir:
+            import t2d_kit.agents
+            agent_files = resources.files(t2d_kit.agents)
 
         for i, agent_name in enumerate(agent_names):
-            agent_file = agent_files / f"{agent_name}.md"
+            if use_source_dir:
+                agent_file = source_agents_dir / f"{agent_name}.md"
+                file_exists = agent_file.exists()
+            else:
+                agent_file = agent_files / f"{agent_name}.md"
+                file_exists = agent_file.is_file()
+
             target_path = agent_path / f"{agent_name}.md"
 
             if target_path.exists() and not force:
@@ -95,9 +110,14 @@ def setup_command(level: str, agent_dir: str, force: bool):
                     f"[yellow]⚠[/yellow] {agent_name} already exists (use --force to overwrite)"
                 )
             else:
-                if agent_file.is_file():
-                    with agent_file.open("rb") as src:
-                        target_path.write_bytes(src.read())
+                if file_exists:
+                    if use_source_dir:
+                        # Read directly from source file
+                        target_path.write_bytes(agent_file.read_bytes())
+                    else:
+                        # Read from package resources
+                        with agent_file.open("rb") as src:
+                            target_path.write_bytes(src.read())
                     console.print(f"[green]✓[/green] Installed {agent_name}")
                 else:
                     console.print(f"[red]✗[/red] Agent file not found: {agent_name}")
