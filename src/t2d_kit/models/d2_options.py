@@ -107,7 +107,25 @@ class D2Options(T2DBaseModel):
 
         # Add theme if specified
         if self.theme:
-            args.extend(["--theme", self.theme])
+            # Map theme names to numeric IDs that D2 expects
+            theme_map = {
+                "neutral-default": "0",
+                "neutral-grey": "1",
+                "flagship-terrastruct": "2",
+                "cool-classics": "3",
+                "mixed-berry-blue": "4",
+                "grape-soda": "5",
+                "aubergine": "6",
+                "colorblind-clear": "3",  # same as cool-classics
+                "vanilla-nitro-cola": "4",  # same as mixed-berry-blue
+                "orange-creamsicle": "5",  # same as grape-soda
+                "shirley-temple": "6",  # same as aubergine
+                "earth-tones": "7",
+                "everglade": "0",  # fallback to default
+                "buttered-toast": "0",  # fallback to default
+            }
+            theme_id = theme_map.get(self.theme, "0")
+            args.extend(["--theme", theme_id])
 
         # Add sketch mode
         if self.sketch:

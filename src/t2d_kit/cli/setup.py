@@ -106,12 +106,70 @@ def setup_command(level: str, agent_dir: str, force: bool):
 
         progress.update(task, completed=6)
 
-        # Check mise installation
+        # Check mise installation and tools
         task = progress.add_task("Checking mise dependencies...", total=1)
-        if shutil.which("mise"):
+        mise_installed = shutil.which("mise")
+        tools_needed = []  # Initialize here to avoid unbound variable
+        if mise_installed:
             console.print("[green]✓[/green] mise is installed")
+
+            # Check if diagram tools are installed
+            import subprocess
+            tools_needed = []
+
+            # Check for D2
+            if not shutil.which("d2"):
+                tools_needed.append("D2")
+
+            # Check for Mermaid CLI
+            if not shutil.which("mmdc"):
+                tools_needed.append("Mermaid CLI")
+
+            # Check for PlantUML
+            plantuml_jar = Path("~/.local/bin/plantuml.jar").expanduser()
+            if not plantuml_jar.exists():
+                tools_needed.append("PlantUML")
+
+            if tools_needed:
+                console.print(f"[yellow]⚠[/yellow] Missing diagram tools: {', '.join(tools_needed)}")
+                console.print("[cyan]→[/cyan] Running [bold]mise install[/bold] to install tools...")
+
+                # Run mise install
+                try:
+                    result = subprocess.run(
+                        ["mise", "install"],
+                        capture_output=True,
+                        text=True,
+                        cwd=Path.cwd()
+                    )
+                    if result.returncode == 0:
+                        console.print("[green]✓[/green] mise install completed successfully")
+
+                        # Also run setup-plantuml task for PlantUML
+                        if "PlantUML" in tools_needed:
+                            console.print("[cyan]→[/cyan] Setting up PlantUML...")
+                            plantuml_result = subprocess.run(
+                                ["mise", "run", "setup-plantuml"],
+                                capture_output=True,
+                                text=True,
+                                cwd=Path.cwd()
+                            )
+                            if plantuml_result.returncode == 0:
+                                console.print("[green]✓[/green] PlantUML setup completed")
+                            else:
+                                console.print("[yellow]⚠[/yellow] PlantUML setup had issues - run [cyan]mise run setup-plantuml[/cyan] manually")
+                    else:
+                        console.print("[yellow]⚠[/yellow] mise install had issues - run it manually")
+                        if result.stderr:
+                            console.print(f"[dim]{result.stderr}[/dim]")
+                except Exception as e:
+                    console.print(f"[yellow]⚠[/yellow] Could not run mise install automatically: {e}")
+                    console.print("[cyan]→[/cyan] Please run [bold]mise install[/bold] manually")
+            else:
+                console.print("[green]✓[/green] All diagram tools are installed")
         else:
             console.print("[yellow]⚠[/yellow] mise not found - install from https://mise.run")
+            console.print("     After installing mise, run [cyan]mise install[/cyan] to get diagram tools")
         progress.update(task, completed=1)
 
     # Success message
@@ -143,8 +201,20 @@ def setup_command(level: str, agent_dir: str, force: bool):
         )
     )
 
-    # Next steps
+    # Next steps - be smart about what to suggest
     console.print("\n[bold]Next steps:[/bold]")
-    console.print("1. Run [cyan]mise install[/cyan] to install diagram tools")
-    console.print("2. Test recipe commands: [cyan]t2d recipe list[/cyan]")
-    console.print("3. Verify installation: [cyan]t2d verify[/cyan]")
+    step_num = 1
+
+    # Only suggest mise install if tools are missing and mise wasn't automatically run
+    if not mise_installed:
+        console.print(f"{step_num}. Install mise from [cyan]https://mise.run[/cyan]")
+        step_num += 1
+        console.print(f"{step_num}. Run [cyan]mise install[/cyan] to install diagram tools")
+        step_num += 1
+    elif tools_needed:
+        console.print(f"{step_num}. If tools are still missing, run [cyan]mise install[/cyan] manually")
+        step_num += 1
+
+    console.print(f"{step_num}. Test recipe commands: [cyan]t2d recipe list[/cyan]")
+    step_num += 1
+    console.print(f"{step_num}. Verify installation: [cyan]t2d verify[/cyan]")

@@ -9,8 +9,11 @@ Transform requirements into beautiful diagrams and documentation using self-orga
 ## 🚀 Quick Start
 
 ```bash
-# Install with uv
-uvx install t2d-kit
+# Install from GitHub
+pip install git+https://github.com/afterthought/t2d-kit.git
+
+# Or with uv
+uv pip install git+https://github.com/afterthought/t2d-kit.git
 
 # Setup agents
 t2d setup
@@ -51,14 +54,23 @@ t2d-kit is an intelligent documentation generator that transforms Product Requir
 
 ## 🛠 Installation
 
+### From GitHub
+
+```bash
+# Install directly from GitHub
+pip install git+https://github.com/afterthought/t2d-kit.git
+
+# Or for development
+git clone https://github.com/afterthought/t2d-kit.git
+cd t2d-kit
+pip install -e .[dev]
+```
+
 ### Prerequisites
 
 ```bash
-# Install mise for dependency management
+# Install mise for dependency management (for diagram tools)
 curl https://mise.run | sh
-
-# Install Python dependencies
-pip install -e .[dev]
 
 # Install diagram tools
 mise install
