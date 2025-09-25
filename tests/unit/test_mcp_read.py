@@ -31,17 +31,13 @@ class TestMCPResourceRead:
 
             await register_user_recipe_resources(mcp_server, recipe_dir)
 
-            # Get the resource and call it
-            resources = await mcp_server.get_resources()
-            assert "user-recipes://" in resources
+            # Get all resource templates - should have the template registered
+            templates = await mcp_server.get_resource_templates()
 
-            resource = resources["user-recipes://"]
-            response = await resource.fn()
-            content = response["content"]
-
-            assert content["total_count"] == 0
-            assert content["recipes"] == []
-            assert content["directory"] == str(recipe_dir.absolute())
+            # Check that the resource template is registered with file:// URI
+            # The template key should be the absolute path
+            expected_template = f"file://{recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
     @pytest.mark.asyncio
     async def test_list_user_recipes_with_files(self, mcp_server):
@@ -72,22 +68,26 @@ class TestMCPResourceRead:
 
             await register_user_recipe_resources(mcp_server, recipe_dir)
 
-            # Get the resource and call it
-            resources = await mcp_server.get_resources()
-            resource = resources["user-recipes://"]
-            response = await resource.fn()
-            content = response["content"]
+            # Get all resource templates
+            templates = await mcp_server.get_resource_templates()
 
-            assert content["total_count"] == 2
-            assert len(content["recipes"]) == 2
+            # Check that the resource template is registered with file:// URI
+            # The template key should be the absolute path
+            expected_template = f"file://{recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
-            # Check recipe summaries
-            recipe_names = [r["name"] for r in content["recipes"]]
-            assert "recipe1" in recipe_names
-            assert "recipe2" in recipe_names
+            # Test reading specific recipes through the template
+            template = templates[expected_template]
 
-            # Verify .t2d.yaml was ignored
-            assert "processed" not in recipe_names
+            # Read recipe1
+            content1 = await template.fn("recipe1")
+            assert content1["name"] == "recipe1"
+            assert content1["content"]["name"] == "test-recipe-1"
+
+            # Read recipe2
+            content2 = await template.fn("recipe2")
+            assert content2["name"] == "recipe2"
+            assert content2["content"]["name"] == "test-recipe-2"
 
     @pytest.mark.asyncio
     async def test_get_specific_user_recipe(self, mcp_server):
@@ -115,52 +115,16 @@ class TestMCPResourceRead:
 
             await register_user_recipe_resources(mcp_server, recipe_dir)
 
-            # Test the functionality by manually calling the resource registration function
-            # Since the templated resources may not show up in get_resources(),
-            # let's test the actual functionality directly
-            from t2d_kit.mcp.resources.user_recipes import get_recipe_metadata
-            from t2d_kit.models.mcp_resources import RecipeDetailResource
-            from t2d_kit.models.user_recipe import UserRecipe
+            # Get the resource template
+            templates = await mcp_server.get_resource_templates()
+            expected_template = f"file://{recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
-            # Simulate what the resource handler should do
-            recipe_path = recipe_dir / "test-recipe.yaml"
+            # Read the recipe through the template
+            template = templates[expected_template]
+            content = await template.fn("test-recipe")
 
-            # Read content like the resource would
-            with open(recipe_path) as f:
-                raw_yaml = f.read()
-                content_dict = yaml.safe_load(raw_yaml)
-
-            # Get metadata
-            metadata = get_recipe_metadata(recipe_path)
-
-            # Try to validate
-            validation_result = None
-            try:
-                UserRecipe.model_validate(content_dict)
-                validation_result = {
-                    "valid": True,
-                    "errors": [],
-                    "warnings": []
-                }
-            except Exception as e:
-                validation_result = {
-                    "valid": False,
-                    "errors": [{"message": str(e)}],
-                    "warnings": []
-                }
-
-            # Create the resource like the handler would
-            resource = RecipeDetailResource(
-                name="test-recipe",
-                content=content_dict,
-                raw_yaml=raw_yaml,
-                validation_result=validation_result,
-                file_path=str(recipe_path.absolute()),
-                metadata=metadata
-            )
-
-            # Simulate the response structure
-            content = resource.model_dump()
+            # Validate the content structure
 
             assert content["name"] == "test-recipe"
             assert content["content"]["name"] == "test-recipe"
@@ -223,21 +187,19 @@ class TestMCPResourceRead:
 
             await register_processed_recipe_resources(mcp_server, processed_dir)
 
-            # Get the resource and call it
-            resources = await mcp_server.get_resources()
-            assert "processed-recipes://" in resources
+            # Get the resource template
+            templates = await mcp_server.get_resource_templates()
+            expected_template = f"file://{processed_dir.resolve()}/{{name}}.t2d.yaml"
+            assert expected_template in templates
 
-            resource = resources["processed-recipes://"]
-            response = await resource.fn()
-            content = response["content"]
+            # Read the recipe through the template
+            template = templates[expected_template]
+            content = await template.fn("test1")
 
-            assert content["total_count"] == 1
-            assert len(content["recipes"]) == 1
-
-            recipe = content["recipes"][0]
-            assert recipe["name"] == "test1"
-            assert recipe["diagram_count"] == 1
-            assert recipe["content_file_count"] == 1
+            # Validate the content
+            assert content["name"] == "test1"
+            assert content["metadata"]["diagram_count"] == 1
+            assert content["metadata"]["content_file_count"] == 1
 
     @pytest.mark.asyncio
     async def test_get_specific_processed_recipe(self, mcp_server):
@@ -295,13 +257,14 @@ class TestMCPResourceRead:
 
             await register_processed_recipe_resources(mcp_server, processed_dir)
 
-            # Get the specific processed recipe resource
-            resources = await mcp_server.get_resources()
-            assert "processed-recipes://test-processed" in resources
+            # Get the resource template
+            templates = await mcp_server.get_resource_templates()
+            expected_template = f"file://{processed_dir.resolve()}/{{name}}.t2d.yaml"
+            assert expected_template in templates
 
-            resource = resources["processed-recipes://test-processed"]
-            response = await resource.fn()
-            content = response["content"]
+            # Read the recipe through the template
+            template = templates[expected_template]
+            content = await template.fn("test-processed")
 
             assert content["name"] == "test-processed"
             assert content["content"]["name"] == "test-processed"
@@ -337,18 +300,20 @@ class TestMCPResourceRead:
 
             await register_user_recipe_resources(mcp_server, recipe_dir)
 
-            # List recipes
-            resources = await mcp_server.get_resources()
-            resource = resources["user-recipes://"]
-            response = await resource.fn()
-            content = response["content"]
+            # Get the resource template
+            templates = await mcp_server.get_resource_templates()
+            expected_template = f"file://{recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
-            # Find recipes by name
-            valid = next(r for r in content["recipes"] if r["name"] == "valid")
-            invalid = next(r for r in content["recipes"] if r["name"] == "invalid")
+            template = templates[expected_template]
 
-            assert valid["validation_status"] == "valid"
-            assert invalid["validation_status"] == "invalid"
+            # Read the valid recipe
+            valid_content = await template.fn("valid")
+            assert valid_content["validation_result"]["valid"] is True
+
+            # Read the invalid recipe
+            invalid_content = await template.fn("invalid")
+            assert invalid_content["validation_result"]["valid"] is False
 
     @pytest.mark.asyncio
     async def test_recipe_with_diagrams_count(self, mcp_server):
@@ -373,14 +338,17 @@ class TestMCPResourceRead:
 
             await register_user_recipe_resources(mcp_server, recipe_dir)
 
-            # List recipes
-            resources = await mcp_server.get_resources()
-            resource = resources["user-recipes://"]
-            response = await resource.fn()
-            content = response["content"]
+            # Get the resource template
+            templates = await mcp_server.get_resource_templates()
+            expected_template = f"file://{recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
-            recipe_summary = content["recipes"][0]
-            assert recipe_summary["diagram_count"] == 3
+            # Read the recipe through the template
+            template = templates[expected_template]
+            content = await template.fn("multi")
+
+            # Check the metadata
+            assert content["metadata"]["diagram_count"] == 3
 
     @pytest.mark.asyncio
     async def test_nonexistent_recipe_directory(self, mcp_server):
@@ -389,14 +357,11 @@ class TestMCPResourceRead:
 
         await register_user_recipe_resources(mcp_server, non_existent_dir)
 
-        # Should still register the resource
-        resources = await mcp_server.get_resources()
-        assert "user-recipes://" in resources
+        # Get all resource templates
+        templates = await mcp_server.get_resource_templates()
 
-        # But return empty list
-        resource = resources["user-recipes://"]
-        response = await resource.fn()
-        content = response["content"]
-
-        assert content["total_count"] == 0
-        assert content["recipes"] == []
+        # The template should still be registered even if no recipes exist
+        # Note: /tmp resolves to /private/tmp on macOS
+        resolved_path = non_existent_dir.resolve()
+        expected_template = f"file://{resolved_path}/{{name}}.yaml"
+        assert expected_template in templates

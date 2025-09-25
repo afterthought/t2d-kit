@@ -163,60 +163,51 @@ class TestMCPRecipeFlow:
     async def test_resource_discovery(self, mcp_server, temp_recipe_dir, mock_yaml_file):
         """Test discovering recipes via resources."""
         from t2d_kit.mcp.resources import register_resources
+        import tempfile
+        from pathlib import Path
 
-        await register_resources(mcp_server)
+        # Create temporary processed directory for testing
+        with tempfile.TemporaryDirectory() as temp_dir:
+            processed_dir = Path(temp_dir)
 
-        # Discover diagram types
-        diagram_types_resource = await mcp_server.get_resource("diagram-types://")
-        diagram_types_response = await diagram_types_resource.fn()
-        diagram_types = diagram_types_response["content"]
-        assert len(diagram_types["diagram_types"]) > 0
-        assert diagram_types["categories"] is not None
+            await register_resources(mcp_server, temp_recipe_dir, processed_dir)
 
-        # Discover user recipes
-        user_recipes_resource = await mcp_server.get_resource("user-recipes://")
-        user_recipes_response = await user_recipes_resource.fn()
-        user_recipes = user_recipes_response["content"]
-        assert "recipes" in user_recipes
-        assert user_recipes["total_count"] >= 0
+            # Discover diagram types
+            diagram_types_resource = await mcp_server.get_resource("diagram-types://")
+            diagram_types_response = await diagram_types_resource.fn()
+            # Resource now returns data directly
+            diagram_types = diagram_types_response
+            # Resource now returns just the array
+            assert isinstance(diagram_types, list)
+            assert len(diagram_types) > 0
 
-        # Get specific recipe (handle template resource issue)
-        if user_recipes["total_count"] > 0:
-            first_recipe = user_recipes["recipes"][0]
-            try:
-                specific_recipe_resource = await mcp_server.get_resource(f"user-recipes://{first_recipe['name']}")
-                specific_recipe_response = await specific_recipe_resource.fn()
-                specific_recipe = specific_recipe_response["content"]
-            except Exception:
-                # Handle template resource limitation similar to contract tests
-                resources = await mcp_server.get_resources()
-                template_resource = None
-                for uri, res in resources.items():
-                    if uri.startswith("user-recipes://") and "{recipe_name}" in uri:
-                        template_resource = res
-                        break
+            # Get resource templates
+            templates = await mcp_server.get_resource_templates()
 
-                if template_resource:
-                    specific_recipe_response = await template_resource.fn(first_recipe['name'])
-                    specific_recipe = specific_recipe_response["content"]
-                else:
-                    # Skip this part if template resources aren't supported
-                    specific_recipe = {"name": first_recipe["name"], "content": {}, "raw_yaml": ""}
+            # Find the user recipe template
+            expected_template = f"file://{temp_recipe_dir.resolve()}/{{name}}.yaml"
+            assert expected_template in templates
 
-            assert specific_recipe["name"] == first_recipe["name"]
+            # Get a specific recipe through the template
+            template = templates[expected_template]
+            specific_recipe = await template.fn("test-recipe")
+
+            assert specific_recipe["name"] == "test-recipe"
             assert "content" in specific_recipe
             assert "raw_yaml" in specific_recipe
 
         # Get schemas
         user_schema_resource = await mcp_server.get_resource("user-recipe-schema://")
         user_schema_response = await user_schema_resource.fn()
-        user_schema = user_schema_response["content"]
+        # Resource now returns data directly
+        user_schema = user_schema_response
         assert "version" in user_schema
         assert "fields" in user_schema
 
         processed_schema_resource = await mcp_server.get_resource("processed-recipe-schema://")
         processed_schema_response = await processed_schema_resource.fn()
-        processed_schema = processed_schema_response["content"]
+        # Resource now returns data directly
+        processed_schema = processed_schema_response
         assert "version" in processed_schema
         assert len(processed_schema["fields"]) > len(user_schema["fields"])  # More complex
 
@@ -285,19 +276,21 @@ A comprehensive system for testing transformation.
 
         import yaml
         with open(recipe_file) as f:
-            recipe_content = {"content": yaml.safe_load(f)}
+            recipe_content = yaml.safe_load(f)
         assert recipe_content is not None
 
         # Get available diagram types for mapping
         diagram_types_resource = await mcp_server.get_resource("diagram-types://")
         diagram_types_response = await diagram_types_resource.fn()
-        diagram_types = diagram_types_response["content"]
-        type_map = {dt["type_id"]: dt for dt in diagram_types["diagram_types"]}
+        # Resource now returns data directly
+        diagram_types = diagram_types_response
+        # Resource now returns just the array
+        type_map = {dt["type_id"]: dt for dt in diagram_types}
 
         # Transform to processed recipe (what agent would do)
         diagram_specs = []
         diagram_refs = []
-        for i, diagram in enumerate(recipe_content["content"]["instructions"]["diagrams"]):
+        for i, diagram in enumerate(recipe_content["instructions"]["diagrams"]):
             diagram_id = f"{diagram['type']}-{i:03d}"
             # Map framework to file extension - check for framework_preference field
             framework_str = diagram.get("framework_preference") or diagram.get("framework") or type_map[diagram["type"]]["framework"]
@@ -325,8 +318,8 @@ A comprehensive system for testing transformation.
 
         # Create content files based on documentation config
         content_files = []
-        if "documentation" in recipe_content["content"]["instructions"]:
-            doc_config = recipe_content["content"]["instructions"]["documentation"]
+        if "documentation" in recipe_content["instructions"]:
+            doc_config = recipe_content["instructions"]["documentation"]
             for section in doc_config.get("sections", []):
                 content_files.append({
                     "id": section.lower().replace(" ", "-"),

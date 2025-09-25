@@ -1,0 +1,60 @@
+name: ecommerce-platform
+version: 1.0.0
+prd:
+  content: |
+    # E-commerce Platform PRD
+
+    ## Overview
+    We are building a modern e-commerce platform that enables businesses to sell products online.
+    The platform will support product management, shopping cart, checkout, and order management.
+
+    ## Key Features
+    - Product catalog with search and filtering
+    - Shopping cart and wishlist
+    - Secure checkout with payment processing
+    - Order tracking and history
+    - User accounts and profiles
+    - Admin dashboard for management
+
+    ## Technical Requirements
+    - Microservices architecture
+    - RESTful API design
+    - PostgreSQL for data storage
+    - Redis for caching
+    - Stripe for payments
+    - Docker containerization
+
+    ## User Types
+    - Customers: Browse and purchase products
+    - Merchants: Manage products and orders
+    - Admins: Platform administration
+
+instructions:
+  diagrams:
+    - type: architecture
+      description: High-level system architecture showing microservices
+      framework_preference: d2
+    - type: erd
+      description: Database schema for products, orders, and users
+      framework_preference: d2
+    - type: sequence
+      description: Checkout and payment processing flow
+      framework_preference: mermaid
+    - type: flowchart
+      description: Order fulfillment workflow
+      framework_preference: mermaid
+  documentation:
+    style: technical
+    audience: developers
+    sections:
+      - Overview
+      - Architecture
+      - API Reference
+      - Deployment
+    detail_level: detailed
+    include_code_examples: true
+preferences:
+  default_framework: mermaid
+  diagram_style: modern
+  color_scheme: blue
+  theme: light

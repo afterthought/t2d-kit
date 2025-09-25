@@ -1,0 +1,43 @@
+name: task-management
+version: 1.0.0
+prd:
+  content: |
+    # Task Management System
+
+    ## Project Overview
+    A collaborative task management system for teams to organize work, track progress, and improve productivity.
+
+    ## Core Features
+    - Task creation and assignment
+    - Project boards (Kanban, Scrum)
+    - Time tracking
+    - Team collaboration tools
+    - Notifications and reminders
+    - Reporting and analytics
+
+    ## Technical Stack
+    - Frontend: React with TypeScript
+    - Backend: Node.js with Express
+    - Database: MongoDB
+    - Real-time: WebSocket for live updates
+    - Authentication: JWT tokens
+
+instructions:
+  diagrams:
+    - type: flowchart
+      description: Task lifecycle from creation to completion
+      framework_preference: mermaid
+    - type: class
+      description: Domain model for tasks and projects
+      framework_preference: plantuml
+    - type: state
+      description: Task state machine
+      framework_preference: mermaid
+  documentation:
+    style: technical
+    audience: developers
+    detail_level: moderate
+preferences:
+  default_framework: mermaid
+  diagram_style: clean
+  color_scheme: green

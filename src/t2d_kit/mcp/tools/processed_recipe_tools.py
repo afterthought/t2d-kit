@@ -160,18 +160,13 @@ async def register_processed_recipe_tools(
 
         OPTIONAL UPDATES (provide any combination):
         - diagram_refs: Update diagram reference statuses
-          Example: [{"id": "arch-001", "status": "generated"}]
+          Each diagram ref contains: id, status (pending/generated/failed), and optional actual_path
         - outputs: Update output paths
         - metadata: Update metadata fields
 
-        COMMON USE CASE:
-        After generating a diagram, update its status:
-        {
-          "recipe_path": ".t2d-state/processed/my-system.t2d.yaml",
-          "diagram_refs": [
-            {"id": "flow-001", "status": "generated", "actual_path": "docs/assets/flow.svg"}
-          ]
-        }
+        Example usage:
+        After generating a diagram for "my-system", update the "flow-001" diagram status
+        to "generated" with the actual path "docs/assets/flow.svg"
 
         Args:
             params: Recipe path and sections to update

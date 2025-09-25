@@ -8,7 +8,7 @@ from typing import Optional
 import yaml
 from fastmcp import FastMCP
 
-from t2d_kit.models.mcp_resources import RecipeDetailResource, RecipeListResource, RecipeSummary
+from t2d_kit.models.mcp_resources import RecipeDetailResource, RecipeSummary
 
 DEFAULT_RECIPE_DIR = Path("./recipes")
 
@@ -74,59 +74,24 @@ async def register_user_recipe_resources(server: FastMCP, recipe_dir: Path | Non
     if recipe_dir is None:
         recipe_dir = DEFAULT_RECIPE_DIR
 
-    # Register a handler for the base URI pattern
-    @server.resource("user-recipes://")
-    async def list_user_recipes() -> dict:
-        """Get list of all user recipes.
+    # Register a resource template for user recipes using file:// URI with absolute path
+    # The template uses the absolute path to the recipe directory
+    base_path = recipe_dir.resolve()
 
-        Returns a list of recipe summaries with metadata about each recipe file.
-        """
-        recipes = []
-
-        # Ensure directory exists
-        if recipe_dir.exists() and recipe_dir.is_dir():
-            # Find all YAML files (excluding .t2d.yaml files)
-            for recipe_file in recipe_dir.glob("*.yaml"):
-                if not recipe_file.name.endswith(".t2d.yaml"):
-                    try:
-                        summary = get_recipe_metadata(recipe_file)
-                        recipes.append(summary)
-                    except Exception:
-                        # Skip files that can't be read
-                        pass
-
-        # Sort by name
-        recipes.sort(key=lambda r: r.name)
-
-        resource = RecipeListResource(
-            recipes=recipes,
-            total_count=len(recipes),
-            directory=str(recipe_dir.absolute())
-        )
-
-        return {
-            "uri": "user-recipes://",
-            "name": "User Recipe List",
-            "description": f"List of {len(recipes)} user recipe(s) in {recipe_dir}",
-            "mimeType": "application/json",
-            "content": resource.model_dump()
-        }
-
-    # Register a template handler for individual recipes
-    @server.resource("user-recipes://{recipe_name}")
-    async def get_user_recipe(recipe_name: str) -> dict:
+    @server.resource(f"file://{base_path}/{{name}}.yaml", mime_type="application/json")
+    async def get_user_recipe(name: str) -> dict:
         """Get a specific user recipe by name.
 
         Args:
-            recipe_name: Name of the recipe file (without .yaml extension)
+            name: Name of the recipe file (without .yaml extension)
 
         Returns:
             Full recipe content and metadata
         """
-        recipe_path = recipe_dir / f"{recipe_name}.yaml"
+        recipe_path = base_path / f"{name}.yaml"
 
         if not recipe_path.exists():
-            raise FileNotFoundError(f"Recipe not found: {recipe_name}")
+            raise FileNotFoundError(f"Recipe not found: {name}")
 
         # Read content
         with open(recipe_path) as f:
@@ -154,7 +119,7 @@ async def register_user_recipe_resources(server: FastMCP, recipe_dir: Path | Non
             }
 
         resource = RecipeDetailResource(
-            name=recipe_name,
+            name=name,
             content=content,
             raw_yaml=raw_yaml,
             validation_result=validation_result,
@@ -162,10 +127,5 @@ async def register_user_recipe_resources(server: FastMCP, recipe_dir: Path | Non
             metadata=metadata
         )
 
-        return {
-            "uri": f"user-recipes://{recipe_name}",
-            "name": f"User Recipe: {recipe_name}",
-            "description": f"User recipe with {metadata.diagram_count} diagram(s)",
-            "mimeType": "application/x-yaml",
-            "content": resource.model_dump()
-        }
+        # Return the data directly - FastMCP will handle wrapping
+        return resource.model_dump()

@@ -1,0 +1,36 @@
+name: two-tier-graphql-app
+version: 1.0.0
+prd:
+  content: "# Two-Tier Application with GraphQL and PostgreSQL\n\n## System Overview\n\
+    A modern two-tier web application that provides a robust data-driven experience\
+    \ through a GraphQL API layer.\n\n## Architecture Components\n\n### Frontend Tier\n\
+    - **Next.js Application**: A React-based frontend framework providing:\n  - Server-side\
+    \ rendering (SSR) for optimal performance\n  - Client-side routing\n  - GraphQL\
+    \ client integration for API communication\n  - Responsive user interface\n  -\
+    \ Real-time data updates via GraphQL subscriptions\n\n### Backend Tier\n- **GraphQL\
+    \ API Server**: A flexible query layer that:\n  - Provides a single endpoint for\
+    \ all data operations\n  - Handles authentication and authorization\n  - Implements\
+    \ business logic and data validation\n  - Manages database connections and query\
+    \ optimization\n  - Supports real-time subscriptions\n\n### Data Layer\n- **PostgreSQL\
+    \ Database**: A relational database system storing:\n  - User accounts and authentication\
+    \ data\n  - Application business data\n  - Session management\n  - Audit logs\
+    \ and analytics data\n\n## Data Flow\n1. Users interact with the Next.js frontend\
+    \ through web browsers\n2. Frontend sends GraphQL queries/mutations to the API\
+    \ server\n3. GraphQL API processes requests and validates permissions\n4. API\
+    \ server queries PostgreSQL database for data operations\n5. Database returns\
+    \ results to API server\n6. API server formats and returns response to frontend\n\
+    7. Next.js renders the updated UI for users\n\n## Key Features\n- Type-safe API\
+    \ with GraphQL schema\n- Efficient data fetching with query batching\n- Real-time\
+    \ updates through WebSocket connections\n- Scalable architecture with clear separation\
+    \ of concerns\n- Database connection pooling for performance\n- Caching layer\
+    \ for frequently accessed data"
+  format: markdown
+instructions:
+  diagrams:
+  - type: c4_context
+    description: High-level system context showing users and external systems
+    framework_preference: d2
+  - type: c4_container
+    description: Container diagram showing the Next.js frontend, GraphQL API, and
+      PostgreSQL database
+    framework_preference: d2

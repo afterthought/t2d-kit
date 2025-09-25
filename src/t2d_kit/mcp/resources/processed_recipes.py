@@ -10,7 +10,6 @@ from fastmcp import FastMCP
 
 from t2d_kit.models.mcp_resources import (
     ProcessedRecipeDetailResource,
-    ProcessedRecipeListResource,
     ProcessedRecipeSummary,
 )
 
@@ -90,102 +89,58 @@ async def register_processed_recipe_resources(
     if processed_dir is None:
         processed_dir = DEFAULT_PROCESSED_DIR
 
-    @server.resource("processed-recipes://")
-    async def list_processed_recipes() -> dict:
-        """Get list of all processed recipes.
+    # Register a resource template for processed recipes using file:// URI with absolute path
+    # The template uses the absolute path to the processed directory
+    base_path = processed_dir.resolve()
 
-        Returns a list of processed recipe summaries with metadata.
+    @server.resource(f"file://{base_path}/{{name}}.t2d.yaml", mime_type="application/json")
+    async def get_processed_recipe(name: str) -> dict:
+        """Get a specific processed recipe by name.
+
+        Args:
+            name: Name of the processed recipe file (without .t2d.yaml extension)
+
+        Returns:
+            Full processed recipe content and metadata
         """
-        recipes = []
+        recipe_path = base_path / f"{name}.t2d.yaml"
 
-        # Ensure directory exists
-        if processed_dir.exists() and processed_dir.is_dir():
-            # Find all .t2d.yaml files
-            for recipe_file in processed_dir.glob("*.t2d.yaml"):
-                try:
-                    summary = get_processed_metadata(recipe_file)
-                    recipes.append(summary)
-                except Exception:
-                    # Skip files that can't be read
-                    pass
+        if not recipe_path.exists():
+            raise FileNotFoundError(f"Processed recipe not found: {name}")
 
-        # Sort by generation time (newest first)
-        recipes.sort(key=lambda r: r.generated_at, reverse=True)
+        # Read content
+        with open(recipe_path) as f:
+            raw_yaml = f.read()
+            content = yaml.safe_load(raw_yaml)
 
-        resource = ProcessedRecipeListResource(
-            recipes=recipes,
-            total_count=len(recipes),
-            directory=str(processed_dir.absolute())
+        # Get metadata
+        metadata = get_processed_metadata(recipe_path)
+
+        # Try to validate
+        validation_result = None
+        try:
+            from t2d_kit.models.processed_recipe import ProcessedRecipe
+            ProcessedRecipe.model_validate(content)
+            validation_result = {
+                "valid": True,
+                "errors": [],
+                "warnings": []
+            }
+        except Exception as e:
+            validation_result = {
+                "valid": False,
+                "errors": [{"message": str(e)}],
+                "warnings": []
+            }
+
+        resource = ProcessedRecipeDetailResource(
+            name=name,
+            content=content,
+            raw_yaml=raw_yaml,
+            validation_result=validation_result,
+            file_path=str(recipe_path.absolute()),
+            metadata=metadata
         )
 
-        return {
-            "uri": "processed-recipes://",
-            "name": "Processed Recipe List",
-            "description": f"List of {len(recipes)} processed recipe(s) in {processed_dir}",
-            "mimeType": "application/json",
-            "content": resource.model_dump()
-        }
-
-    # Register individual resources for each existing processed recipe
-    if processed_dir.exists() and processed_dir.is_dir():
-        for recipe_file in processed_dir.glob("*.t2d.yaml"):
-            recipe_name = recipe_file.stem.replace(".t2d", "")
-
-            # Create a closure to capture the recipe_name
-            def create_processed_handler(name: str, path: Path):
-                @server.resource(f"processed-recipes://{name}")
-                async def get_specific_processed_recipe() -> dict:
-                    """Get a specific processed recipe by name.
-
-                    Returns:
-                        Full processed recipe content and metadata
-                    """
-                    if not path.exists():
-                        raise FileNotFoundError(f"Processed recipe not found: {name}")
-
-                    # Read content
-                    with open(path) as f:
-                        raw_yaml = f.read()
-                        content = yaml.safe_load(raw_yaml)
-
-                    # Get metadata
-                    metadata = get_processed_metadata(path)
-
-                    # Try to validate
-                    validation_result = None
-                    try:
-                        from t2d_kit.models.processed_recipe import ProcessedRecipe
-                        ProcessedRecipe.model_validate(content)
-                        validation_result = {
-                            "valid": True,
-                            "errors": [],
-                            "warnings": []
-                        }
-                    except Exception as e:
-                        validation_result = {
-                            "valid": False,
-                            "errors": [{"message": str(e)}],
-                            "warnings": []
-                        }
-
-                    resource = ProcessedRecipeDetailResource(
-                        name=name,
-                        content=content,
-                        raw_yaml=raw_yaml,
-                        validation_result=validation_result,
-                        file_path=str(path.absolute()),
-                        metadata=metadata
-                    )
-
-                    return {
-                        "uri": f"processed-recipes://{name}",
-                        "name": f"Processed Recipe: {name}",
-                        "description": f"Processed recipe with {metadata.diagram_count} diagram(s) and {metadata.content_file_count} content file(s)",
-                        "mimeType": "application/x-yaml",
-                        "content": resource.model_dump()
-                    }
-
-                return get_specific_processed_recipe
-
-            # Register the handler for this specific recipe
-            create_processed_handler(recipe_name, recipe_file)
+        # Return the data directly - FastMCP will handle wrapping
+        return resource.model_dump()

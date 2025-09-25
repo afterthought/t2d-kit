@@ -154,13 +154,8 @@ async def register_schema_resources(server: FastMCP) -> None:
             validation_rules=validation_rules
         )
 
-        return {
-            "uri": "user-recipe-schema://",
-            "name": "User Recipe Schema",
-            "description": "Complete schema definition for user recipe files",
-            "mimeType": "application/json",
-            "content": resource.model_dump()
-        }
+        # Return the data directly - FastMCP will handle wrapping
+        return resource.model_dump()
 
     @server.resource("processed-recipe-schema://")
     async def get_processed_recipe_schema() -> dict:
@@ -242,10 +237,5 @@ async def register_schema_resources(server: FastMCP) -> None:
             validation_rules=validation_rules
         )
 
-        return {
-            "uri": "processed-recipe-schema://",
-            "name": "Processed Recipe Schema",
-            "description": "Complete schema definition for processed recipe files",
-            "mimeType": "application/json",
-            "content": resource.model_dump()
-        }
+        # Return the data directly - FastMCP will handle wrapping
+        return resource.model_dump()

@@ -1,0 +1,12 @@
+name: test-dict-recipe
+version: 1.0.0
+prd:
+  content: '# Test Recipe
+
+
+    Simple test content.'
+  format: markdown
+instructions:
+  diagrams:
+  - type: flowchart
+    description: Test flowchart

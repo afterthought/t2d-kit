@@ -64,17 +64,27 @@ class TestMCPServerSmoke:
         resources = await server.get_resources()
         assert len(resources) > 0
 
-        # Verify key resources exist
+        # Check resource templates are registered
+        templates = await server.get_resource_templates()
+        assert len(templates) > 0
+
+        # Verify key regular resources exist
         expected_resources = [
             "diagram-types://",
-            "user-recipes://",
-            "processed-recipes://",
             "user-recipe-schema://",
             "processed-recipe-schema://"
         ]
         resource_uris = list(resources.keys())  # resources is a dict where keys are URIs
         for expected in expected_resources:
             assert expected in resource_uris, f"Missing expected resource: {expected}"
+
+        # Verify resource templates exist (they will have file:// URIs with absolute paths)
+        template_uris = list(templates.keys())
+        # Check that we have at least templates for user recipes and processed recipes
+        has_user_template = any("/{name}.yaml" in uri for uri in template_uris)
+        has_processed_template = any("/{name}.t2d.yaml" in uri for uri in template_uris)
+        assert has_user_template, "Missing user recipe template"
+        assert has_processed_template, "Missing processed recipe template"
 
     def test_cli_mcp_command_stdio_mode(self, tmp_path):
         """Test that the MCP server can be started via CLI in stdio mode."""

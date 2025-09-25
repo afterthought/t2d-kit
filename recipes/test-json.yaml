@@ -1,0 +1,9 @@
+name: test-json
+version: 1.0.0
+prd:
+  content: Test
+  format: markdown
+instructions:
+  diagrams:
+  - type: flowchart
+    description: Test

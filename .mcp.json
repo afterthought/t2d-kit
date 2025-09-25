@@ -1,17 +1,6 @@
 {
   "mcpServers": {
-    "ref-tools": {
-      "type": "http",
-      "url": "https://api.ref.tools/mcp?apiKey="
-    },
-    "container-use": {
-      "type": "stdio",
-      "command": "container-use",
-      "args": [
-        "stdio"
-      ],
-      "env": {}
-    },
+
    
     "chat-prd": {
       "type": "http",

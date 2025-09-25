@@ -2,7 +2,7 @@
 
 from fastmcp import FastMCP
 
-from t2d_kit.models.mcp_resources import DiagramTypeInfo, DiagramTypesResource
+from t2d_kit.models.mcp_resources import DiagramTypeInfo
 
 # Define available diagram types
 DIAGRAM_TYPES = [
@@ -188,21 +188,10 @@ async def register_diagram_types_resource(server: FastMCP) -> None:
     """
 
     @server.resource("diagram-types://")
-    async def get_diagram_types() -> dict:
-        """Get all available diagram types with metadata.
+    async def diagram_types() -> list:
+        """Available diagram types for t2d-kit.
 
-        Returns a comprehensive list of diagram types that can be used
-        in recipes, along with their recommended frameworks and usage examples.
+        Returns an array of diagram type definitions with frameworks and examples.
         """
-        resource = DiagramTypesResource(
-            diagram_types=DIAGRAM_TYPES,
-            total_count=len(DIAGRAM_TYPES),
-            categories=DIAGRAM_CATEGORIES
-        )
-        return {
-            "uri": "diagram-types://",
-            "name": "Available Diagram Types",
-            "description": "List of all supported diagram types with examples and framework recommendations",
-            "mimeType": "application/json",
-            "content": resource.model_dump()
-        }
+        # Return just the diagram types array
+        return [diagram_type.model_dump() for diagram_type in DIAGRAM_TYPES]

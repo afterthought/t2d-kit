@@ -14,21 +14,50 @@ console = Console()
 
 @click.command(name="setup")
 @click.option(
+    "--level",
+    type=click.Choice(["project", "user"], case_sensitive=False),
+    help="Installation level: 'project' (./.claude/agents) or 'user' (~/.claude/agents)",
+)
+@click.option(
     "--agent-dir",
-    default="~/.claude/agents",
-    help="Directory where Claude Code agents will be installed",
+    help="Custom directory for agent installation (overrides --level)",
     type=click.Path(),
 )
 @click.option("--force", is_flag=True, help="Overwrite existing agent files")
-def setup_command(agent_dir: str, force: bool):
+def setup_command(level: str, agent_dir: str, force: bool):
     """Setup t2d-kit agents and dependencies.
 
     This command:
-    1. Installs Claude Code agents to ~/.claude/agents
+    1. Installs Claude Code agents to chosen location
     2. Verifies mise dependencies
     3. Sets up the environment for diagram generation
     """
-    agent_path = Path(agent_dir).expanduser()
+    # Determine installation path
+    if agent_dir:
+        # Custom path takes precedence
+        agent_path = Path(agent_dir).expanduser()
+        install_type = "custom"
+    elif level:
+        # Explicit level choice
+        if level == "project":
+            agent_path = Path("./.claude/agents")
+            install_type = "project"
+        else:
+            agent_path = Path("~/.claude/agents").expanduser()
+            install_type = "user"
+    else:
+        # Interactive prompt if no option provided
+        console.print("\n[bold]Choose installation level:[/bold]")
+        console.print("1. Project level (./.claude/agents) - agents for this project only")
+        console.print("2. User level (~/.claude/agents) - agents available globally")
+
+        choice = click.prompt("\nSelect", type=click.Choice(["1", "2"]), default="1")
+        if choice == "1":
+            agent_path = Path("./.claude/agents")
+            install_type = "project"
+        else:
+            agent_path = Path("~/.claude/agents").expanduser()
+            install_type = "user"
 
     with Progress(
         SpinnerColumn(),
@@ -44,6 +73,7 @@ def setup_command(agent_dir: str, force: bool):
         # Copy agent files
         task = progress.add_task("Installing Claude Code agents...", total=6)
         agent_names = [
+            "t2d-create-recipe",
             "t2d-transform",
             "t2d-d2-generator",
             "t2d-mermaid-generator",
@@ -86,15 +116,28 @@ def setup_command(agent_dir: str, force: bool):
 
     # Success message
     console.print("")
+    level_msg = {
+        "project": "[yellow]Project-level[/yellow] installation",
+        "user": "[cyan]User-level[/cyan] installation",
+        "custom": "[magenta]Custom[/magenta] installation"
+    }[install_type]
+
     console.print(
         Panel.fit(
-            "[bold green]✅ t2d-kit setup complete![/bold green]\n\n"
-            f"   Self-organizing agents installed to: {agent_path}\n\n"
+            f"[bold green]✅ t2d-kit setup complete![/bold green]\n\n"
+            f"   {level_msg}\n"
+            f"   Agents installed to: [bold]{agent_path}[/bold]\n\n"
             "🤖 Intelligent agents ready:\n"
+            "   - Create Recipe Agent: Helps create new user recipes\n"
             "   - Transform Agent: Converts simple recipes to detailed specs\n"
             "   - Diagram Agents: Generate D2, Mermaid, PlantUML diagrams\n"
             "   - Content Agents: Create documentation and presentations\n"
-            "   - All agents self-activate based on 'use proactively' instructions",
+            "   - All agents self-activate based on 'use proactively' instructions\n\n"
+            "📝 Recipe CLI commands:\n"
+            "   - t2d recipe list: Show available recipes\n"
+            "   - t2d recipe load: Load and display a recipe\n"
+            "   - t2d recipe save: Save a new recipe\n"
+            "   - t2d recipe validate: Validate recipe structure",
             title="Setup Complete",
             border_style="green",
         )
@@ -103,5 +146,5 @@ def setup_command(agent_dir: str, force: bool):
     # Next steps
     console.print("\n[bold]Next steps:[/bold]")
     console.print("1. Run [cyan]mise install[/cyan] to install diagram tools")
-    console.print("2. Start MCP server: [cyan]t2d mcp[/cyan]")
+    console.print("2. Test recipe commands: [cyan]t2d recipe list[/cyan]")
     console.print("3. Verify installation: [cyan]t2d verify[/cyan]")

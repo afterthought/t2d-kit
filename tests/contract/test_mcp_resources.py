@@ -29,15 +29,14 @@ class TestMCPResources:
         # Get resource
         resource = await mcp_server.get_resource("diagram-types://")
         resource_response = await resource.fn()
-        result = resource_response["content"]
+        # Resource now returns data directly
+        result = resource_response
 
-        # Validate contract
-        assert "diagram_types" in result
-        assert "total_count" in result
-        assert "categories" in result
+        # Resource now returns just the array
+        assert isinstance(result, list)
 
         # Validate diagram type structure
-        for diagram_type in result["diagram_types"]:
+        for diagram_type in result:
             assert "type_id" in diagram_type
             assert "name" in diagram_type
             assert "framework" in diagram_type
@@ -49,7 +48,7 @@ class TestMCPResources:
 
     @pytest.mark.asyncio
     async def test_user_recipes_resource(self, mcp_server, temp_recipe_dir, mock_yaml_file):
-        """Test user-recipes:// resource contract.
+        """Test user recipe resource template contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_resources.json#RecipeListResource
         """
@@ -57,31 +56,39 @@ class TestMCPResources:
 
         await register_user_recipe_resources(mcp_server, temp_recipe_dir)
 
-        # List all recipes
-        resource = await mcp_server.get_resource("user-recipes://")
-        resource_response = await resource.fn()
-        result = resource_response["content"]
+        # Get resource templates
+        templates = await mcp_server.get_resource_templates()
 
-        # Validate contract
-        assert "recipes" in result
-        assert "total_count" in result
-        assert "directory" in result
+        # Find the user recipe template
+        expected_template = f"file://{temp_recipe_dir.resolve()}/{{name}}.yaml"
+        assert expected_template in templates
 
-        # Validate recipe summary structure
-        for recipe in result["recipes"]:
-            assert "name" in recipe
-            assert "file_path" in recipe
-            assert "created_at" in recipe
-            assert "modified_at" in recipe
-            assert "size_bytes" in recipe
-            assert "diagram_count" in recipe
-            assert "has_prd" in recipe
-            assert "validation_status" in recipe
-            assert recipe["validation_status"] in ["valid", "invalid", "unknown"]
+        # Get a specific recipe through the template
+        template = templates[expected_template]
+        result = await template.fn("test-recipe")
+
+        # Validate recipe detail structure
+        assert "name" in result
+        assert "content" in result
+        assert "raw_yaml" in result
+        assert "file_path" in result
+        assert "metadata" in result
+
+        # Validate metadata
+        metadata = result["metadata"]
+        assert "name" in metadata
+        assert "file_path" in metadata
+        assert "created_at" in metadata
+        assert "modified_at" in metadata
+        assert "size_bytes" in metadata
+        assert "diagram_count" in metadata
+        assert "has_prd" in metadata
+        assert "validation_status" in metadata
+        assert metadata["validation_status"] in ["valid", "invalid", "unknown"]
 
     @pytest.mark.asyncio
     async def test_processed_recipes_resource(self, mcp_server, temp_recipe_dir, mock_processed_yaml_file):
-        """Test processed-recipes:// resource contract.
+        """Test processed recipe resource template contract.
 
         Contract: specs/002-the-user-can/contracts/mcp_resources.json#ProcessedRecipeListResource
         """
@@ -89,27 +96,35 @@ class TestMCPResources:
 
         await register_processed_recipe_resources(mcp_server, temp_recipe_dir)
 
-        # List all processed recipes
-        resource = await mcp_server.get_resource("processed-recipes://")
-        resource_response = await resource.fn()
-        result = resource_response["content"]
+        # Get resource templates
+        templates = await mcp_server.get_resource_templates()
 
-        # Validate contract
-        assert "recipes" in result
-        assert "total_count" in result
-        assert "directory" in result
+        # Find the processed recipe template
+        expected_template = f"file://{temp_recipe_dir.resolve()}/{{name}}.t2d.yaml"
+        assert expected_template in templates
 
-        # Validate processed recipe summary structure
-        for recipe in result["recipes"]:
-            assert "name" in recipe
-            assert "file_path" in recipe
-            assert "source_recipe" in recipe
-            assert "generated_at" in recipe
-            assert "modified_at" in recipe
-            assert "size_bytes" in recipe
-            assert "diagram_count" in recipe
-            assert "content_file_count" in recipe
-            assert "validation_status" in recipe
+        # Get a specific processed recipe through the template
+        template = templates[expected_template]
+        result = await template.fn("test-recipe")
+
+        # Validate recipe detail structure
+        assert "name" in result
+        assert "content" in result
+        assert "raw_yaml" in result
+        assert "file_path" in result
+        assert "metadata" in result
+
+        # Validate metadata
+        metadata = result["metadata"]
+        assert "name" in metadata
+        assert "file_path" in metadata
+        assert "source_recipe" in metadata
+        assert "generated_at" in metadata
+        assert "modified_at" in metadata
+        assert "size_bytes" in metadata
+        assert "diagram_count" in metadata
+        assert "content_file_count" in metadata
+        assert "validation_status" in metadata
 
     @pytest.mark.asyncio
     async def test_recipe_schemas(self, mcp_server):
@@ -124,7 +139,8 @@ class TestMCPResources:
         # Test user recipe schema
         user_schema_resource = await mcp_server.get_resource("user-recipe-schema://")
         user_schema_response = await user_schema_resource.fn()
-        user_schema = user_schema_response["content"]
+        # Resource now returns data directly
+        user_schema = user_schema_response
         assert "version" in user_schema
         assert "fields" in user_schema
         assert "examples" in user_schema
@@ -133,7 +149,8 @@ class TestMCPResources:
         # Test processed recipe schema
         processed_schema_resource = await mcp_server.get_resource("processed-recipe-schema://")
         processed_schema_response = await processed_schema_resource.fn()
-        processed_schema = processed_schema_response["content"]
+        # Resource now returns data directly
+        processed_schema = processed_schema_response
         assert "version" in processed_schema
         assert "fields" in processed_schema
         assert "examples" in processed_schema
@@ -148,7 +165,7 @@ class TestMCPResources:
 
     @pytest.mark.asyncio
     async def test_specific_recipe_resource(self, mcp_server, temp_recipe_dir, mock_yaml_file):
-        """Test user-recipes://{name} specific recipe resource.
+        """Test file://{path}/{name}.yaml specific recipe resource template.
 
         Contract: specs/002-the-user-can/contracts/mcp_resources.json#RecipeDetailResource
         """
@@ -156,29 +173,16 @@ class TestMCPResources:
 
         await register_user_recipe_resources(mcp_server, temp_recipe_dir)
 
-        # Get specific recipe (template resources may not appear in get_resources())
-        try:
-            resource = await mcp_server.get_resource("user-recipes://test-recipe")
-            resource_response = await resource.fn()
-            result = resource_response["content"]
-        except Exception:
-            # If template resource isn't found via get_resource, call the template function directly
-            # This is a known limitation with template resources in FastMCP
-            resources = await mcp_server.get_resources()
-            template_resource = None
-            for uri, res in resources.items():
-                if uri.startswith("user-recipes://") and "{recipe_name}" in uri:
-                    template_resource = res
-                    break
+        # Get resource templates
+        templates = await mcp_server.get_resource_templates()
 
-            if template_resource:
-                # Call the template function with the recipe name
-                resource_response = await template_resource.fn("test-recipe")
-                result = resource_response["content"]
-            else:
-                # Skip this test if template resources aren't supported
-                import pytest
-                pytest.skip("Template resources not supported in this FastMCP version")
+        # Find the user recipe template
+        expected_template = f"file://{temp_recipe_dir.resolve()}/{{name}}.yaml"
+        assert expected_template in templates
+
+        # Get a specific recipe through the template
+        template = templates[expected_template]
+        result = await template.fn("test-recipe")
 
         # Validate contract
         assert "name" in result
@@ -207,18 +211,25 @@ class TestMCPResources:
 
             await register_resources(mcp_server, temp_recipe_dir, processed_dir)
 
-            # List all resources
+            # List all regular resources
             resources = await mcp_server.get_resources()
 
-        # Verify expected resources are registered
+            # List all resource templates
+            templates = await mcp_server.get_resource_templates()
+
+        # Verify expected regular resources are registered
         resource_uris = list(resources.keys())
         assert "diagram-types://" in resource_uris
-        assert "user-recipes://" in resource_uris
-        assert "processed-recipes://" in resource_uris
         assert "user-recipe-schema://" in resource_uris
         assert "processed-recipe-schema://" in resource_uris
 
-        # Verify metadata
+        # Verify expected resource templates are registered
+        expected_user_template = f"file://{temp_recipe_dir.resolve()}/{{name}}.yaml"
+        expected_processed_template = f"file://{processed_dir.resolve()}/{{name}}.t2d.yaml"
+        assert expected_user_template in templates
+        assert expected_processed_template in templates
+
+        # Verify metadata for regular resources
         for uri, resource in resources.items():
             assert hasattr(resource, "uri")
             assert hasattr(resource, "name")

@@ -1,6 +1,7 @@
 [tools]
 claude = "latest"
 "pipx:git+https://github.com/github/spec-kit.git" = "latest"
+
 python = "3.11"
 node = "20"
 go = "1.21"
@@ -123,6 +124,63 @@ echo "📤 Publishing to PyPI..."
 python -m twine upload dist/*
 echo "✅ Published to PyPI!"
 echo "Install with: pip install t2d-kit"
+"""
+
+[tasks.mcp-inspect]
+description = "Start MCP server with inspector for debugging"
+run = """
+echo "🔍 Starting t2d-kit MCP server with inspector..."
+echo "📌 Inspector will be available at: http://localhost:5173"
+echo ""
+npx @modelcontextprotocol/inspector python -m t2d_kit.mcp.server
+"""
+
+[tasks.mcp-server]
+description = "Start MCP server in stdio mode (for direct testing)"
+run = """
+echo "🚀 Starting t2d-kit MCP server..."
+echo "Press Ctrl+C to stop"
+python -m t2d_kit.mcp.server
+"""
+
+[tasks.mcp-test]
+description = "Test MCP server functionality"
+run = """
+echo "🧪 Testing MCP server..."
+python -c "
+import asyncio
+from t2d_kit.mcp.server import create_server_async
+
+async def test():
+    server = await create_server_async()
+    print('✅ Server created successfully')
+
+    # Get resources and tools
+    resources = await server.get_resources()
+    tools = await server.get_tools()
+
+    print(f'📚 Resources: {len(resources)}')
+    print(f'🛠️  Tools: {len(tools)}')
+
+    # List resources
+    print('\\n📦 Available Resources:')
+    for resource in resources:
+        if hasattr(resource, 'uri'):
+            print(f'  - {resource.uri}: {resource.name}')
+        else:
+            print(f'  - {resource}')
+
+    # List tools
+    print('\\n🔧 Available Tools:')
+    for tool in tools:
+        if hasattr(tool, 'name'):
+            desc = tool.description[:50] if hasattr(tool, 'description') else 'No description'
+            print(f'  - {tool.name}: {desc}...')
+        else:
+            print(f'  - {tool}')
+
+asyncio.run(test())
+"
 """
 
 [env]

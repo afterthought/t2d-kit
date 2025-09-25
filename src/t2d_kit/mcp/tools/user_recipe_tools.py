@@ -1,13 +1,15 @@
 """MCP tools for managing user recipes."""
 
+import json
 import os
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type, TypeVar, Union
 
 import yaml
 from fastmcp import Context, FastMCP
+from pydantic import BaseModel
 
 from t2d_kit.models.user_recipe import (
     CreateRecipeParams,
@@ -94,36 +96,26 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
     recipe_dir.mkdir(parents=True, exist_ok=True)
 
     @server.tool()
-    async def create_user_recipe(params: CreateRecipeParams, ctx: Context) -> CreateRecipeResponse:
+    async def create_user_recipe(params: CreateRecipeParams | str | dict, ctx: Context) -> CreateRecipeResponse:
         """Create a new user recipe file for t2d-kit diagram generation.
 
         Creates a new recipe YAML file with the provided PRD content and diagram specifications.
         Validates the recipe before saving and returns validation results.
 
-        REQUIRED PARAMETERS:
+        Parameters:
         - name: Recipe name (alphanumeric with hyphens/underscores, e.g., "my-system")
-        - diagrams: List of diagram requests, each with:
-          - type: Diagram type (e.g., "flowchart", "architecture", "sequence", "erd")
-          - description: Optional description of what to generate
-          - framework_preference: Optional ("d2", "mermaid", "plantuml", or "auto")
         - prd_content OR prd_file_path: The PRD content (provide one, not both)
+        - diagrams: List of diagram specifications
 
-        EXAMPLE:
-        {
-          "name": "ecommerce-platform",
-          "prd_content": "# E-commerce Platform\n\nA modern online shopping system...",
-          "diagrams": [
-            {
-              "type": "architecture",
-              "description": "System components and their relationships",
-              "framework_preference": "d2"
-            },
-            {
-              "type": "sequence",
-              "description": "Order processing workflow"
-            }
-          ]
-        }
+        Each diagram in the diagrams list should contain:
+        - type: Diagram type (e.g., "flowchart", "architecture", "sequence", "erd")
+        - description: Optional description of what to generate
+        - framework_preference: Optional ("d2", "mermaid", "plantuml", or "auto")
+
+        Example usage:
+        Create a recipe named "ecommerce-platform" with PRD content and two diagrams:
+        - An architecture diagram showing system components (using d2)
+        - A sequence diagram showing order processing workflow
 
         Args:
             params: Recipe creation parameters including name, PRD, and diagrams
@@ -132,6 +124,61 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
             CreateRecipeResponse with success status and validation results
         """
         start_time = time.time()
+
+        # COMPATIBILITY WORKAROUND: MCP clients may send parameters as JSON strings or dicts
+        # depending on how they interpret tool documentation and schemas. This ensures
+        # compatibility with different client behaviors:
+        # - MCP Inspector: May send JSON strings
+        # - Claude Code: May send JSON strings when confused by documentation
+        # - Direct API calls: May send dicts
+        # This workaround ensures all formats are properly converted to Pydantic models
+        import json
+        if isinstance(params, str):
+            try:
+                params = CreateRecipeParams.model_validate_json(params)
+            except Exception:
+                # If model_validate_json fails, try parsing as dict first
+                try:
+                    params_dict = json.loads(params)
+                    params = CreateRecipeParams.model_validate(params_dict)
+                except Exception as e:
+                    return CreateRecipeResponse(
+                        success=False,
+                        message=f"Invalid JSON parameters: {str(e)}",
+                        file_path="",
+                        validation_result=MCPValidationResult(
+                            valid=False,
+                            errors=[MCPValidationError(
+                                field="params",
+                                message=str(e),
+                                error_type="json_parse",
+                                suggestion="Ensure parameters are valid JSON matching the schema"
+                            )],
+                            warnings=[],
+                            duration_ms=(time.time() - start_time) * 1000
+                        )
+                    )
+        elif isinstance(params, dict):
+            try:
+                params = CreateRecipeParams.model_validate(params)
+            except Exception as e:
+                return CreateRecipeResponse(
+                    success=False,
+                    message=f"Invalid parameters: {str(e)}",
+                    file_path="",
+                    validation_result=MCPValidationResult(
+                        valid=False,
+                        errors=[MCPValidationError(
+                            field="params",
+                            message=str(e),
+                            error_type="validation",
+                            suggestion="Check parameter structure and required fields"
+                        )],
+                        warnings=[],
+                        duration_ms=(time.time() - start_time) * 1000
+                    )
+                )
+
         await ctx.info(f"Creating user recipe: {params.name}")
 
         # Create output directory if specified, otherwise use the passed recipe_dir
@@ -346,15 +393,11 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         - documentation_config: New documentation settings
         - validate_before_save: Whether to validate before saving (default: true)
 
-        EXAMPLE:
-        {
-          "name": "my-system",
-          "diagrams": [
-            {"type": "architecture", "description": "Updated system design"},
-            {"type": "flowchart", "description": "New process flow"}
-          ],
-          "validate_before_save": true
-        }
+        Example usage:
+        Edit "my-system" recipe to update its diagrams with:
+        - An architecture diagram with description "Updated system design"
+        - A flowchart diagram with description "New process flow"
+        And validate before saving
 
         Args:
             params: Edit parameters including recipe name and fields to update
@@ -466,11 +509,8 @@ async def register_user_recipe_tools(server: FastMCP, recipe_dir: Path | None = 
         - name: Recipe name to delete (e.g., "my-system")
         - confirm: Must be true to actually delete (safety mechanism)
 
-        EXAMPLE:
-        {
-          "name": "old-project",
-          "confirm": true
-        }
+        Example usage:
+        Delete the recipe named "old-project" with confirmation set to true
 
         Args:
             params: Recipe name and confirmation flag

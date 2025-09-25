@@ -1,0 +1,59 @@
+name: healthcare-api
+version: 2.0.0
+prd:
+  content: |
+    # Healthcare API Platform
+
+    ## Executive Summary
+    A HIPAA-compliant healthcare API platform that enables secure exchange of medical records between providers.
+
+    ## Key Components
+    - Patient record management
+    - Appointment scheduling
+    - Prescription management
+    - Lab results integration
+    - Insurance verification
+    - FHIR compliance
+
+    ## Security Requirements
+    - End-to-end encryption
+    - HIPAA compliance
+    - Audit logging
+    - Role-based access control
+    - Multi-factor authentication
+
+    ## Integration Points
+    - EHR systems
+    - Laboratory systems
+    - Pharmacy networks
+    - Insurance providers
+
+instructions:
+  diagrams:
+    - type: c4-context
+      description: System context showing external integrations
+      framework_preference: d2
+    - type: c4-container
+      description: Container diagram showing services and data stores
+      framework_preference: d2
+    - type: sequence
+      description: Patient record access flow with authentication
+      framework_preference: plantuml
+    - type: dataflow
+      description: Data flow for lab results processing
+      framework_preference: d2
+  documentation:
+    style: technical
+    audience: architects
+    sections:
+      - Security
+      - Compliance
+      - Integration
+      - API Specification
+    detail_level: comprehensive
+    include_code_examples: true
+preferences:
+  default_framework: d2
+  diagram_style: professional
+  color_scheme: medical
+  theme: light
