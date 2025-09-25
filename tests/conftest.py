@@ -10,7 +10,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 import pytest_asyncio
-from fastmcp import FastMCP
 
 # Add src to path for imports
 src_path = Path(__file__).parent.parent / "src"
@@ -27,21 +26,6 @@ def event_loop():
     loop.close()
 
 
-@pytest_asyncio.fixture
-async def mcp_server() -> AsyncGenerator[FastMCP, None]:
-    """Create a test MCP server instance."""
-    server = FastMCP("test-t2d-kit")
-    yield server
-
-
-@pytest_asyncio.fixture
-async def mcp_context():
-    """Create a test MCP context for tool testing."""
-    # Create a simple mock context since fastmcp.testing is not available
-    context = MagicMock()
-    context.user = {"id": "test-user"}
-    context.session = {"id": "test-session"}
-    return context
 
 
 @pytest.fixture

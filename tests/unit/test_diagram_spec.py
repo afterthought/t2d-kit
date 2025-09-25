@@ -111,17 +111,19 @@ class TestDiagramSpecification:
             )
 
     def test_diagram_specification_validation_empty_output_formats(self):
-        """Test that DiagramSpecification requires at least one output format."""
-        with pytest.raises(ValidationError, match="List should have at least 1 item"):
-            DiagramSpecification(
-                id="test-diagram",
-                type=DiagramType.ARCHITECTURE,
-                agent="t2d-generator-v1",
-                title="Test",
-                instructions="This is a test diagram with detailed instructions",
-                output_file="test.d2",
-                output_formats=[]  # Empty list
-            )
+        """Test that DiagramSpecification sets default output formats when empty."""
+        spec = DiagramSpecification(
+            id="test-diagram",
+            type=DiagramType.ARCHITECTURE,
+            agent="t2d-generator-v1",
+            title="Test",
+            instructions="This is a test diagram with detailed instructions",
+            output_file="test.d2",
+            output_formats=[]  # Empty list
+        )
+        # Should default to SVG for D2
+        assert spec.output_formats == [OutputFormat.SVG]
+        assert spec.framework == FrameworkType.D2  # Auto-detected from .d2 extension
 
     def test_diagram_specification_framework_compatibility_d2(self):
         """Test framework compatibility validation for D2."""

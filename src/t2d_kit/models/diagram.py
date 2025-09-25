@@ -26,7 +26,7 @@ class DiagramSpecification(T2DBaseModel):
     title: NameField
     instructions: InstructionsField
     output_file: PathField
-    output_formats: list[OutputFormat] = Field(min_length=1)
+    output_formats: list[OutputFormat] = Field(default_factory=list)
     options: Union[dict[str, Any], "MermaidConfig", "D2Options", "MarpConfig"] | None = None
 
     @field_validator("instructions")
@@ -48,12 +48,45 @@ class DiagramSpecification(T2DBaseModel):
         return v
 
     @model_validator(mode="after")
+    def auto_detect_framework_and_formats(self) -> "DiagramSpecification":
+        """Auto-detect framework from file extension and set default output format."""
+        # Auto-detect framework from file extension if not provided
+        if not self.framework:
+            path = Path(self.output_file)
+            extension_to_framework = {
+                ".d2": FrameworkType.D2,
+                ".mmd": FrameworkType.MERMAID,
+                ".puml": FrameworkType.PLANTUML,
+                ".gv": FrameworkType.GRAPHVIZ,
+                ".md": FrameworkType.MERMAID,  # Default for markdown
+            }
+            self.framework = extension_to_framework.get(
+                path.suffix,
+                self._get_default_framework_for_type(self.type)
+            )
+
+        # Set default output format if not provided
+        if not self.output_formats:
+            # Single default format per framework (prefer SVG for quality and compatibility)
+            framework_defaults = {
+                FrameworkType.D2: [OutputFormat.SVG],  # SVG only for D2
+                FrameworkType.MERMAID: [OutputFormat.SVG],  # SVG only for Mermaid
+                FrameworkType.PLANTUML: [OutputFormat.SVG],  # SVG only for PlantUML
+                FrameworkType.GRAPHVIZ: [OutputFormat.SVG],  # SVG only for Graphviz
+            }
+            self.output_formats = framework_defaults.get(
+                self.framework,
+                [OutputFormat.SVG]
+            )
+
+        return self
+
+    @model_validator(mode="after")
     def validate_framework_compatibility(self) -> "DiagramSpecification":
         """Ensure framework supports diagram type and output formats."""
+        # Framework should already be set by auto_detect_framework_and_formats
         if not self.framework:
-            # Auto-select framework based on diagram type
-            self.framework = self._get_default_framework_for_type(self.type)
-            return self
+            raise ValueError("Framework could not be determined")
 
         # Framework compatibility matrix
         framework_capabilities: dict[FrameworkType, dict[str, set[Any]]] = {

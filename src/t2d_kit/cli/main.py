@@ -5,7 +5,6 @@ from rich.console import Console
 
 from t2d_kit._version import __version__
 
-from .mcp_cmd import mcp_command
 from .setup import setup_command
 from .verify import verify_command
 from .recipe_cmd import recipe_command
@@ -25,7 +24,6 @@ def cli():
 
 # Register commands
 cli.add_command(setup_command)
-cli.add_command(mcp_command)
 cli.add_command(verify_command)
 cli.add_command(recipe_command)
 

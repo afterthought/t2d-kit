@@ -12,7 +12,7 @@ license = {text = "MIT"}
 authors = [
     {name = "T2D Kit Team", email = "team@t2d-kit.dev"}
 ]
-keywords = ["diagrams", "documentation", "mcp", "claude", "ai", "agents", "d2", "mermaid", "plantuml"]
+keywords = ["diagrams", "documentation", "claude", "ai", "agents", "d2", "mermaid", "plantuml"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -26,7 +26,6 @@ classifiers = [
 ]
 dependencies = [
     "click>=8.1.0",
-    "fastmcp>=2",
     "pydantic>=2.5.0",
     "pyyaml>=6.0",
     "rich>=13.0.0",

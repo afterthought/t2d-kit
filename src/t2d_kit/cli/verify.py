@@ -33,7 +33,6 @@ def verify_command(verbose: bool):
     - Claude Code agent installation
     - Required tools (mise, Python, Node, Go, Java)
     - Diagram tools (D2, Mermaid CLI, PlantUML)
-    - MCP server functionality
     """
     console.print("[bold]Verifying t2d-kit installation...[/bold]\n")
 
@@ -97,20 +96,6 @@ def verify_command(verbose: bool):
         results.append(("PlantUML", True, "jar installed"))
     else:
         results.append(("PlantUML", False, "not installed (optional)"))
-
-    # Check MCP server
-    try:
-        import importlib.util
-
-        spec = importlib.util.find_spec("t2d_kit.mcp")
-        if spec is not None:
-            results.append(("MCP server", True, "FastMCP configured"))
-        else:
-            results.append(("MCP server", False, "Module not found"))
-            all_good = False
-    except ImportError:
-        results.append(("MCP server", False, "Import error"))
-        all_good = False
 
     # Check file-based state management
     results.append(("State management", True, "Ready (file-based)"))

@@ -50,13 +50,15 @@ You handle the entire transformation process:
 
 4. **Generate Diagram Specifications**
    - Convert natural language requests to specific diagram types
-   - Assign optimal frameworks (D2, Mermaid, PlantUML)
+   - Framework is auto-detected from file extension (.d2→D2, .mmd→Mermaid, .puml→PlantUML)
+   - You can optionally specify framework explicitly if needed
+   - Output formats default to SVG only (no need to specify both SVG and PNG)
    - Create detailed instructions for generator agents
    - Follow schema's DiagramSpecification structure exactly
    - Example mapping:
-     - "system architecture" → c4_container + d2 + detailed instructions
-     - "user flow" → sequence + mermaid + step-by-step flow
-     - "database design" → erd + mermaid + table relationships
+     - "system architecture" → c4_container + docs/assets/architecture.d2
+     - "user flow" → sequence + docs/assets/user-flow.mmd
+     - "database design" → erd + docs/assets/database.mmd
 
 5. **Create Content Specifications**
    - Generate base prompts for content agents
