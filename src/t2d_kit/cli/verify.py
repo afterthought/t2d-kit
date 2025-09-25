@@ -90,6 +90,17 @@ def verify_command(verbose: bool):
         if not found and name != "PlantUML":  # PlantUML is optional
             all_good = False
 
+    # Check for D2 Tala layout engine
+    if shutil.which("d2"):
+        try:
+            from t2d_kit.utils.d2_utils import is_tala_installed
+            if is_tala_installed():
+                results.append(("D2 Tala Layout", True, "installed (optimal for architecture)"))
+            else:
+                results.append(("D2 Tala Layout", False, "not installed (optional)"))
+        except Exception:
+            results.append(("D2 Tala Layout", False, "could not detect"))
+
     # Check PlantUML
     plantuml_jar = Path("~/.local/bin/plantuml.jar").expanduser()
     if plantuml_jar.exists():

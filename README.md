@@ -18,9 +18,6 @@ uv pip install git+https://github.com/afterthought/t2d-kit.git
 # Setup agents
 t2d setup
 
-# Start MCP server for Claude Desktop
-t2d mcp .
-
 # Verify installation
 t2d verify
 ```
@@ -76,20 +73,6 @@ curl https://mise.run | sh
 mise install
 ```
 
-### Claude Desktop Integration
-
-Add to your Claude Desktop config:
-
-```json
-{
-  "mcpServers": {
-    "t2d-kit": {
-      "command": "t2d",
-      "args": ["mcp", "."]
-    }
-  }
-}
-```
 
 ## 📄 Usage
 
@@ -163,7 +146,6 @@ flowchart LR
 t2d-kit/
 ├── src/t2d_kit/
 │   ├── models/        # Pydantic data models
-│   ├── mcp/           # FastMCP server
 │   ├── cli/           # CLI commands
 │   └── agents/        # Claude Code agents
 ├── examples/          # Recipe examples
@@ -247,7 +229,6 @@ Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md)
 ## 🙏 Acknowledgments
 
 - Built with [Claude Code](https://claude.ai/code)
-- Powered by [FastMCP](https://github.com/jlowin/fastmcp)
 - Diagrams by [D2](https://d2lang.com), [Mermaid](https://mermaid.js.org), [PlantUML](https://plantuml.com)
 
 ---

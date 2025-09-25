@@ -53,10 +53,14 @@ You handle the entire transformation process:
    - Framework is auto-detected from file extension (.d2→D2, .mmd→Mermaid, .puml→PlantUML)
    - You can optionally specify framework explicitly if needed
    - Output formats default to SVG only (no need to specify both SVG and PNG)
+   - For D2 architectural diagrams (C4, architecture types):
+     - Include `options` with D2Options configuration
+     - Tala layout will be auto-selected if available (best for architecture)
+     - Falls back to ELK or dagre if Tala not installed
    - Create detailed instructions for generator agents
    - Follow schema's DiagramSpecification structure exactly
    - Example mapping:
-     - "system architecture" → c4_container + docs/assets/architecture.d2
+     - "system architecture" → c4_container + docs/assets/architecture.d2 + D2Options
      - "user flow" → sequence + docs/assets/user-flow.mmd
      - "database design" → erd + docs/assets/database.mmd
 
@@ -80,6 +84,30 @@ You handle the entire transformation process:
 - Don't rely on memorized formats - check the schema each time
 - Validate processed recipes using `t2d recipe validate --type processed`
 - Include comprehensive generation notes explaining your transformation decisions
+
+## D2 Architectural Diagrams
+
+For D2 diagrams of architectural nature (C4 models, system architecture), include D2Options:
+```json
+{
+  "id": "architecture",
+  "type": "c4_container",
+  "output_file": "docs/assets/architecture.d2",
+  "options": {
+    "diagram_type": "c4_container",  // Hints for layout detection
+    "theme": "neutral-default",
+    "pad": 120,
+    "direction": "down",
+    "center": true
+    // layout_engine will auto-select Tala if available
+  }
+}
+```
+
+The system will automatically:
+- Detect if Tala layout engine is installed
+- Use Tala for architectural diagrams (best quality)
+- Fall back to ELK or dagre if Tala unavailable
 
 ## Next Steps After Transformation
 

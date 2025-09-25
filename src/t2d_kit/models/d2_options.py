@@ -2,9 +2,9 @@
 
 import os
 import warnings
-from typing import Literal
+from typing import Literal, Optional
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
 from .base import T2DBaseModel
 
@@ -13,8 +13,15 @@ class D2Options(T2DBaseModel):
     """Advanced D2 diagram configuration options."""
 
     # Layout engines
-    layout_engine: Literal["dagre", "elk", "tala"] = Field(
-        default="dagre", description="D2 layout engine to use"
+    layout_engine: Literal["dagre", "elk", "tala"] | None = Field(
+        default=None, description="D2 layout engine to use (auto-detect if None)"
+    )
+
+    # Diagram type hint for auto-detection
+    diagram_type: str | None = Field(
+        default=None,
+        description="Diagram type hint for layout auto-detection",
+        exclude=True  # Don't include in serialization
     )
 
     # Themes
@@ -85,18 +92,33 @@ class D2Options(T2DBaseModel):
 
     center: bool = Field(default=False, description="Center the diagram in the viewport")
 
-    @field_validator("layout_engine")
-    @classmethod
-    def validate_tala_license(cls, v: str) -> str:
-        """Warn if Tala is selected without license."""
-        if v == "tala" and not os.environ.get("TALA_LICENSE_KEY"):
-            warnings.warn(
-                "Tala layout engine requires a license key. "
-                "Set TALA_LICENSE_KEY environment variable.",
-                UserWarning,
-                stacklevel=2,
-            )
-        return v
+    @model_validator(mode="after")
+    def auto_detect_layout_engine(self) -> "D2Options":
+        """Auto-detect the best layout engine if not specified."""
+        if self.layout_engine is None:
+            # Import here to avoid circular dependency
+            from t2d_kit.utils.d2_utils import get_default_layout_for_diagram
+
+            # Use diagram type hint if available, otherwise default to dagre
+            if self.diagram_type:
+                self.layout_engine = get_default_layout_for_diagram(self.diagram_type)
+            else:
+                self.layout_engine = "dagre"
+
+        # Validate Tala license if Tala is selected
+        if self.layout_engine == "tala" and not os.environ.get("TALA_LICENSE_KEY"):
+            # Check if Tala is actually installed
+            from t2d_kit.utils.d2_utils import is_tala_installed
+
+            if is_tala_installed():
+                warnings.warn(
+                    "Tala layout engine may require a license key for full features. "
+                    "Set TALA_LICENSE_KEY environment variable if you have a license.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+
+        return self
 
     def to_cli_args(self) -> list[str]:
         """Convert options to D2 CLI arguments."""
@@ -202,3 +224,24 @@ class D2Options(T2DBaseModel):
             warnings.append("Explicit dimensions with scaling may produce unexpected results")
 
         return warnings
+
+    @classmethod
+    def for_architectural_diagram(cls, diagram_type: str) -> "D2Options":
+        """Create D2Options optimized for architectural diagrams.
+
+        Args:
+            diagram_type: The type of diagram (e.g., "c4_container")
+
+        Returns:
+            D2Options configured for architectural diagrams with Tala if available
+        """
+        return cls(
+            diagram_type=diagram_type,
+            # Layout will auto-detect to Tala if available
+            layout_engine=None,
+            # Good defaults for architectural diagrams
+            theme="neutral-default",
+            pad=120,  # More padding for complex diagrams
+            direction="down",  # Top-down is typical for architecture
+            center=True,  # Center in viewport
+        )
