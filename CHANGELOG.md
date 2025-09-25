@@ -1,3 +1,10 @@
+## [1.1.0](https://github.com/afterthought/t2d-kit/compare/v1.0.0...v1.1.0) (2025-09-25)
+
+### Features
+
+* enhance D2 diagram support with Tala layout engine integration and auto-detection ([70bd734](https://github.com/afterthought/t2d-kit/commit/70bd7344f42358522f7aaa38bea69e8119d0011b))
+* extend permissions in settings.local.json for additional Bash commands and read access ([61ae2e2](https://github.com/afterthought/t2d-kit/commit/61ae2e26c98e9c34d42cf3e3f47718091cc82d83))
+
 ## 1.0.0 (2025-09-25)
 
 ### Features
