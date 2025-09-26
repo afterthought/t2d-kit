@@ -244,7 +244,11 @@ graph LR
 
 </div>
 
-### 🚀 Start in 30 Seconds
+---
+
+## 🚀 Quick Start
+
+Get started in 30 seconds:
 
 ```bash
 # 1. Install uv if you don't have it (optional)
@@ -256,25 +260,11 @@ uv tool install git+https://github.com/afterthought/t2d-kit.git
 # 3. Set up agents
 t2d setup
 
-# 4. Create your recipe and let AI do the rest!
-```
-
----
-
-## 🚀 Quick Start
-
-```bash
-# Install uv if you don't have it (optional)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install t2d-kit with uv
-uv tool install git+https://github.com/afterthought/t2d-kit.git
-
-# Setup agents
-t2d setup
-
-# Verify installation
+# 4. Verify installation
 t2d verify
+
+# 5. Create your recipe and let AI do the rest!
+echo "Transform my recipe.yaml" | claude
 ```
 
 ## 📖 What is t2d-kit?
