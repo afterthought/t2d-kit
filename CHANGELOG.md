@@ -1,3 +1,9 @@
+## [1.2.0](https://github.com/afterthought/t2d-kit/compare/v1.1.0...v1.2.0) (2025-09-26)
+
+### Features
+
+* add MkDocs and Zudoku documentation generators, update setup command to include new agents ([ad9f96b](https://github.com/afterthought/t2d-kit/commit/ad9f96b869daa6337dc2e36c41ced484ad5dd64b))
+
 ## [1.1.0](https://github.com/afterthought/t2d-kit/compare/v1.0.0...v1.1.0) (2025-09-25)
 
 ### Features
