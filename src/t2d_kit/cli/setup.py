@@ -71,14 +71,15 @@ def setup_command(level: str, agent_dir: str, force: bool):
         progress.update(task, completed=1)
 
         # Copy agent files
-        task = progress.add_task("Installing Claude Code agents...", total=6)
+        task = progress.add_task("Installing Claude Code agents...", total=8)
         agent_names = [
             "t2d-create-recipe",
             "t2d-transform",
             "t2d-d2-generator",
             "t2d-mermaid-generator",
             "t2d-plantuml-generator",
-            "t2d-docs-generator",
+            "t2d-mkdocs-generator",
+            "t2d-zudoku-generator",
             "t2d-slides-generator",
         ]
 
@@ -124,7 +125,7 @@ def setup_command(level: str, agent_dir: str, force: bool):
 
             progress.update(task, completed=i + 1)
 
-        progress.update(task, completed=6)
+        progress.update(task, completed=8)
 
         # Check mise installation and tools
         task = progress.add_task("Checking mise dependencies...", total=1)
@@ -209,7 +210,8 @@ def setup_command(level: str, agent_dir: str, force: bool):
             "   - Create Recipe Agent: Helps create new user recipes\n"
             "   - Transform Agent: Converts simple recipes to detailed specs\n"
             "   - Diagram Agents: Generate D2, Mermaid, PlantUML diagrams\n"
-            "   - Content Agents: Create documentation and presentations\n"
+            "   - Documentation Agents: Generate docs (MkDocs, Zudoku)\n"
+            "   - Presentation Agent: Create slide presentations\n"
             "   - All agents self-activate based on 'use proactively' instructions\n\n"
             "📝 Recipe CLI commands:\n"
             "   - t2d recipe list: Show available recipes\n"
