@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v4
@@ -21,25 +21,40 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Install uv
-      run: pip install uv
+    - name: Setup mise
+      uses: jdx/mise-action@v2
+      with:
+        version: latest
+        install: true
+        cache: true
+        experimental: true
 
-    - name: Install dependencies
+    - name: Install Python dependencies with mise
       run: |
-        uv sync --frozen
+        # Install uv first
+        pip install uv
 
-    - name: Run linting
+        # Install dependencies using mise (this installs the tools defined in .mise.toml)
+        mise install
+
+        # Sync Python dependencies including dev dependencies
+        uv sync --frozen --all-extras
+
+    - name: Run linting with mise
       run: |
-        uv run ruff check .
-        uv run ruff format --check .
+        mise run lint
+
+    - name: Run formatting check
+      run: |
+        mise run format-check
 
     - name: Run type checking
       run: |
-        uv run mypy src/
+        mise run typecheck
 
     - name: Run tests with coverage
       run: |
-        uv run pytest tests/ -v --cov=src/t2d_kit --cov-report=term-missing --cov-report=xml
+        mise run test-cov
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4

@@ -78,16 +78,18 @@ def verify_command(verbose: bool):
         if not found:
             all_good = False
 
-    # Check diagram tools
+    # Check diagram and documentation tools
     diagram_tools = [
         ("d2", "D2", "--version"),
         ("mmdc", "Mermaid CLI", "--version"),
+        ("mkdocs", "MkDocs", "--version"),
+        ("marp", "Marp", "--version"),
     ]
 
     for cmd, name, flag in diagram_tools:
         found, version = check_command(cmd, name, flag)
         results.append((name, found, version))
-        if not found and name != "PlantUML":  # PlantUML is optional
+        if not found:
             all_good = False
 
     # Check for D2 Tala layout engine
@@ -143,9 +145,26 @@ def verify_command(verbose: bool):
             console.print("  • Run [cyan]t2d setup[/cyan] to install missing agents")
         if not shutil.which("mise"):
             console.print("  • Install mise from https://mise.run")
-        if not shutil.which("d2"):
-            console.print("  • Run [cyan]mise install[/cyan] to install D2")
-        if not shutil.which("mmdc"):
-            console.print("  • Run [cyan]npm install -g @mermaid-js/mermaid-cli[/cyan]")
+            console.print("  • Then run [cyan]mise install[/cyan] to install all tools")
+        else:
+            # If mise is installed, suggest running mise install for missing tools
+            missing_tools = []
+            if not shutil.which("d2"):
+                missing_tools.append("D2")
+            if not shutil.which("mmdc"):
+                missing_tools.append("Mermaid CLI")
+            if not shutil.which("mkdocs"):
+                missing_tools.append("MkDocs")
+            if not shutil.which("marp"):
+                missing_tools.append("Marp")
+            if not plantuml_jar.exists():
+                missing_tools.append("PlantUML")
+
+            if missing_tools:
+                console.print(f"  • Run [cyan]mise install[/cyan] to install: {', '.join(missing_tools)}")
+                if "PlantUML" in missing_tools:
+                    console.print("  • Run [cyan]mise run setup-plantuml[/cyan] for PlantUML")
+                if "D2" in missing_tools:
+                    console.print("  • Run [cyan]mise run setup-d2[/cyan] if D2 doesn't install")
 
     sys.exit(0 if all_good else 1)

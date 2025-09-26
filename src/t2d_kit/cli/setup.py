@@ -127,70 +127,164 @@ def setup_command(level: str, agent_dir: str, force: bool):
 
         progress.update(task, completed=8)
 
-        # Check mise installation and tools
-        task = progress.add_task("Checking mise dependencies...", total=1)
+        # Check mise installation and configure tools
+        task = progress.add_task("Configuring mise tools...", total=1)
         mise_installed = shutil.which("mise")
-        tools_needed = []  # Initialize here to avoid unbound variable
-        if mise_installed:
+
+        if not mise_installed:
+            console.print("[red]✗[/red] mise is not installed")
+            console.print("[yellow]→[/yellow] Please install mise from https://mise.run")
+            console.print("[yellow]→[/yellow] Then run [cyan]t2d setup[/cyan] again")
+            progress.update(task, completed=1)
+        else:
             console.print("[green]✓[/green] mise is installed")
 
-            # Check if diagram tools are installed
             import subprocess
-            tools_needed = []
+            import toml
 
-            # Check for D2
-            if not shutil.which("d2"):
-                tools_needed.append("D2")
+            # Check if .mise.toml exists in current directory
+            mise_config_path = Path.cwd() / ".mise.toml"
 
-            # Check for Mermaid CLI
-            if not shutil.which("mmdc"):
-                tools_needed.append("Mermaid CLI")
-
-            # Check for PlantUML
-            plantuml_jar = Path("~/.local/bin/plantuml.jar").expanduser()
-            if not plantuml_jar.exists():
-                tools_needed.append("PlantUML")
-
-            if tools_needed:
-                console.print(f"[yellow]⚠[/yellow] Missing diagram tools: {', '.join(tools_needed)}")
-                console.print("[cyan]→[/cyan] Running [bold]mise install[/bold] to install tools...")
-
-                # Run mise install
+            # Load existing config or create new one
+            if mise_config_path.exists():
+                console.print("[cyan]→[/cyan] Found existing .mise.toml, updating...")
                 try:
-                    result = subprocess.run(
-                        ["mise", "install"],
-                        capture_output=True,
+                    with open(mise_config_path, "r") as f:
+                        config = toml.load(f)
+                except Exception as e:
+                    console.print(f"[yellow]⚠[/yellow] Could not read .mise.toml: {e}")
+                    config = {}
+            else:
+                console.print("[cyan]→[/cyan] Creating .mise.toml with required tools...")
+                config = {}
+
+            # Ensure tools section exists
+            if "tools" not in config:
+                config["tools"] = {}
+
+            # Check which base languages are already installed
+            has_python = shutil.which("python") or shutil.which("python3")
+            has_node = shutil.which("node") or shutil.which("npm")
+            has_go = shutil.which("go")
+            has_java = shutil.which("java")
+
+            # Define required tools (only add base languages if missing)
+            required_tools = {}
+
+            # Only add base languages if they're not already installed
+            if not has_python:
+                required_tools["python"] = "3.11"
+                console.print("[yellow]⚠[/yellow] Python not found, will install via mise")
+            else:
+                console.print(f"[green]✓[/green] Python already installed")
+
+            if not has_node:
+                required_tools["node"] = "20"
+                console.print("[yellow]⚠[/yellow] Node.js not found, will install via mise")
+            else:
+                console.print(f"[green]✓[/green] Node.js already installed")
+
+            if not has_go:
+                required_tools["go"] = "1.21"
+                console.print("[yellow]⚠[/yellow] Go not found, will install via mise")
+            else:
+                console.print(f"[green]✓[/green] Go already installed")
+
+            if not has_java:
+                required_tools["java"] = "openjdk-17"
+                console.print("[yellow]⚠[/yellow] Java not found, will install via mise")
+            else:
+                console.print(f"[green]✓[/green] Java already installed")
+
+            # Always add the specific tool packages
+            required_tools.update({
+                "npm:@mermaid-js/mermaid-cli": "latest",
+                "npm:@marp-team/marp-cli": "latest",
+                "pipx:mkdocs": "latest",
+                "pipx:mkdocs-material": "latest",
+                "go:oss.terrastruct.com/d2": "latest"
+            })
+
+            # Add required tools to config
+            tools_added = []
+            for tool, version in required_tools.items():
+                if tool not in config["tools"]:
+                    config["tools"][tool] = version
+                    tools_added.append(tool.split(":")[-1])
+
+            # Add PlantUML setup task if not exists
+            if "tasks" not in config:
+                config["tasks"] = {}
+
+            if "setup-plantuml" not in config.get("tasks", {}):
+                config["tasks"]["setup-plantuml"] = {
+                    "description": "Download and setup PlantUML",
+                    "run": """mkdir -p ~/.local/bin
+curl -L https://github.com/plantuml/plantuml/releases/download/v1.2024.0/plantuml-1.2024.0.jar -o ~/.local/bin/plantuml.jar
+echo '#!/bin/bash\\njava -jar ~/.local/bin/plantuml.jar "$@"' > ~/.local/bin/plantuml
+chmod +x ~/.local/bin/plantuml
+echo "PlantUML installed to ~/.local/bin/plantuml"
+"""
+                }
+
+            # Write updated config
+            try:
+                with open(mise_config_path, "w") as f:
+                    toml.dump(config, f)
+                if tools_added:
+                    console.print(f"[green]✓[/green] Added tools to .mise.toml: {', '.join(tools_added)}")
+                else:
+                    console.print("[green]✓[/green] .mise.toml already has all required tools")
+            except Exception as e:
+                console.print(f"[red]✗[/red] Could not write .mise.toml: {e}")
+
+            # Run mise install to install the tools
+            console.print("[cyan]→[/cyan] Running [bold]mise install[/bold] to install tools...")
+            try:
+                result = subprocess.run(
+                    ["mise", "install"],
+                    capture_output=False,  # Show output to user
+                    text=True,
+                    cwd=Path.cwd()
+                )
+                if result.returncode == 0:
+                    console.print("[green]✓[/green] mise install completed successfully")
+
+                    # Run PlantUML setup
+                    console.print("[cyan]→[/cyan] Setting up PlantUML...")
+                    plantuml_result = subprocess.run(
+                        ["mise", "run", "setup-plantuml"],
+                        capture_output=False,
                         text=True,
                         cwd=Path.cwd()
                     )
-                    if result.returncode == 0:
-                        console.print("[green]✓[/green] mise install completed successfully")
-
-                        # Also run setup-plantuml task for PlantUML
-                        if "PlantUML" in tools_needed:
-                            console.print("[cyan]→[/cyan] Setting up PlantUML...")
-                            plantuml_result = subprocess.run(
-                                ["mise", "run", "setup-plantuml"],
-                                capture_output=True,
-                                text=True,
-                                cwd=Path.cwd()
-                            )
-                            if plantuml_result.returncode == 0:
-                                console.print("[green]✓[/green] PlantUML setup completed")
-                            else:
-                                console.print("[yellow]⚠[/yellow] PlantUML setup had issues - run [cyan]mise run setup-plantuml[/cyan] manually")
+                    if plantuml_result.returncode == 0:
+                        console.print("[green]✓[/green] PlantUML setup completed")
                     else:
-                        console.print("[yellow]⚠[/yellow] mise install had issues - run it manually")
-                        if result.stderr:
-                            console.print(f"[dim]{result.stderr}[/dim]")
-                except Exception as e:
-                    console.print(f"[yellow]⚠[/yellow] Could not run mise install automatically: {e}")
-                    console.print("[cyan]→[/cyan] Please run [bold]mise install[/bold] manually")
+                        console.print("[yellow]⚠[/yellow] PlantUML setup had issues - run [cyan]mise run setup-plantuml[/cyan] manually")
+                else:
+                    console.print("[yellow]⚠[/yellow] mise install had issues - please run [cyan]mise install[/cyan] manually")
+            except Exception as e:
+                console.print(f"[yellow]⚠[/yellow] Could not run mise install: {e}")
+                console.print("[cyan]→[/cyan] Please run [bold]mise install[/bold] manually")
+
+            # Check which tools are available after installation
+            console.print("\n[cyan]→[/cyan] Verifying tool installation...")
+            tools_status = {
+                "D2": shutil.which("d2") is not None,
+                "Mermaid CLI": shutil.which("mmdc") is not None,
+                "MkDocs": shutil.which("mkdocs") is not None,
+                "Marp": shutil.which("marp") is not None,
+                "PlantUML": Path("~/.local/bin/plantuml.jar").expanduser().exists()
+            }
+
+            # Report status
+            missing_tools = [name for name, installed in tools_status.items() if not installed]
+            if missing_tools:
+                console.print(f"[yellow]⚠[/yellow] Some tools are not available: {', '.join(missing_tools)}")
+                console.print("[cyan]→[/cyan] Try running [bold]mise install[/bold] again or check your PATH")
             else:
-                console.print("[green]✓[/green] All diagram tools are installed")
-        else:
-            console.print("[yellow]⚠[/yellow] mise not found - install from https://mise.run")
-            console.print("     After installing mise, run [cyan]mise install[/cyan] to get diagram tools")
+                console.print("[green]✓[/green] All required tools are installed!")
         progress.update(task, completed=1)
 
     # Success message
@@ -223,20 +317,9 @@ def setup_command(level: str, agent_dir: str, force: bool):
         )
     )
 
-    # Next steps - be smart about what to suggest
+    # Next steps
     console.print("\n[bold]Next steps:[/bold]")
-    step_num = 1
-
-    # Only suggest mise install if tools are missing and mise wasn't automatically run
-    if not mise_installed:
-        console.print(f"{step_num}. Install mise from [cyan]https://mise.run[/cyan]")
-        step_num += 1
-        console.print(f"{step_num}. Run [cyan]mise install[/cyan] to install diagram tools")
-        step_num += 1
-    elif tools_needed:
-        console.print(f"{step_num}. If tools are still missing, run [cyan]mise install[/cyan] manually")
-        step_num += 1
-
-    console.print(f"{step_num}. Test recipe commands: [cyan]t2d recipe list[/cyan]")
-    step_num += 1
-    console.print(f"{step_num}. Verify installation: [cyan]t2d verify[/cyan]")
+    console.print("1. Verify installation: [cyan]t2d verify[/cyan]")
+    console.print("2. Test recipe commands: [cyan]t2d recipe list[/cyan]")
+    console.print("3. Create your first recipe or use Claude to transform one!")
+    console.print("\n[dim]If any tools are missing, run [cyan]mise install[/cyan] manually[/dim]")

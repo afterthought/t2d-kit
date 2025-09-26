@@ -7,6 +7,8 @@ node = "20"
 go = "1.21"
 java = "openjdk-17"
 "npm:@mermaid-js/mermaid-cli" = "latest"
+"npm:@marp-team/marp-cli" = "latest"
+"pipx:mkdocs" = "latest"
 "go:oss.terrastruct.com/d2" = "latest"
 
 [tasks.setup-plantuml]
@@ -30,29 +32,39 @@ run = "echo 'Setup complete!'"
 [tasks.lint]
 description = "Run linters"
 run = """
-ruff check .
-black --check .
-mypy src/t2d_kit --ignore-missing-imports
+uv run ruff check .
+"""
+
+[tasks.format-check]
+description = "Check code formatting without modifying"
+run = """
+uv run ruff format --check .
 """
 
 [tasks.format]
 description = "Format code"
 run = """
-ruff check --fix .
-black .
+uv run ruff check --fix .
+uv run ruff format .
+"""
+
+[tasks.typecheck]
+description = "Run type checking"
+run = """
+uv run mypy src/t2d_kit --ignore-missing-imports
 """
 
 [tasks.test]
 description = "Run tests"
-run = "pytest tests/"
+run = "uv run pytest tests/"
 
 [tasks.test-all]
 description = "Run all tests (including failing ones)"
-run = "pytest tests/ -v || true"
+run = "uv run pytest tests/ -v || true"
 
 [tasks.test-cov]
 description = "Run tests with coverage"
-run = "pytest tests/test_smoke.py tests/unit/test_user_recipe_fixed.py --cov=src/t2d_kit --cov-report=term-missing"
+run = "uv run pytest tests/ -v --cov=src/t2d_kit --cov-report=term-missing --cov-report=xml"
 
 [tasks.verify]
 description = "Verify all tools are installed"

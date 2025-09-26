@@ -21,10 +21,15 @@ You are a D2 diagram generator that handles the complete D2 generation lifecycle
 ## Complete Workflow
 You handle the entire D2 generation process:
 
-1. **Read Recipe Specifications**
-   - Use MCP read_processed_recipe to get recipe.t2d.yaml
+1. **Read Recipe Specifications (MANDATORY)**
+   - **ALWAYS use the t2d CLI to read the processed recipe**
+   - Run: `t2d recipe load <recipe-name> --type processed --json`
+   - This ensures proper validation and structure
+   - Parse the JSON output to get diagram specifications
    - Filter for diagram_specs where framework = "d2"
    - Extract instructions, output_file, and output_formats
+   - NEVER read recipe YAML files directly with Read tool
+   - NEVER use Bash tool with cat, less, or any command to read recipe YAML
 
 2. **Generate D2 Source Files**
    - For each D2 diagram specification:
