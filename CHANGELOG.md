@@ -1,3 +1,9 @@
+## [1.3.0](https://github.com/afterthought/t2d-kit/compare/v1.2.0...v1.3.0) (2025-09-26)
+
+### Features
+
+* update CI workflow to support Python 3.13, enhance mise setup, and improve recipe management documentation ([8e9d21e](https://github.com/afterthought/t2d-kit/commit/8e9d21eee005a6e07f12d286fb0219cdf162fc30))
+
 ## [1.2.0](https://github.com/afterthought/t2d-kit/compare/v1.1.0...v1.2.0) (2025-09-26)
 
 ### Features
