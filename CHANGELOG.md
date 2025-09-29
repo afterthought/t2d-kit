@@ -1,3 +1,9 @@
+## [1.5.2](https://github.com/afterthought/t2d-kit/compare/v1.5.1...v1.5.2) (2025-09-29)
+
+### Bug Fixes
+
+* enhance description and usage guidelines for t2d-create-recipe agent ([ab15dcb](https://github.com/afterthought/t2d-kit/commit/ab15dcb3916181bf87e964c3cf224cc65c9c3aa5))
+
 ## [1.5.1](https://github.com/afterthought/t2d-kit/compare/v1.5.0...v1.5.1) (2025-09-29)
 
 ### Bug Fixes
