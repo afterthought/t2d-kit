@@ -1,3 +1,13 @@
+## [1.5.0](https://github.com/afterthought/t2d-kit/compare/v1.4.0...v1.5.0) (2025-09-29)
+
+### Features
+
+* enhance diagram generation agents to check for existing files and update them appropriately ([2c645eb](https://github.com/afterthought/t2d-kit/commit/2c645eb0842f403742740306756d65dcb66ffe05))
+
+### Bug Fixes
+
+* update references to '.mise.toml' to 'mise.toml' in setup command ([9e47234](https://github.com/afterthought/t2d-kit/commit/9e47234ba9c58dcbb770119a5b75d0501eea52c3))
+
 ## [1.4.0](https://github.com/afterthought/t2d-kit/compare/v1.3.0...v1.4.0) (2025-09-29)
 
 ### Features
