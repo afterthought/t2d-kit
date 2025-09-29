@@ -142,20 +142,20 @@ def setup_command(level: str, agent_dir: str, force: bool):
             import subprocess
             import toml
 
-            # Check if .mise.toml exists in current directory
-            mise_config_path = Path.cwd() / ".mise.toml"
+            # Check if mise.toml exists in current directory
+            mise_config_path = Path.cwd() / "mise.toml"
 
             # Load existing config or create new one
             if mise_config_path.exists():
-                console.print("[cyan]→[/cyan] Found existing .mise.toml, updating...")
+                console.print("[cyan]→[/cyan] Found existing mise.toml, updating...")
                 try:
                     with open(mise_config_path, "r") as f:
                         config = toml.load(f)
                 except Exception as e:
-                    console.print(f"[yellow]⚠[/yellow] Could not read .mise.toml: {e}")
+                    console.print(f"[yellow]⚠[/yellow] Could not read mise.toml: {e}")
                     config = {}
             else:
-                console.print("[cyan]→[/cyan] Creating .mise.toml with required tools...")
+                console.print("[cyan]→[/cyan] Creating mise.toml with required tools...")
                 config = {}
 
             # Ensure tools section exists
@@ -232,11 +232,11 @@ echo "PlantUML installed to ~/.local/bin/plantuml"
                 with open(mise_config_path, "w") as f:
                     toml.dump(config, f)
                 if tools_added:
-                    console.print(f"[green]✓[/green] Added tools to .mise.toml: {', '.join(tools_added)}")
+                    console.print(f"[green]✓[/green] Added tools to mise.toml: {', '.join(tools_added)}")
                 else:
-                    console.print("[green]✓[/green] .mise.toml already has all required tools")
+                    console.print("[green]✓[/green] mise.toml already has all required tools")
             except Exception as e:
-                console.print(f"[red]✗[/red] Could not write .mise.toml: {e}")
+                console.print(f"[red]✗[/red] Could not write mise.toml: {e}")
 
             # Run mise install to install the tools
             console.print("[cyan]→[/cyan] Running [bold]mise install[/bold] to install tools...")
