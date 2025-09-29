@@ -42,7 +42,7 @@ InstructionsField = Annotated[
 
 NameField = Annotated[str, Field(min_length=1, max_length=255, description="Human-readable name")]
 
-DescriptionField = Annotated[str, Field(max_length=500, description="Brief description")]
+DescriptionField = Annotated[str, Field(description="Description")]
 
 ContentField = Annotated[
     str, Field(max_length=1048576, description="Content text (max 1MB)")  # 1MB
