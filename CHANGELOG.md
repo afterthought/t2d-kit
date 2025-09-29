@@ -1,3 +1,9 @@
+## [1.4.0](https://github.com/afterthought/t2d-kit/compare/v1.3.0...v1.4.0) (2025-09-29)
+
+### Features
+
+* enhance documentation for recipe management and Zudoku generator, adding detailed descriptions and media integration guidelines ([ac53d84](https://github.com/afterthought/t2d-kit/commit/ac53d84933fcf7fb97e28e821193d50aa8a5d7f9))
+
 ## [1.3.0](https://github.com/afterthought/t2d-kit/compare/v1.2.0...v1.3.0) (2025-09-26)
 
 ### Features
