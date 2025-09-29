@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/afterthought/t2d-kit/compare/v1.6.0...v1.7.0) (2025-09-29)
+
+### Features
+
+* enhance D2 diagram generator documentation with valid style attributes and usage guidelines; update UserRecipe model for improved diagram request validation ([9922e1d](https://github.com/afterthought/t2d-kit/commit/9922e1dde26e0de3add2652e1e5dc067a38f4fb1))
+
 ## [1.6.0](https://github.com/afterthought/t2d-kit/compare/v1.5.2...v1.6.0) (2025-09-29)
 
 ### Features
