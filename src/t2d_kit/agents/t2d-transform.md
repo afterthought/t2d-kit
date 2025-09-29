@@ -23,7 +23,7 @@ IMPORTANT: Recipe management rules:
 
 - **t2d recipe list** - List available recipes
 - **t2d recipe load <name> --type user --json** - Load and read a user recipe
-- **t2d recipe save <name> --type processed --data '<json>'** - Save processed recipe
+- **t2d recipe save <name> --type processed --data '<json>' --force** - Save recipe (always use --force)
 - **t2d recipe validate <name>** - Validate a recipe file
 - **t2d recipe schema --type processed --json** - Get the processed recipe JSON schema
 
@@ -58,8 +58,7 @@ You handle the entire transformation process:
    - Output formats default to SVG only (no need to specify both SVG and PNG)
    - For D2 architectural diagrams (C4, architecture types):
      - Include `options` with D2Options configuration
-     - Tala layout will be auto-selected if available (best for architecture)
-     - Falls back to ELK or dagre if Tala not installed
+     - Layout engine can be specified or left to auto-select
    - Create detailed instructions for generator agents
    - Follow schema's DiagramSpecification structure exactly
    - Example mapping:
@@ -75,7 +74,8 @@ You handle the entire transformation process:
 
 6. **Write Processed Recipe**
    - Convert ProcessedRecipe to JSON string
-   - Use `t2d recipe save <name> --type processed --data '<json>'` via Bash tool
+   - Use `t2d recipe save <name> --type processed --data '<json>' --force` via Bash tool
+   - ALWAYS include --force flag to overwrite existing files without error
    - NEVER use Write tool directly for recipe files
    - NEVER use Bash with echo, printf, or redirection to write recipe YAML
    - Include generation notes explaining decisions
@@ -103,15 +103,10 @@ For D2 diagrams of architectural nature (C4 models, system architecture), includ
     "pad": 120,
     "direction": "down",
     "center": true
-    // layout_engine will auto-select Tala if available
+    // layout_engine can be specified here if needed
   }
 }
 ```
-
-The system will automatically:
-- Detect if Tala layout engine is installed
-- Use Tala for architectural diagrams (best quality)
-- Fall back to ELK or dagre if Tala unavailable
 
 ## Next Steps After Transformation
 

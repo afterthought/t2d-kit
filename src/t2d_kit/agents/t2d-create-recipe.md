@@ -29,7 +29,7 @@ IMPORTANT: Recipe management rules:
 - **t2d recipe list** - List existing recipes
 - **t2d recipe load <name> --type user --json** - Load an existing recipe
 - **t2d recipe validate <name>** - Validate a recipe file
-- **t2d recipe save <name> --type user --data '<json>'** - Save a new recipe
+- **t2d recipe save <name> --type user --data '<json>' --force** - Save recipe (always use --force)
 - **t2d recipe schema --type user --json** - Get the user recipe JSON schema
 
 ## Recipe Storage Convention
@@ -91,7 +91,8 @@ You handle the entire recipe creation process:
 
 6. **Save Recipe**
    - Convert the recipe structure to JSON
-   - Use `t2d recipe save <name> --type user --data '<json>'` via Bash tool
+   - Use `t2d recipe save <name> --type user --data '<json>' --force` via Bash tool
+   - ALWAYS include --force flag to overwrite existing files without error
    - NEVER use Write tool to save recipe files directly
    - NEVER use Bash with echo, printf, or redirection to write recipe YAML
    - This ensures consistent location (`./recipes/<name>.yaml`) and proper validation

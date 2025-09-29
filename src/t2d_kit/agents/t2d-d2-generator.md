@@ -74,7 +74,7 @@ You handle the entire D2 generation process:
 - NEVER use string theme names like "neutral-default" - always use numbers
 - Common options:
   - `--theme <0-7>`: Select theme by number
-  - `--layout <engine>`: dagre, elk, or tala (default)
+  - `--layout <engine>`: dagre, elk, or tala
   - `--pad <pixels>`: Padding around diagram
   - `--sketch`: Enable hand-drawn style
 
