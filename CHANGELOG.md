@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/afterthought/t2d-kit/compare/v1.5.2...v1.6.0) (2025-09-29)
+
+### Features
+
+* add layout engine and theme options to user recipe model; enhance D2 diagram configuration ([77e74f5](https://github.com/afterthought/t2d-kit/commit/77e74f58e4bc2b9280e2dd1bab98093ca208e788))
+
 ## [1.5.2](https://github.com/afterthought/t2d-kit/compare/v1.5.1...v1.5.2) (2025-09-29)
 
 ### Bug Fixes
