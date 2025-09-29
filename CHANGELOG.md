@@ -1,3 +1,9 @@
+## [1.5.1](https://github.com/afterthought/t2d-kit/compare/v1.5.0...v1.5.1) (2025-09-29)
+
+### Bug Fixes
+
+* update DescriptionField to remove max_length constraint for better flexibility ([37e28de](https://github.com/afterthought/t2d-kit/commit/37e28de12f57d07cdb55d0a40c7922e2ad9f12e1))
+
 ## [1.5.0](https://github.com/afterthought/t2d-kit/compare/v1.4.0...v1.5.0) (2025-09-29)
 
 ### Features
