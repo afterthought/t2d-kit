@@ -141,6 +141,43 @@ web_app -> api: API calls {
 }
 ```
 
+## Valid D2 Style Attributes
+
+### IMPORTANT: Only Use These Valid Style Keywords
+
+#### Shape Styles
+- `style.opacity`: Float between 0 and 1
+- `style.stroke`: Color for shape border (let theme handle this)
+- `style.fill`: Color for shape body (let theme handle this)
+- `style.stroke-width`: Width of shape border (e.g., 1, 2, 3)
+- `style.stroke-dash`: Dashed line pattern (e.g., 3 for dashed, 0 for solid)
+- `style.border-radius`: Corner rounding for rectangles (e.g., 8)
+- `style.shadow`: Boolean, applies shadow to shapes
+- `style.3d`: Boolean, makes rectangles appear 3D
+- `style.multiple`: Boolean, creates stacked appearance
+- `style.double-border`: Boolean, for rectangles and ovals
+
+#### Text/Font Styles
+- `style.font`: Font family name
+- `style.font-size`: Size in points (e.g., 12, 14, 16)
+- `style.font-color`: Text color (let theme handle this)
+- `style.bold`: Boolean, makes text bold
+- `style.italic`: Boolean, makes text italic
+- `style.underline`: Boolean, underlines text
+- `style.text-transform`: uppercase, lowercase, capitalize
+
+#### Connection Styles
+- `style.stroke`: Line color (let theme handle this)
+- `style.stroke-width`: Line thickness (e.g., 1, 2, 3)
+- `style.stroke-dash`: Dashed pattern (e.g., 3 for dashed, 0 for solid)
+- `style.animated`: Boolean, animates the connection
+
+#### INVALID Styles (DO NOT USE)
+- ❌ `style.font-weight` - Use `style.bold` instead
+- ❌ `style.fill-pattern` - Not supported
+- ❌ `style.line-style` - Use `style.stroke-dash` instead
+- ❌ Any color values - Let themes handle colors
+
 ## D2 Classes for Reuse and Consistency
 
 ### How D2 Classes Work
@@ -150,24 +187,27 @@ D2 classes let you define reusable sets of attributes that can be applied to mul
 - **Override when needed**: Object attributes override class attributes
 - **Multiple classes**: Apply multiple classes with arrays `class: [class1, class2]`
 - **SVG integration**: Classes are written to SVG for CSS/JS post-processing
+- **IMPORTANT**: Classes must be defined under `classes` node to avoid appearing as shapes
 
 ### Defining and Using Classes
 ```d2
-# Define reusable classes for consistency
-service_style: {
-  shape: rectangle
-  style.border-radius: 8
-  style.font-size: 14
-}
+# CRITICAL: Define classes under the 'classes' node
+classes: {
+  service_style: {
+    shape: rectangle
+    style.border-radius: 8
+    style.font-size: 14
+  }
 
-database_style: {
-  shape: cylinder
-  style.multiple: true
-}
+  database_style: {
+    shape: cylinder
+    style.multiple: true
+  }
 
-critical_style: {
-  style.stroke-width: 3
-  style.stroke-dash: 0
+  critical_style: {
+    style.stroke-width: 3
+    style.bold: true
+  }
 }
 
 # Apply classes to objects
@@ -186,10 +226,17 @@ payment_service: Payment Service {
 
 ### Class Inheritance and Overriding
 ```d2
-# Define base class
-base_service: {
-  shape: rectangle
-  style.border-radius: 8
+classes: {
+  # Define base class
+  base_service: {
+    shape: rectangle
+    style.border-radius: 8
+  }
+
+  critical_style: {
+    style.stroke-width: 3
+    style.bold: true
+  }
 }
 
 # Object can override class attributes
@@ -207,23 +254,25 @@ auth: Auth Service {
 
 ### Using Classes for Consistent Architecture Patterns
 ```d2
-# Define consistent styles for different component types
-microservice_class: {
-  shape: rectangle
-  style.border-radius: 8
-}
+classes: {
+  # Define consistent styles for different component types
+  microservice_class: {
+    shape: rectangle
+    style.border-radius: 8
+  }
 
-database_class: {
-  shape: cylinder
-}
+  database_class: {
+    shape: cylinder
+  }
 
-queue_class: {
-  shape: queue
-}
+  queue_class: {
+    shape: queue
+  }
 
-external_class: {
-  shape: cloud
-  style.stroke-dash: 3
+  external_class: {
+    shape: cloud
+    style.stroke-dash: 3
+  }
 }
 
 # Apply consistently across the diagram
@@ -251,22 +300,24 @@ external_payment: Payment Provider { class: external_class }
 
 #### C4 Container Diagram with Classes
 ```d2
-# Define classes for C4 components
-person_class: {
-  shape: person
-}
+classes: {
+  # Define classes for C4 components
+  person_class: {
+    shape: person
+  }
 
-system_class: {
-  shape: rectangle
-  style.border-radius: 8
-}
+  system_class: {
+    shape: rectangle
+    style.border-radius: 8
+  }
 
-container_class: {
-  shape: rectangle
-}
+  container_class: {
+    shape: rectangle
+  }
 
-database_class: {
-  shape: cylinder
+  database_class: {
+    shape: cylinder
+  }
 }
 
 # Apply classes for consistency
@@ -287,17 +338,19 @@ db: Database {
 
 #### Microservices Architecture with Classes
 ```d2
-# Define service and infrastructure classes
-service_class: {
-  shape: hexagon
-}
+classes: {
+  # Define service and infrastructure classes
+  service_class: {
+    shape: hexagon
+  }
 
-data_store_class: {
-  shape: cylinder
-}
+  data_store_class: {
+    shape: cylinder
+  }
 
-message_broker_class: {
-  shape: queue
+  message_broker_class: {
+    shape: queue
+  }
 }
 
 # Apply to create consistent architecture
@@ -322,29 +375,33 @@ event_bus: Event Bus { class: message_broker_class }
 
 #### Define Classes Based on Component Types
 ```d2
-# Infrastructure components
-load_balancer_class: { shape: hexagon }
-service_class: { shape: rectangle; style.border-radius: 8 }
-database_class: { shape: cylinder }
-cache_class: { shape: cylinder; style.multiple: true }
-queue_class: { shape: queue }
-external_api_class: { shape: cloud; style.stroke-dash: 3 }
+classes: {
+  # Infrastructure components
+  load_balancer_class: { shape: hexagon }
+  service_class: { shape: rectangle; style.border-radius: 8 }
+  database_class: { shape: cylinder }
+  cache_class: { shape: cylinder; style.multiple: true }
+  queue_class: { shape: queue }
+  external_api_class: { shape: cloud; style.stroke-dash: 3 }
 
-# Human actors
-user_class: { shape: person }
-admin_class: { shape: person; style.multiple: true }
+  # Human actors
+  user_class: { shape: person }
+  admin_class: { shape: person; style.multiple: true }
+}
 ```
 
 #### Apply Classes to Connections
 ```d2
-# Define connection styles
-sync_connection: {
-  style.stroke-width: 2
-}
+classes: {
+  # Define connection styles
+  sync_connection: {
+    style.stroke-width: 2
+  }
 
-async_connection: {
-  style.stroke-dash: 3
-  style.stroke-width: 2
+  async_connection: {
+    style.stroke-dash: 3
+    style.stroke-width: 2
+  }
 }
 
 # Apply to connections

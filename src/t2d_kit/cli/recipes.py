@@ -180,7 +180,7 @@ def save(name, type, data, force):
 
         # Save to file
         with open(recipe_path, 'w') as f:
-            yaml.dump(recipe.model_dump(exclude_none=True), f,
+            yaml.dump(recipe.model_dump(exclude_none=True, mode='json'), f,
                      default_flow_style=False, sort_keys=False)
 
         console.print(f"[green]✓[/green] Saved to: {recipe_path}")

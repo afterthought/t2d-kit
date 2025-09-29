@@ -22,11 +22,18 @@ from .base import (
 
 
 class DiagramRequest(T2DBaseModel):
-    """User's high-level diagram request."""
+    """User's high-level diagram request.
 
-    type: str = Field(min_length=1, max_length=100)
+    The transform agent will automatically select the best framework
+    based on the diagram type (e.g., sequence → Mermaid, c4_container → D2).
+    """
+
+    type: str = Field(
+        min_length=1,
+        max_length=100,
+        description="Diagram type (e.g., architecture, sequence, erd, flowchart, c4_container)"
+    )
     description: DescriptionField | None = None
-    framework_preference: str | None = None
     layout_engine: str | None = Field(
         None,
         description="Layout engine for D2 diagrams (dagre, elk, or tala)"
@@ -45,17 +52,6 @@ class DiagramRequest(T2DBaseModel):
         if not re.match(r"^[a-z][a-z0-9_]*$", normalized):
             raise ValueError("Diagram type must be alphanumeric with underscores")
         return normalized
-
-    @field_validator("framework_preference")
-    @classmethod
-    def validate_framework_preference(cls, v: str | None) -> str | None:
-        """Validate framework preference against known frameworks."""
-        if v is None:
-            return v
-        valid_frameworks = {"d2", "mermaid", "plantuml", "graphviz", "auto"}
-        if v.lower() not in valid_frameworks:
-            raise ValueError(f"Framework must be one of: {valid_frameworks}")
-        return v.lower()
 
     @field_validator("layout_engine")
     @classmethod
