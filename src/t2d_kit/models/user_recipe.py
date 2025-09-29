@@ -27,6 +27,15 @@ class DiagramRequest(T2DBaseModel):
     type: str = Field(min_length=1, max_length=100)
     description: DescriptionField | None = None
     framework_preference: str | None = None
+    layout_engine: str | None = Field(
+        None,
+        description="Layout engine for D2 diagrams (dagre, elk, or tala)"
+    )
+    theme: int | None = Field(
+        None,
+        description="D2 theme ID (0-8, 100-105, 200, 300-301)",
+        ge=0  # Must be >= 0
+    )
 
     @field_validator("type")
     @classmethod
@@ -47,6 +56,29 @@ class DiagramRequest(T2DBaseModel):
         if v.lower() not in valid_frameworks:
             raise ValueError(f"Framework must be one of: {valid_frameworks}")
         return v.lower()
+
+    @field_validator("layout_engine")
+    @classmethod
+    def validate_layout_engine(cls, v: str | None) -> str | None:
+        """Validate layout engine for D2 diagrams."""
+        if v is None:
+            return v
+        valid_engines = {"dagre", "elk", "tala"}
+        if v.lower() not in valid_engines:
+            raise ValueError(f"Layout engine must be one of: {valid_engines}")
+        return v.lower()
+
+    @field_validator("theme")
+    @classmethod
+    def validate_theme(cls, v: int | None) -> int | None:
+        """Validate D2 theme ID."""
+        if v is None:
+            return v
+        # Valid D2 theme IDs based on the catalog
+        valid_themes = {0, 1, 3, 4, 5, 6, 7, 8, 100, 101, 102, 103, 104, 105, 200, 300, 301}
+        if v not in valid_themes:
+            raise ValueError(f"Theme ID must be one of: {sorted(valid_themes)}")
+        return v
 
 
 class DocumentationInstructions(T2DBaseModel):

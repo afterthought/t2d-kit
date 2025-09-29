@@ -1,6 +1,5 @@
 """T021: D2Options model for advanced D2 diagram configuration."""
 
-import os
 import warnings
 from typing import Literal, Optional
 
@@ -24,26 +23,11 @@ class D2Options(T2DBaseModel):
         exclude=True  # Don't include in serialization
     )
 
-    # Themes
-    theme: (
-        Literal[
-            "neutral-default",
-            "neutral-grey",
-            "flagship-terrastruct",
-            "cool-classics",
-            "mixed-berry-blue",
-            "grape-soda",
-            "aubergine",
-            "colorblind-clear",
-            "vanilla-nitro-cola",
-            "orange-creamsicle",
-            "shirley-temple",
-            "earth-tones",
-            "everglade",
-            "buttered-toast",
-        ]
-        | None
-    ) = Field(default="neutral-default", description="D2 theme to apply")
+    # Theme ID (based on D2 themes catalog)
+    theme: int | None = Field(
+        default=0,  # Default theme
+        description="D2 theme ID (0-8, 100-105, 200, 300-301)"
+    )
 
     # Rendering options
     sketch: bool = Field(default=False, description="Enable hand-drawn sketch mode")
@@ -105,49 +89,18 @@ class D2Options(T2DBaseModel):
             else:
                 self.layout_engine = "dagre"
 
-        # Validate Tala license if Tala is selected
-        if self.layout_engine == "tala" and not os.environ.get("TALA_LICENSE_KEY"):
-            # Check if Tala is actually installed
-            from t2d_kit.utils.d2_utils import is_tala_installed
-
-            if is_tala_installed():
-                warnings.warn(
-                    "Tala layout engine may require a license key for full features. "
-                    "Set TALA_LICENSE_KEY environment variable if you have a license.",
-                    UserWarning,
-                    stacklevel=2,
-                )
-
         return self
 
     def to_cli_args(self) -> list[str]:
-        """Convert options to D2 CLI arguments."""
+        """Convert options to D2 CLI arguments.
+
+        Note: Layout engine and theme are now set in the D2 file vars,
+        not via CLI arguments.
+        """
         args = []
 
-        # Add layout engine
-        args.extend(["--layout", self.layout_engine])
-
-        # Add theme if specified
-        if self.theme:
-            # Map theme names to numeric IDs that D2 expects
-            theme_map = {
-                "neutral-default": "0",
-                "neutral-grey": "1",
-                "flagship-terrastruct": "2",
-                "cool-classics": "3",
-                "mixed-berry-blue": "4",
-                "grape-soda": "5",
-                "aubergine": "6",
-                "colorblind-clear": "3",  # same as cool-classics
-                "vanilla-nitro-cola": "4",  # same as mixed-berry-blue
-                "orange-creamsicle": "5",  # same as grape-soda
-                "shirley-temple": "6",  # same as aubergine
-                "earth-tones": "7",
-                "everglade": "0",  # fallback to default
-                "buttered-toast": "0",  # fallback to default
-            }
-            theme_id = theme_map.get(self.theme, "0")
-            args.extend(["--theme", theme_id])
+        # Layout and theme are handled in the D2 file vars configuration
+        # No need to add them to CLI args
 
         # Add sketch mode
         if self.sketch:

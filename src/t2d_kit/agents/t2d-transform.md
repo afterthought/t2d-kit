@@ -136,14 +136,28 @@ For D2 diagrams of architectural nature (C4 models, system architecture), includ
   "output_file": "docs/assets/architecture.d2",
   "options": {
     "diagram_type": "c4_container",  // Hints for layout detection
-    "theme": "neutral-default",
+    "layout_engine": "tala",  // Pass through from user recipe if specified
+    "theme": 200,  // Theme ID passed directly from user recipe
     "pad": 120,
     "direction": "down",
     "center": true
-    // layout_engine can be specified here if needed
   }
 }
 ```
+
+**IMPORTANT**: Pass through user-specified options from the recipe:
+
+1. **Layout Engine**: If the user recipe specifies `layout_engine` for a diagram:
+   - Check each diagram for `layout_engine` field
+   - If present, add it to the D2Options in the processed recipe
+   - Valid values: "dagre", "elk", "tala"
+   - If not specified, let the system auto-detect based on diagram type
+
+2. **Theme**: If the user recipe specifies `theme` for a diagram:
+   - Check each diagram for `theme` field (will be a theme ID number)
+   - Pass the theme ID directly to the options
+   - Valid IDs: 0, 1, 3-8, 100-105, 200, 300-301
+   - If not specified, use 0 (default theme)
 
 ## Next Steps After Transformation
 

@@ -49,19 +49,22 @@ You handle the entire D2 generation process:
      - Interpret the natural language instructions
      - For UPDATES: Modify existing D2 code preserving unchanged elements
      - For NEW: Create syntactically correct D2 code from scratch
+     - **ALWAYS include vars configuration at the top of the file**:
+       - Set layout-engine from options.layout_engine (or auto-detect)
+       - Set theme-id from options.theme (use numeric ID)
+     - **NEVER use explicit colors** - let the theme handle all coloring
+     - Focus on structure, relationships, and clear labeling
+     - Use appropriate D2 shapes for different component types
      - Use Write tool to save .d2 file to specified output_file
-     - Follow D2 best practices (clear shapes, connections, labels)
+     - Follow D2 best practices (clear hierarchy, meaningful connections, descriptive labels)
 
 3. **Build Diagram Assets**
    - For each generated .d2 file:
      - Use Bash tool to run d2 CLI commands
-     - IMPORTANT: D2 themes use numeric IDs (0-7), NOT names
-       - Theme 0: Neutral default
-       - Theme 1: Neutral gray
-       - Theme 3: Colorblind clear
-       - Theme 4: Vanilla Nitro
-       - Theme 5: Dark Mauve
-       - Use: `d2 --theme 0` NOT `d2 --theme neutral-default`
+     - Since layout and theme are in the D2 file vars, simple command:
+       - `d2 input.d2 output.svg`
+     - No need to specify --layout or --theme in CLI
+     - The vars configuration handles everything
      - Handle multiple output formats:
        - Single format: `d2 diagram.d2 diagram.svg`
        - Multiple formats: `d2 diagram.d2 diagram.svg && d2 diagram.d2 diagram.png`
@@ -74,23 +77,320 @@ You handle the entire D2 generation process:
    - Report any warnings or errors
    - Confirm diagram specifications are complete
 
+## D2 Configuration with Vars
+
+### Setting Layout Engine and Theme in D2 Files
+**ALWAYS include the vars configuration at the top of every D2 file**:
+
+```d2
+vars: {
+  d2-config: {
+    layout-engine: tala  # Options: dagre, elk, tala
+    theme-id: 0          # Use numeric theme ID from processed recipe
+  }
+}
+
+# Rest of your diagram content follows...
+```
+
+### Theme ID Usage
+The processed recipe specifies theme as a numeric ID in options.theme.
+Simply use this number directly in the vars configuration.
+Valid theme IDs: 0, 1, 3-8, 100-105, 200, 300-301
+
+### Layout Engine Selection
+- If `options.layout_engine` is specified, use that value
+- Otherwise, auto-detect based on diagram type:
+  - `tala` for C4 models and architectural diagrams (if available)
+  - `elk` for hierarchical structures
+  - `dagre` for general flow diagrams
+
+### Complete Example with Configuration
+```d2
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 200  # dark-mauve theme
+  }
+}
+
+# C4 Container Diagram
+title: E-commerce Platform Architecture
+
+users: Users {
+  class: primary
+  shape: person
+}
+
+web_app: Web Application {
+  class: primary
+  shape: browser
+}
+
+api: API Gateway {
+  class: primary
+}
+
+# Connections with semantic classes
+users -> web_app: Uses {
+  class: primary
+}
+
+web_app -> api: API calls {
+  class: secondary
+}
+```
+
+## D2 Classes for Reuse and Consistency
+
+### How D2 Classes Work
+D2 classes let you define reusable sets of attributes that can be applied to multiple objects:
+- **Define once, use many times**: Create a class with styling attributes
+- **Apply to objects**: Use `class: classname` to apply attributes
+- **Override when needed**: Object attributes override class attributes
+- **Multiple classes**: Apply multiple classes with arrays `class: [class1, class2]`
+- **SVG integration**: Classes are written to SVG for CSS/JS post-processing
+
+### Defining and Using Classes
+```d2
+# Define reusable classes for consistency
+service_style: {
+  shape: rectangle
+  style.border-radius: 8
+  style.font-size: 14
+}
+
+database_style: {
+  shape: cylinder
+  style.multiple: true
+}
+
+critical_style: {
+  style.stroke-width: 3
+  style.stroke-dash: 0
+}
+
+# Apply classes to objects
+auth_service: Authentication Service {
+  class: service_style
+}
+
+user_db: User Database {
+  class: database_style
+}
+
+payment_service: Payment Service {
+  class: [service_style, critical_style]  # Multiple classes
+}
+```
+
+### Class Inheritance and Overriding
+```d2
+# Define base class
+base_service: {
+  shape: rectangle
+  style.border-radius: 8
+}
+
+# Object can override class attributes
+api_gateway: API Gateway {
+  class: base_service
+  shape: hexagon  # Overrides the rectangle from class
+}
+
+# Classes applied left-to-right when using arrays
+auth: Auth Service {
+  class: [base_service, critical_style]
+  # critical_style attributes override base_service if they conflict
+}
+```
+
+### Using Classes for Consistent Architecture Patterns
+```d2
+# Define consistent styles for different component types
+microservice_class: {
+  shape: rectangle
+  style.border-radius: 8
+}
+
+database_class: {
+  shape: cylinder
+}
+
+queue_class: {
+  shape: queue
+}
+
+external_class: {
+  shape: cloud
+  style.stroke-dash: 3
+}
+
+# Apply consistently across the diagram
+user_service: User Service { class: microservice_class }
+order_service: Order Service { class: microservice_class }
+inventory_service: Inventory Service { class: microservice_class }
+
+user_db: User DB { class: database_class }
+order_db: Order DB { class: database_class }
+
+message_queue: Event Bus { class: queue_class }
+external_payment: Payment Provider { class: external_class }
+```
+
+### Best Practices for Classes and Themes
+- **NEVER use explicit colors** - let themes handle all coloring
+- **Define reusable classes** for consistent styling across similar components
+- **Use descriptive class names** that explain the component type or role
+- **Apply classes consistently** to maintain visual coherence
+- **Override sparingly** - only override class attributes when truly needed
+- **Layer classes** using arrays when combining styles
+- **Let themes work** - focus on structure, the theme handles the colors
+
+### Class Examples for Common Patterns
+
+#### C4 Container Diagram with Classes
+```d2
+# Define classes for C4 components
+person_class: {
+  shape: person
+}
+
+system_class: {
+  shape: rectangle
+  style.border-radius: 8
+}
+
+container_class: {
+  shape: rectangle
+}
+
+database_class: {
+  shape: cylinder
+}
+
+# Apply classes for consistency
+user: User { class: person_class }
+
+web_app: Web Application {
+  class: container_class
+}
+
+api: API Application {
+  class: container_class
+}
+
+db: Database {
+  class: database_class
+}
+```
+
+#### Microservices Architecture with Classes
+```d2
+# Define service and infrastructure classes
+service_class: {
+  shape: hexagon
+}
+
+data_store_class: {
+  shape: cylinder
+}
+
+message_broker_class: {
+  shape: queue
+}
+
+# Apply to create consistent architecture
+auth_service: Auth Service { class: service_class }
+user_service: User Service { class: service_class }
+order_service: Order Service { class: service_class }
+
+user_db: User DB { class: data_store_class }
+order_db: Order DB { class: data_store_class }
+
+event_bus: Event Bus { class: message_broker_class }
+```
+
+### Working with Themes
+- Themes are specified by numeric ID in the vars configuration
+- Valid theme IDs: 0, 1, 3-8, 100-105, 200, 300-301
+- The theme handles all colors automatically
+- Your diagram structure remains the same across themes
+- Focus on layout and relationships, not colors
+
+### Creating Reusable Classes
+
+#### Define Classes Based on Component Types
+```d2
+# Infrastructure components
+load_balancer_class: { shape: hexagon }
+service_class: { shape: rectangle; style.border-radius: 8 }
+database_class: { shape: cylinder }
+cache_class: { shape: cylinder; style.multiple: true }
+queue_class: { shape: queue }
+external_api_class: { shape: cloud; style.stroke-dash: 3 }
+
+# Human actors
+user_class: { shape: person }
+admin_class: { shape: person; style.multiple: true }
+```
+
+#### Apply Classes to Connections
+```d2
+# Define connection styles
+sync_connection: {
+  style.stroke-width: 2
+}
+
+async_connection: {
+  style.stroke-dash: 3
+  style.stroke-width: 2
+}
+
+# Apply to connections
+user -> api: HTTP Request {
+  class: sync_connection
+}
+
+api -> queue: Publish Event {
+  class: async_connection
+}
+```
+
 ## D2 Best Practices
-- Use appropriate shapes for different component types
-- Create clear hierarchical layouts
-- Add meaningful labels and descriptions
-- Optimize for readability at typical viewing sizes
-- Use consistent styling within diagrams
+
+### Styling Principles
+- **NEVER use explicit colors** - let the theme system handle colors
+- **Define reusable classes** for consistency across similar elements
+- **Choose appropriate shapes** for different component types
+- **Create clear hierarchical layouts** through positioning and grouping
+- **Add meaningful labels** and descriptions
+- **Use consistent class patterns** within diagrams
+- **Let the theme system handle all color decisions**
+
+### Theme-Aware Design
+- **Design for theme flexibility** - your structure works with any theme
+- **Focus on diagram structure** not visual appearance
+- **Use classes for reusability** not for color control
+- **Maintain consistency** in class usage across related diagrams
+
+### Quality Guidelines
+- **Consistent class usage**: Apply the same classes to similar components
+- **Clear relationships**: Show different connection types with distinct styles
+- **Readable layouts**: Ensure adequate spacing and clear connection paths
+- **Meaningful names**: Class names should describe component types or roles
+- **Reusable patterns**: Define classes once, use many times
 
 ## D2 CLI Usage
 - Basic command: `d2 input.d2 output.svg`
-- With theme: `d2 --theme 0 input.d2 output.svg` (use numeric IDs 0-7)
-- With layout: `d2 --layout dagre input.d2 output.svg`
-- NEVER use string theme names like "neutral-default" - always use numbers
-- Common options:
-  - `--theme <0-7>`: Select theme by number
-  - `--layout <engine>`: dagre, elk, or tala
+- **Layout and theme are set in the D2 file vars**, not CLI arguments
+- Common CLI options (if needed):
   - `--pad <pixels>`: Padding around diagram
   - `--sketch`: Enable hand-drawn style
+  - `--watch`: Watch for file changes
+- The vars configuration in the D2 file handles:
+  - Layout engine (dagre, elk, tala)
+  - Theme selection (by numeric ID)
 
 ## Error Handling
 - Validate D2 syntax before running CLI

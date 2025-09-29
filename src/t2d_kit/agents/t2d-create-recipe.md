@@ -101,6 +101,24 @@ You handle the entire recipe creation/update process:
    - **deployment**: Infrastructure topology
    - (Check schema for complete list of valid types)
 
+   **Layout Engine Option (for D2 diagrams)**:
+   - User can specify `layout_engine` for D2 diagrams: "dagre", "elk", or "tala"
+   - Tala: Best for architectural diagrams (C4, system architecture)
+   - ELK: Good for hierarchical layouts
+   - Dagre: Default, works well for most diagrams
+   - If not specified, system auto-selects based on diagram type
+
+   **Theme Option (for D2 diagrams)**:
+   - User can specify `theme` as a number for D2 theme ID
+   - Common themes:
+     - 0: Default (light)
+     - 1: Neutral gray (darker)
+     - 200: Dark mauve (true dark theme)
+     - 300: Terminal (high contrast)
+   - Full list: 0, 1, 3-8, 100-105, 200, 300-301
+   - See D2 themes catalog for visual reference
+   - If not specified, defaults to theme 0
+
 6. **Create or Update Recipe Structure**
    - For UPDATES: Preserve existing fields unless explicitly changing them
    - For NEW: Build fresh UserRecipe
