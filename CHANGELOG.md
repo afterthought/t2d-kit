@@ -1,3 +1,10 @@
+## [1.9.0](https://github.com/afterthought/t2d-kit/compare/v1.8.0...v1.9.0) (2025-09-30)
+
+### Features
+
+* Add MCP server management commands and integrate FastMCP ([0a3ecae](https://github.com/afterthought/t2d-kit/commit/0a3ecaee439750be8f11e221c70d4893ac940142))
+* update agent descriptions and commands for clarity; add new agents and modify existing ones in documentation; adjust valid agents in ContentFile model ([0731778](https://github.com/afterthought/t2d-kit/commit/0731778f7740f361ed33d5aad89b3113f1424549))
+
 ## [1.8.0](https://github.com/afterthought/t2d-kit/compare/v1.7.0...v1.8.0) (2025-09-30)
 
 ### Features
