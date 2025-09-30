@@ -42,11 +42,13 @@ def verify_command(verbose: bool):
     # Check Claude Code agents
     agent_dir = Path("~/.claude/agents").expanduser()
     agent_names = [
+        "t2d-create-recipe",
         "t2d-transform",
         "t2d-d2-generator",
         "t2d-mermaid-generator",
         "t2d-plantuml-generator",
-        "t2d-docs-generator",
+        "t2d-mkdocs-generator",
+        "t2d-zudoku-generator",
         "t2d-slides-generator",
     ]
 
@@ -166,5 +168,7 @@ def verify_command(verbose: bool):
                     console.print("  • Run [cyan]mise run setup-plantuml[/cyan] for PlantUML")
                 if "D2" in missing_tools:
                     console.print("  • Run [cyan]mise run setup-d2[/cyan] if D2 doesn't install")
+                if "MkDocs" in missing_tools:
+                    console.print("  • After installing MkDocs, run [cyan]pipx install mkdocs-material[/cyan]")
 
     sys.exit(0 if all_good else 1)

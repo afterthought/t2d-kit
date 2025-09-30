@@ -21,7 +21,7 @@ class TestProcessedRecipe:
             id="test-content",
             path="docs/test.md",
             type=ContentType.DOCUMENTATION,
-            agent="t2d-markdown-maintainer",
+            agent="t2d-mkdocs-generator",
             base_prompt="Generate comprehensive documentation for the system.",
             diagram_refs=["arch-diagram"],
             title="Test Documentation",
@@ -255,8 +255,7 @@ class TestProcessedRecipe:
                 diagrams=[
                     DiagramRequest(
                         type="architecture",
-                        description="System architecture diagram",
-                        framework_preference="d2"
+                        description="System architecture diagram"
                     )
                 ],
                 documentation=DocumentationInstructions(
@@ -279,7 +278,7 @@ class TestProcessedRecipe:
                     id="test-doc",
                     path="docs/test.md",
                     type=ContentType.DOCUMENTATION,
-                    agent="t2d-markdown-maintainer",
+                    agent="t2d-mkdocs-generator",
                     base_prompt="Generate documentation from PRD.",
                     diagram_refs=["arch-001"],
                     title="Test Documentation",

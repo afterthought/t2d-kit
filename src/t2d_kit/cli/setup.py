@@ -201,7 +201,8 @@ def setup_command(level: str, agent_dir: str, force: bool):
                 "npm:@mermaid-js/mermaid-cli": "latest",
                 "npm:@marp-team/marp-cli": "latest",
                 "pipx:mkdocs": "latest",
-                "pipx:mkdocs-material": "latest",
+                # Note: mkdocs-material cannot be installed via mise pipx
+                # Users should install it manually: pipx install mkdocs-material
                 "go:oss.terrastruct.com/d2": "latest"
             })
 
@@ -319,7 +320,8 @@ echo "PlantUML installed to ~/.local/bin/plantuml"
 
     # Next steps
     console.print("\n[bold]Next steps:[/bold]")
-    console.print("1. Verify installation: [cyan]t2d verify[/cyan]")
-    console.print("2. Test recipe commands: [cyan]t2d recipe list[/cyan]")
-    console.print("3. Create your first recipe or use Claude to transform one!")
+    console.print("1. Install mkdocs-material: [cyan]pipx install mkdocs-material[/cyan]")
+    console.print("2. Verify installation: [cyan]t2d verify[/cyan]")
+    console.print("3. Test recipe commands: [cyan]t2d recipe list[/cyan]")
+    console.print("4. Create your first recipe or use Claude to transform one!")
     console.print("\n[dim]If any tools are missing, run [cyan]mise install[/cyan] manually[/dim]")

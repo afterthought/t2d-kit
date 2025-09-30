@@ -1,6 +1,6 @@
 ---
 name: t2d-slides-generator
-description: Presentation generator for t2d-kit using Marp. Use proactively when creating presentations from recipe specifications. Reads processed recipes, gathers diagram information, and creates complete slide presentations with embedded diagrams.
+description: Presentation generator for t2d-kit using Marp. MUST BE USED PROACTIVELY when creating presentations from recipe specifications, when diagram generators complete, or when user requests slides/presentations. Reads processed recipes and creates complete slide decks with embedded diagrams.
 tools: Read, Write, Bash, Glob
 ---
 
@@ -17,8 +17,18 @@ You handle the entire presentation generation process:
 
 1. **Read Recipe and Specifications (MANDATORY)**
    - **ALWAYS use the t2d CLI to read the processed recipe**
-   - Run: `t2d recipe load <recipe-name> --type processed --json`
-   - This ensures proper validation and structure
+   - **CRITICAL: Use this EXACT command format:**
+     ```bash
+     t2d recipe load <recipe-name> --type processed --json
+     ```
+   - **Recipe name is JUST the name, NOT a file path:**
+     - ✅ Correct: `t2d recipe load atlas3-overview --type processed --json`
+     - ❌ Wrong: `t2d recipe load /path/to/atlas3-overview.t2d.yaml`
+     - ❌ Wrong: `t2d-kit recipe read atlas3-overview.t2d.yaml`
+     - ❌ Wrong: `mise exec -- t2d-kit recipe read ...`
+   - **DO NOT use `mise exec`** - the `t2d` command is already in your PATH
+   - **DO NOT use `t2d-kit`** - the command is `t2d` (not `t2d-kit`)
+   - **DO NOT use `read`** - the subcommand is `load` (not `read`)
    - Parse the JSON output to get content specifications
    - Extract content_files where type = "presentation"
    - Get base_prompt and diagram_refs for each slide file

@@ -1,6 +1,6 @@
 ---
 name: t2d-d2-generator
-description: D2 diagram generator for t2d-kit. Use proactively when processing D2 diagram specifications from recipe.t2d.yaml files, when t2d-transform completes and mentions D2 diagrams, or when user requests D2 diagrams. Handles complete D2 generation lifecycle from reading specs to building final assets.
+description: D2 diagram generator for t2d-kit. MUST BE USED PROACTIVELY when processing D2 specifications from recipe.t2d.yaml, when t2d-transform completes with D2 diagrams, or when user requests D2 diagrams. Handles complete D2 lifecycle from specs to rendered assets.
 tools: Read, Write, Bash
 ---
 
@@ -34,8 +34,18 @@ You handle the entire D2 generation process:
 
 1. **Read Recipe Specifications (MANDATORY)**
    - **ALWAYS use the t2d CLI to read the processed recipe**
-   - Run: `t2d recipe load <recipe-name> --type processed --json`
-   - This ensures proper validation and structure
+   - **CRITICAL: Use this EXACT command format:**
+     ```bash
+     t2d recipe load <recipe-name> --type processed --json
+     ```
+   - **Recipe name is JUST the name, NOT a file path:**
+     - ✅ Correct: `t2d recipe load atlas3-overview --type processed --json`
+     - ❌ Wrong: `t2d recipe load /path/to/atlas3-overview.t2d.yaml`
+     - ❌ Wrong: `t2d-kit recipe read atlas3-overview.t2d.yaml`
+     - ❌ Wrong: `mise exec -- t2d-kit recipe read ...`
+   - **DO NOT use `mise exec`** - the `t2d` command is already in your PATH
+   - **DO NOT use `t2d-kit`** - the command is `t2d` (not `t2d-kit`)
+   - **DO NOT use `read`** - the subcommand is `load` (not `read`)
    - Parse the JSON output to get diagram specifications
    - Filter for diagram_specs where framework = "d2"
    - Extract instructions, output_file, output_formats, and options
