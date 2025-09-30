@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run Python tests with coverage"
+
+uv run pytest tests/ -v --cov=src/t2d_kit --cov-report=term-missing --cov-report=xml

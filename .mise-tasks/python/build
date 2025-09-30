@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Build Python packages"
+#MISE depends=["python:validate", "python:build-wheel"]
+
+echo "✅ Python build complete!"

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Build wheel and source distribution"
+
+echo "🔨 Building t2d-kit wheel and source distribution..."
+uv build
+echo "✅ Build complete! Files in dist/"
+ls -lh dist/

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run Python type checking"
+
+uv run mypy src/t2d_kit --ignore-missing-imports

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Build only the wheel file"
+
+echo "🔨 Building t2d-kit wheel..."
+uv build --wheel
+echo "✅ Wheel build complete!"
+ls -lh dist/*.whl

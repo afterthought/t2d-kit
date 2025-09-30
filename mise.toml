@@ -1,0 +1,29 @@
+[tools]
+claude = "latest"
+"pipx:git+https://github.com/github/spec-kit.git" = "latest"
+
+python = "3.11"
+node = "20"
+go = "1.21"
+java = "openjdk-17"
+"npm:@mermaid-js/mermaid-cli" = "latest"
+"npm:@marp-team/marp-cli" = "latest"
+"pipx:mkdocs" = "latest"
+"go:oss.terrastruct.com/d2" = "latest"
+
+# Task definitions have been moved to file-based tasks in .mise-tasks/
+# Run `mise tasks` to see all available tasks
+#
+# Task organization follows the mise-en-place methodology:
+#   - Phase 1 (Prepare): mise run prepare
+#   - Phase 3 (Validate): mise run validate
+#   - Phase 4 (Build): mise run build-all
+#
+# Individual tasks are organized by category:
+#   - Python tasks: mise run python:lint, python:test, etc.
+#   - Build tasks: mise run build:wheel, build:clean, etc.
+#   - Publish tasks: mise run publish:test, publish:pypi
+#   - MCP tasks: mise run mcp:inspect, mcp:server, mcp:test
+
+[env]
+PYTHONPATH = "src"

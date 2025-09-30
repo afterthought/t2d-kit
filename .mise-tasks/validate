@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Run all validation checks (Phase 3: Validation)"
+#MISE depends=["python:validate"]
+
+echo "✅ All validation checks passed!"

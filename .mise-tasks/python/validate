@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Run all Python validation checks"
+#MISE depends=["python:lint", "python:format-check", "python:typecheck", "python:test"]
+
+echo "✅ All Python validation checks passed!"

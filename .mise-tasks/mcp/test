@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Test MCP server functionality"
+
+t2d mcp test

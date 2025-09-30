@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_validator, model_validator
 
 from .base import (
     ContentField,
@@ -31,26 +31,58 @@ class DiagramRequest(T2DBaseModel):
     type: str = Field(
         min_length=1,
         max_length=100,
-        description="Diagram type (e.g., architecture, sequence, erd, flowchart, c4_container, sql_schema, class_diagram)"
+        description="Diagram type (e.g., architecture, sequence, erd, flowchart, c4_container, sql_schema, class_diagram)",
+        examples=["architecture", "sequence", "erd", "c4_container", "flowchart"]
     )
-    description: DescriptionField | None = None
+    description: DescriptionField | None = Field(
+        None,
+        examples=["High-level system architecture showing main components",
+                  "User authentication flow from login to token generation"]
+    )
     layout_engine: str | None = Field(
         None,
-        description="Layout engine for D2 diagrams (dagre, elk, or tala)"
+        description="Layout engine for D2 diagrams (dagre, elk, or tala)",
+        examples=["dagre", "elk", "tala"]
     )
     theme: int | None = Field(
         None,
         description="D2 theme ID for light mode (0-8, 100-105, 200, 300-301)",
-        ge=0  # Must be >= 0
+        ge=0,  # Must be >= 0
+        examples=[0, 3, 100, 200]
     )
     dark_theme: int | None = Field(
         None,
         description="D2 dark theme ID for dark mode (0-8, 100-105, 200, 300-301)",
-        ge=0  # Must be >= 0
+        ge=0,  # Must be >= 0
+        examples=[200, 300]
     )
     sketch: bool | None = Field(
         None,
-        description="Enable hand-drawn sketch mode for D2 diagrams"
+        description="Enable hand-drawn sketch mode for D2 diagrams",
+        examples=[True, False]
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'type': 'architecture',
+                    'description': 'High-level system architecture'
+                },
+                {
+                    'type': 'sequence',
+                    'description': 'User authentication flow',
+                    'theme': 3
+                },
+                {
+                    'type': 'c4_container',
+                    'description': 'Container diagram for microservices',
+                    'layout_engine': 'elk',
+                    'theme': 100,
+                    'dark_theme': 200
+                }
+            ]
+        }
     )
 
     @field_validator("type")
@@ -199,14 +231,74 @@ class Preferences(T2DBaseModel):
 
 
 class UserRecipe(T2DBaseModel):
-    """User-maintained recipe with PRD content and high-level instructions."""
+    """User-maintained recipe with PRD content and high-level instructions.
 
-    name: NameField
-    version: VersionField = "1.0.0"
-    prd: PRDContent
-    instructions: UserInstructions
-    preferences: Preferences | None = None
-    metadata: dict[str, Any] | None = None
+    A UserRecipe is the primary input for t2d-kit. It contains:
+    - PRD content (inline or file reference)
+    - High-level diagram requests
+    - Optional documentation and presentation instructions
+    - User preferences for styling and frameworks
+
+    The transform agent reads this recipe and generates a detailed ProcessedRecipe
+    with specific diagram specifications.
+    """
+
+    name: NameField = Field(
+        description="Unique name for this recipe (alphanumeric, hyphens, underscores)",
+        examples=["payment-system", "user-auth", "api-gateway-v2"]
+    )
+    version: VersionField = Field(
+        default="1.0.0",
+        description="Semantic version of this recipe",
+        examples=["1.0.0", "2.1.0"]
+    )
+    prd: PRDContent = Field(
+        description="Product Requirements Document content or file reference"
+    )
+    instructions: UserInstructions = Field(
+        description="High-level instructions for what diagrams and docs to generate"
+    )
+    preferences: Preferences | None = Field(
+        None,
+        description="Optional user preferences for diagram styling and frameworks"
+    )
+    metadata: dict[str, Any] | None = Field(
+        None,
+        description="Optional metadata for tracking and organization",
+        examples=[{"author": "team-platform", "project": "api-redesign"}]
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'examples': [
+                {
+                    'name': 'payment-system',
+                    'version': '1.0.0',
+                    'prd': {
+                        'file_path': './docs/payment-prd.md',
+                        'format': 'markdown'
+                    },
+                    'instructions': {
+                        'diagrams': [
+                            {
+                                'type': 'architecture',
+                                'description': 'Payment system architecture'
+                            },
+                            {
+                                'type': 'sequence',
+                                'description': 'Payment processing flow'
+                            }
+                        ]
+                    }
+                }
+            ],
+            'ai_guidance': {
+                'purpose': 'Define high-level system requirements and diagram requests',
+                'usage': 'Used by t2d-transform agent to generate detailed ProcessedRecipe',
+                'validation': 'Always validate with: t2d recipe validate <name> --type user'
+            }
+        }
+    )
 
     @field_validator("name")
     @classmethod

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Install Python dependencies including dev tools"
+
+uv sync

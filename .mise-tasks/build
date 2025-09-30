@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Build production artifacts (Phase 4: Build)"
+#MISE depends=["python:build"]
+
+echo "✅ Build complete!"

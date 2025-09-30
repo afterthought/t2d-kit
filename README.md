@@ -263,9 +263,40 @@ t2d setup
 # 4. Verify installation
 t2d verify
 
-# 5. Create your recipe and let AI do the rest!
+# 5. Configure Claude Code MCP (optional but recommended)
+# Create project MCP config:
+mkdir -p .claude
+cat > .claude/.mcp.json << 'EOF'
+{
+  "mcpServers": {
+    "t2d-kit": {
+      "command": "t2d",
+      "args": ["mcp", "start"]
+    }
+  }
+}
+EOF
+
+# 6. Create your recipe and let AI do the rest!
 echo "Transform my recipe.yaml" | claude
 ```
+
+**MCP Configuration Snippet**
+
+Add this to your project's `.claude/.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "t2d-kit": {
+      "command": "t2d",
+      "args": ["mcp", "start"]
+    }
+  }
+}
+```
+
+This enables agents to access schema documentation directly through MCP resources like `recipe://schema/user/agent-friendly`.
 
 ## 📖 What is t2d-kit?
 
@@ -329,7 +360,32 @@ curl https://mise.run | sh
 
 # Install diagram tools
 mise install
+
 ```
+
+### MCP Server Setup (Optional)
+
+Enable Claude Code agents to access schema documentation directly:
+
+```bash
+# 1. Test MCP server
+t2d mcp test
+
+# 2. Generate configuration
+t2d mcp config
+
+# 3. Add configuration to Claude Code settings
+# Copy the output to ~/.claude.json or .claude/mcp-config.json
+
+# 4. Restart Claude Code
+# Now agents can use resources like: recipe://schema/user/agent-friendly
+```
+
+**Benefits:**
+- Agents can read schema documentation without CLI commands
+- Eliminates complex bash workarounds
+- Faster and more reliable schema access
+- See [MCP Setup Guide](docs/mcp-setup.md) for details
 
 
 ## 📄 Usage
@@ -442,6 +498,43 @@ Agents self-activate based on context, but you can also invoke them directly:
 - `Generate D2 diagrams` - Activates D2 generator
 - `Create documentation` - Activates docs generator
 - `Build presentation` - Activates slides generator
+
+## 🔌 MCP Commands
+
+Manage the MCP server for Claude Code integration:
+
+```bash
+# Test MCP server functionality
+t2d mcp test
+# or: mise run mcp-test
+
+# Generate Claude Code configuration
+t2d mcp config
+
+# List available MCP resources
+t2d mcp resources
+
+# Show MCP server information
+t2d mcp info
+
+# Start MCP server (used by Claude Code)
+t2d mcp start
+# or: mise run mcp-server
+
+# Debug with MCP Inspector (opens at http://localhost:5173)
+mise run mcp-inspect
+```
+
+### Available MCP Resources
+
+When configured, Claude Code agents can access:
+
+- `recipe://schema/user/agent-friendly` - Concise schema reference
+- `recipe://docs/user-recipe` - Complete documentation
+- `recipe://examples/recipes` - Real-world examples
+- `recipe://docs/quick-start` - Getting started guide
+
+See [Schema Access Quick Reference](docs/schema-access-quick-reference.md) for details.
 
 ## 🔧 Configuration
 

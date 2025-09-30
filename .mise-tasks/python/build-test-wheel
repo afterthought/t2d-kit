@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Test the built wheel in a virtual environment"
+
+echo "🧪 Testing wheel installation..."
+uv venv .test-venv
+uv pip install --python .test-venv/bin/python dist/*.whl
+uv run --python .test-venv/bin/python -c "import t2d_kit; print(f'✅ Successfully imported t2d_kit version {t2d_kit.__version__}')"
+rm -rf .test-venv
+echo "✅ Wheel test complete!"

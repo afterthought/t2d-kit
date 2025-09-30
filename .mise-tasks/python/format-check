@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Check Python code formatting without modifying"
+
+uv run ruff format --check .

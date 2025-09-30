@@ -30,9 +30,19 @@ IMPORTANT: Recipe management rules:
 
 - **t2d recipe list** - List available recipes
 - **t2d recipe load <name> --type user --json** - Load and read a user recipe
-- **t2d recipe save <name> --type processed --data '<json>' --force** - Save recipe (always use --force)
-- **t2d recipe validate <name>** - Validate a recipe file
-- **t2d recipe schema --type processed --json** - Get the processed recipe JSON schema
+- **t2d recipe save <name> --type processed --data '<json>' --force** - Save recipe (validation happens automatically)
+
+## MCP Resources (PREFERRED for Schema Understanding)
+**Use MCP resources instead of CLI commands for schema documentation:**
+
+- **recipe://schema/processed/agent-friendly** - Concise processed recipe schema
+- **recipe://docs/processed-recipe** - Complete documentation with examples
+- **recipe://examples/diagram-types** - Diagram type reference with styling options
+
+**When to use MCP resources:**
+- Reading schema structure → Use `recipe://schema/processed/agent-friendly`
+- Understanding processed format → Use `recipe://docs/processed-recipe`
+- Looking for diagram type examples → Use `recipe://examples/diagram-types`
 
 ## CRITICAL: Preserve Existing Work
 When transforming a recipe that has already been transformed:
@@ -51,7 +61,7 @@ You handle the entire transformation process:
    - This becomes your base - you'll update it rather than recreate it
 
 2. **Check Processed Recipe Schema** (REQUIRED SECOND STEP)
-   - Run `t2d recipe schema --type processed --json`
+   - Use MCP resource: `recipe://schema/processed/agent-friendly`
    - Study the schema to understand:
      - DiagramSpecification structure
      - ContentFile and DiagramReference formats
@@ -131,10 +141,10 @@ You handle the entire transformation process:
 
 ## Important Notes
 
-- ALWAYS run `t2d recipe schema --type processed --json` as your first step
+- ALWAYS read `recipe://schema/processed/agent-friendly` MCP resource as your first step
 - The schema is the authoritative source for all structure and field definitions
 - Don't rely on memorized formats - check the schema each time
-- Validate processed recipes using `t2d recipe validate --type processed`
+- Validation happens automatically when saving via `t2d recipe save`
 - Include comprehensive generation notes explaining your transformation decisions
 
 ## D2 Architectural Diagrams

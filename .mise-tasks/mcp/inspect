@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+#MISE description="Start MCP server with inspector for debugging"
+
+echo "🔍 Starting t2d-kit MCP server with inspector..."
+echo "📌 Inspector will be available at: http://localhost:5173"
+echo ""
+npx @modelcontextprotocol/inspector python -m t2d_kit.mcp.server

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run Python tests"
+
+uv run pytest tests/

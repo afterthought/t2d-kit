@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+#MISE description="Complete project setup (Phase 1: Preparation)"
+#MISE depends=["python:prepare"]
+
+echo "✅ Setup complete!"

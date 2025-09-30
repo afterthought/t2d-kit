@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+#MISE description="Run all Python tests (including failing ones)"
+
+uv run pytest tests/ -v || true

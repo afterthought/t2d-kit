@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Clean build artifacts and rebuild"
+
+echo "🧹 Cleaning build artifacts..."
+rm -rf build/ dist/ *.egg-info src/*.egg-info
+echo "🔨 Building fresh wheel and source distribution..."
+uv build
+echo "✅ Clean build complete!"
+ls -lh dist/

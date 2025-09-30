@@ -3,12 +3,10 @@
 import json
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
 import click
 import yaml
 from rich.console import Console
 from rich.table import Table
-from datetime import datetime
 
 from t2d_kit.models.user_recipe import UserRecipe
 from t2d_kit.models.processed_recipe import ProcessedRecipe
@@ -195,21 +193,37 @@ def save(name, type, data, force):
 
 @recipe_command.command()
 @click.option('--type', '-t', default='user', help='Schema type: user or processed')
-@click.option('--json', 'json_output', is_flag=True, help='Output as JSON')
-def schema(type, json_output):
-    """Display the JSON schema for recipe validation."""
+@click.option('--format', '-f', default='yaml',
+              type=click.Choice(['json', 'yaml', 'markdown', 'agent']),
+              help='Output format: json, yaml, markdown (detailed), or agent (concise)')
+def schema(type, format):
+    """Display the JSON schema for recipe validation.
+
+    Format options:
+      - json: Raw JSON schema (for programmatic use)
+      - yaml: YAML formatted schema (default, human-readable)
+      - markdown: Detailed markdown documentation with examples
+      - agent: Concise format optimized for Claude Code agents
+    """
     try:
         if type == "user":
-            schema = UserRecipe.model_json_schema()
+            schema_dict = UserRecipe.model_json_schema()
+            model_name = "UserRecipe"
         else:
-            schema = ProcessedRecipe.model_json_schema()
+            schema_dict = ProcessedRecipe.model_json_schema()
+            model_name = "ProcessedRecipe"
 
-        if json_output:
-            print(json.dumps(schema, indent=2))
-        else:
-            # Display schema in a readable format
+        if format == 'json':
+            print(json.dumps(schema_dict, indent=2))
+        elif format == 'markdown':
+            from t2d_kit.utils.schema_formatter import format_schema_markdown
+            print(format_schema_markdown(schema_dict, model_name))
+        elif format == 'agent':
+            from t2d_kit.utils.schema_formatter import format_schema_agent_friendly
+            print(format_schema_agent_friendly(schema_dict, model_name))
+        else:  # yaml
             console.print(f"[bold]Schema for {type} recipes:[/bold]\n")
-            console.print(yaml.dump(schema, default_flow_style=False))
+            console.print(yaml.dump(schema_dict, default_flow_style=False))
     except Exception as e:
         console.print(f"[red]Error:[/red] Failed to get schema: {str(e)}")
         sys.exit(1)

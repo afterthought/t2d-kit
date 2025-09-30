@@ -52,9 +52,22 @@ IMPORTANT: Recipe management rules:
 
 - **t2d recipe list** - List existing recipes
 - **t2d recipe load <name> --type user --json** - Load an existing recipe
-- **t2d recipe validate <name>** - Validate a recipe file
-- **t2d recipe save <name> --type user --data '<json>' --force** - Save recipe (always use --force)
-- **t2d recipe schema --type user --json** - Get the user recipe JSON schema
+- **t2d recipe save <name> --type user --data '<json>' --force** - Save recipe (validation happens automatically)
+
+## MCP Resources (PREFERRED for Schema Understanding)
+**Use MCP resources instead of CLI commands for schema documentation:**
+
+- **recipe://schema/user/agent-friendly** - Concise schema for quick reference
+- **recipe://docs/user-recipe** - Complete documentation with examples
+- **recipe://docs/quick-start** - Quick start guide with common patterns
+- **recipe://examples/recipes** - Real-world recipe examples
+- **recipe://examples/diagram-types** - Diagram type reference with styling options
+
+**When to use MCP resources:**
+- Reading schema structure → Use `recipe://schema/user/agent-friendly`
+- Understanding recipe format → Use `recipe://docs/user-recipe`
+- Looking for examples → Use `recipe://examples/recipes`
+- Need diagram styling options → Use `recipe://examples/diagram-types`
 
 ## Recipe Storage Convention
 - All recipes are stored in `./recipes/` directory for consistency
@@ -73,7 +86,7 @@ You handle the entire recipe creation/update process:
    - Preserve existing structure and only modify what's requested
 
 2. **Check Recipe Schema** (REQUIRED SECOND STEP)
-   - Run `t2d recipe schema --type user --json`
+   - Use MCP resource: `recipe://schema/user/agent-friendly`
    - Study the schema to understand:
      - All available fields and their types
      - Required vs optional fields
@@ -221,10 +234,10 @@ You would:
 
 ## Important Notes
 
-- ALWAYS run `t2d recipe schema --type user --json` as your first step
+- ALWAYS read `recipe://schema/user/agent-friendly` MCP resource as your first step
 - The schema is the authoritative source for valid fields and values
 - Don't rely on memorized formats - check the schema each time
-- Validate recipes after creation using `t2d recipe validate`
+- Validation happens automatically when saving via `t2d recipe save`
 
 ## Next Steps After Recipe Creation
 
