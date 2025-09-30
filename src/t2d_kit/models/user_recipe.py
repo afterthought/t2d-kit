@@ -31,7 +31,7 @@ class DiagramRequest(T2DBaseModel):
     type: str = Field(
         min_length=1,
         max_length=100,
-        description="Diagram type (e.g., architecture, sequence, erd, flowchart, c4_container)"
+        description="Diagram type (e.g., architecture, sequence, erd, flowchart, c4_container, sql_schema, class_diagram)"
     )
     description: DescriptionField | None = None
     layout_engine: str | None = Field(
@@ -40,8 +40,17 @@ class DiagramRequest(T2DBaseModel):
     )
     theme: int | None = Field(
         None,
-        description="D2 theme ID (0-8, 100-105, 200, 300-301)",
+        description="D2 theme ID for light mode (0-8, 100-105, 200, 300-301)",
         ge=0  # Must be >= 0
+    )
+    dark_theme: int | None = Field(
+        None,
+        description="D2 dark theme ID for dark mode (0-8, 100-105, 200, 300-301)",
+        ge=0  # Must be >= 0
+    )
+    sketch: bool | None = Field(
+        None,
+        description="Enable hand-drawn sketch mode for D2 diagrams"
     )
 
     @field_validator("type")
@@ -64,7 +73,7 @@ class DiagramRequest(T2DBaseModel):
             raise ValueError(f"Layout engine must be one of: {valid_engines}")
         return v.lower()
 
-    @field_validator("theme")
+    @field_validator("theme", "dark_theme")
     @classmethod
     def validate_theme(cls, v: int | None) -> int | None:
         """Validate D2 theme ID."""

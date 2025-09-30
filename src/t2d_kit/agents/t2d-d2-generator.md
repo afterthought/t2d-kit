@@ -38,7 +38,12 @@ You handle the entire D2 generation process:
    - This ensures proper validation and structure
    - Parse the JSON output to get diagram specifications
    - Filter for diagram_specs where framework = "d2"
-   - Extract instructions, output_file, and output_formats
+   - Extract instructions, output_file, output_formats, and options
+   - Check D2Options for hints:
+     - `sql_tables` → Generate SQL table shapes
+     - `class_shapes` → Generate class diagrams with visibility
+     - `style_classes` → Create reusable class definitions
+     - `enable_markdown/enable_code_blocks` → Use rich text features
    - NEVER read recipe YAML files directly with Read tool
    - NEVER use Bash tool with cat, less, or any command to read recipe YAML
 
@@ -49,9 +54,10 @@ You handle the entire D2 generation process:
      - Interpret the natural language instructions
      - For UPDATES: Modify existing D2 code preserving unchanged elements
      - For NEW: Create syntactically correct D2 code from scratch
-     - **ALWAYS include vars configuration at the top of the file**:
-       - Set layout-engine from options.layout_engine (or auto-detect)
-       - Set theme-id from options.theme (use numeric ID)
+     - **ALWAYS create vars configuration from the options object**:
+       - Read values from options: layout_engine, theme, dark_theme, sketch, pad, center
+       - Generate vars block at the top of the D2 file
+       - All configuration goes in vars, not CLI args
      - **NEVER use explicit colors** - let the theme handle all coloring
      - Focus on structure, relationships, and clear labeling
      - Use appropriate D2 shapes for different component types
@@ -61,10 +67,11 @@ You handle the entire D2 generation process:
 3. **Build Diagram Assets**
    - For each generated .d2 file:
      - Use Bash tool to run d2 CLI commands
-     - Since layout and theme are in the D2 file vars, simple command:
-       - `d2 input.d2 output.svg`
-     - No need to specify --layout or --theme in CLI
-     - The vars configuration handles everything
+     - Since most config is in the D2 file vars, build simplified CLI:
+       - Extract from options: width, height, scale, direction, animate_interval
+       - Build command: `d2 [cli_args] input.d2 output.svg`
+     - The vars configuration handles: layout, theme, dark theme, sketch, pad, center
+     - CLI args only for: width, height, scale, direction, animate-interval
      - Handle multiple output formats:
        - Single format: `d2 diagram.d2 diagram.svg`
        - Multiple formats: `d2 diagram.d2 diagram.svg && d2 diagram.d2 diagram.png`
@@ -79,24 +86,46 @@ You handle the entire D2 generation process:
 
 ## D2 Configuration with Vars
 
-### Setting Layout Engine and Theme in D2 Files
-**ALWAYS include the vars configuration at the top of every D2 file**:
+### Generating Vars Configuration from Options
+**ALWAYS create the vars block from the options data in the recipe**:
 
+1. **Read the options object** from the diagram specification
+2. **Extract configuration values**:
+   - `layout_engine` → `layout-engine` in vars
+   - `theme` → `theme-id` in vars
+   - `dark_theme` → `dark-theme-id` in vars
+   - `sketch` → `sketch` in vars (if true)
+   - `pad` → `pad` in vars (if not default 100)
+   - `center` → `center` in vars (if true)
+
+3. **Generate the vars block**:
 ```d2
 vars: {
   d2-config: {
-    layout-engine: tala  # Options: dagre, elk, tala
-    theme-id: 0          # Use numeric theme ID from processed recipe
+    layout-engine: tala      # From options.layout_engine
+    theme-id: 0              # From options.theme
+    dark-theme-id: 200       # From options.dark_theme
+    sketch: false            # From options.sketch
+    pad: 120                 # From options.pad (if not 100)
+    center: true             # From options.center
   }
 }
 
 # Rest of your diagram content follows...
 ```
 
-### Theme ID Usage
-The processed recipe specifies theme as a numeric ID in options.theme.
-Simply use this number directly in the vars configuration.
-Valid theme IDs: 0, 1, 3-8, 100-105, 200, 300-301
+### Building CLI Arguments from Options
+Extract these values from options for CLI args:
+- `width` → `--width <value>`
+- `height` → `--height <value>`
+- `scale` → `--scale <value>` (if not 1.0)
+- `direction` → `--direction <value>`
+- `animate_interval` → `--animate-interval <value>`
+
+Example: If options has `width: 800, height: 600, direction: "left"`, generate:
+```bash
+d2 --width 800 --height 600 --direction left diagram.d2 output.svg
+```
 
 ### Layout Engine Selection
 - If `options.layout_engine` is specified, use that value
@@ -105,12 +134,30 @@ Valid theme IDs: 0, 1, 3-8, 100-105, 200, 300-301
   - `elk` for hierarchical structures
   - `dagre` for general flow diagrams
 
-### Complete Example with Configuration
+### Complete Example: Reading Options and Generating Config
+
+Given this options object from the recipe:
+```json
+{
+  "layout_engine": "tala",
+  "theme": 0,
+  "dark_theme": 200,
+  "sketch": false,
+  "pad": 120,
+  "center": true,
+  "width": 800
+}
+```
+
+Generate this D2 file:
 ```d2
 vars: {
   d2-config: {
     layout-engine: tala
-    theme-id: 200  # dark-mauve theme
+    theme-id: 0
+    dark-theme-id: 200
+    pad: 120
+    center: true
   }
 }
 
@@ -118,27 +165,175 @@ vars: {
 title: E-commerce Platform Architecture
 
 users: Users {
-  class: primary
   shape: person
 }
 
 web_app: Web Application {
-  class: primary
   shape: browser
 }
 
 api: API Gateway {
-  class: primary
+  shape: rectangle
 }
 
-# Connections with semantic classes
-users -> web_app: Uses {
-  class: primary
+# Connections
+users -> web_app: Uses
+web_app -> api: API calls
+```
+
+And this CLI command:
+```bash
+d2 --width 800 --direction down diagram.d2 output.svg
+```
+
+## SQL Table Support
+
+### Using SQL Table Shape
+D2 has a special `sql_table` shape for database schemas:
+
+```d2
+users_table: {
+  shape: sql_table
+  id: int primary_key
+  email: varchar unique
+  name: varchar
+  created_at: timestamp
+  updated_at: timestamp
 }
 
-web_app -> api: API calls {
-  class: secondary
+orders_table: {
+  shape: sql_table
+  id: int primary_key
+  user_id: int foreign_key
+  status: varchar
+  total: decimal
+  created_at: timestamp
 }
+
+# Relationships between tables
+orders_table.user_id -> users_table.id: FK
+```
+
+### Generating SQL Tables from Instructions
+When the instructions mention database schemas or tables:
+
+1. **Identify table structure** from the natural language description
+2. **Create SQL table shapes** with appropriate column types
+3. **Add constraints** inline with column definitions
+4. **Connect foreign keys** to show relationships
+
+Example generation pattern:
+- "User table with id, email, name" → Create sql_table shape with typed columns
+- "Orders belong to users" → Add foreign key and connection
+- "Email must be unique" → Add unique constraint inline
+
+## Class Shape Support for OOP
+
+### Using Class Shape with Visibility Modifiers
+D2 supports class shapes with UML-style visibility modifiers:
+
+```d2
+Parser: {
+  shape: class
+  +prevRune: rune
+  -prevColumn: int
+  +eatSpace: (bool): void
+  -unreadRune(): (rune, error)
+  #scanKey(r: rune): (Key, error)
+}
+
+Lexer: {
+  shape: class
+  +tokens: []Token
+  -position: int
+  +nextToken(): Token
+  -readChar(): char
+  #isWhitespace(c: char): bool
+}
+
+# Class relationships
+Parser -> Lexer: uses
+```
+
+### Visibility Modifiers
+- `+` for public visibility
+- `-` for private visibility
+- `#` for protected visibility
+
+### Generating Class Shapes from Instructions
+When instructions mention OOP structures, class diagrams, or code architecture:
+
+1. **Identify classes** from the description
+2. **Determine visibility** (public, private, protected)
+3. **Extract methods and attributes** with appropriate types
+4. **Connect classes** with inheritance/usage relationships
+
+Generation patterns:
+- "Parser class with public parseKey method" → `+parseKey(): returnType`
+- "Private prevColumn attribute" → `-prevColumn: type`
+- "Protected validation method" → `#validate(): bool`
+- "Parser uses Lexer" → Arrow connection between classes
+
+Always format as:
+```d2
+ClassName: {
+  shape: class
+  +publicAttribute: type
+  -privateAttribute: type
+  +publicMethod(): returnType
+  -privateMethod(): void
+  #protectedMethod(param: type): returnType
+}
+```
+
+## Markdown and Code Block Support
+
+### Markdown Text Blocks
+D2 supports markdown for rich text content:
+
+```d2
+documentation: |`
+# API Documentation
+
+This service handles:
+- User authentication
+- Session management
+- Token validation
+
+**Important**: All endpoints require authentication
+`|
+
+api_service: {
+  shape: rectangle
+  description: |`
+## Authentication Service
+
+Handles OAuth2 flows and JWT tokens.
+Uses **Redis** for session storage.
+`|
+}
+```
+
+### Code Blocks with Syntax Highlighting
+D2 supports code blocks with language tags:
+
+```d2
+implementation: |`go
+func authenticate(token string) error {
+    if !isValid(token) {
+        return ErrInvalidToken
+    }
+    return nil
+}
+`|
+
+python_example: |`python
+def process_order(order_id):
+    order = get_order(order_id)
+    if order.status == "pending":
+        process_payment(order)
+    return order
+`|
 ```
 
 ## Valid D2 Style Attributes
@@ -179,6 +374,36 @@ web_app -> api: API calls {
 - ❌ Any color values - Let themes handle colors
 
 ## D2 Classes for Reuse and Consistency
+
+### Generating Classes from Instructions
+When instructions mention patterns, consistency, or multiple similar components:
+
+1. **Identify common patterns** across diagram elements
+2. **Extract reusable attributes** into class definitions
+3. **Place all classes under `classes:` node** to avoid them appearing as shapes
+4. **Apply classes** to relevant shapes
+
+Generation patterns:
+- "Multiple microservices" → Create `service` class with common styling
+- "Several databases" → Create `database` class with cylinder shape
+- "External systems" → Create `external` class with cloud shape and dashed border
+- "Critical components" → Create `critical` class with bold text and thick borders
+
+Example workflow:
+1. Instructions say "Show user service, order service, payment service as microservices"
+2. Generate:
+```d2
+classes: {
+  microservice: {
+    shape: hexagon
+    style.border-radius: 8
+  }
+}
+
+user_service: User Service { class: microservice }
+order_service: Order Service { class: microservice }
+payment_service: Payment Service { class: microservice }
+```
 
 ### How D2 Classes Work
 D2 classes let you define reusable sets of attributes that can be applied to multiple objects:
@@ -454,6 +679,165 @@ api -> queue: Publish Event {
 - Provide clear error messages for syntax issues
 - Fall back gracefully if specific output formats fail
 - Continue processing remaining diagrams even if one fails
+
+## Comprehensive Generation Examples
+
+### Example 1: Database Schema Diagram
+Instructions: "Generate database schema for e-commerce with users, products, and orders tables"
+
+Generated D2:
+```d2
+vars: {
+  d2-config: {
+    layout-engine: elk
+    theme-id: 0
+    center: true
+  }
+}
+
+classes: {
+  table_style: {
+    shape: sql_table
+  }
+}
+
+users: {
+  class: table_style
+  id: int primary_key
+  email: varchar unique
+  name: varchar not_null
+  created_at: timestamp
+}
+
+products: {
+  class: table_style
+  id: int primary_key
+  name: varchar not_null
+  price: decimal not_null
+  stock: int default_0
+}
+
+orders: {
+  class: table_style
+  id: int primary_key
+  user_id: int foreign_key
+  product_id: int foreign_key
+  quantity: int not_null
+  total: decimal not_null
+  status: varchar
+}
+
+orders.user_id -> users.id: FK
+orders.product_id -> products.id: FK
+```
+
+### Example 2: OOP Class Diagram
+Instructions: "Create class diagram for authentication system with User, Auth, and Token classes"
+
+Generated D2:
+```d2
+vars: {
+  d2-config: {
+    layout-engine: dagre
+    theme-id: 0
+  }
+}
+
+User: {
+  shape: class
+  -id: string
+  -passwordHash: string
+  +email: string
+  +name: string
+  +login(email: string, password: string): bool
+  +logout(): void
+  +resetPassword(email: string): void
+}
+
+AuthService: {
+  shape: class
+  -secretKey: string
+  -tokenStore: TokenStore
+  +authenticate(credentials: Credentials): Token
+  +validateToken(token: string): bool
+  -hashPassword(password: string): string
+}
+
+Token: {
+  shape: class
+  +userId: string
+  +expiresAt: timestamp
+  +scope: []string
+  +isValid(): bool
+  +refresh(): Token
+}
+
+AuthService -> User: authenticates
+AuthService -> Token: generates
+Token -> User: belongs to
+```
+
+### Example 3: Architecture with Rich Content
+Instructions: "Architecture diagram for payment system with documentation"
+
+Generated D2:
+```d2
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 0
+    sketch: false
+  }
+}
+
+classes: {
+  service: {
+    shape: rectangle
+    style.border-radius: 8
+  }
+  external: {
+    shape: cloud
+    style.stroke-dash: 3
+  }
+}
+
+title: |`# Payment Processing Architecture`|
+
+payment_service: {
+  class: service
+  description: |`
+## Payment Service
+
+Handles payment processing with:
+- **Stripe** integration
+- **PayPal** support
+- PCI DSS compliance
+`|
+}
+
+implementation: |`python
+@payment_handler
+async def process_payment(order_id: str, method: PaymentMethod):
+    """Process payment for order."""
+    validator = PaymentValidator()
+    if not validator.validate(order_id):
+        raise ValidationError("Invalid order")
+
+    result = await method.charge(order_id)
+    return result
+`|
+
+stripe: Stripe API {
+  class: external
+}
+
+paypal: PayPal API {
+  class: external
+}
+
+payment_service -> stripe: process card payments
+payment_service -> paypal: process PayPal
+```
 
 You complete the entire D2 workflow autonomously - no orchestrator needed.
 

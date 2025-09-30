@@ -1,7 +1,7 @@
 """T021: D2Options model for advanced D2 diagram configuration."""
 
 import warnings
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import Field, field_validator, model_validator
 
@@ -27,6 +27,12 @@ class D2Options(T2DBaseModel):
     theme: int | None = Field(
         default=0,  # Default theme
         description="D2 theme ID (0-8, 100-105, 200, 300-301)"
+    )
+
+    # Dark theme ID for dark mode support
+    dark_theme: int | None = Field(
+        default=None,
+        description="D2 dark theme ID for dark mode (0-8, 100-105, 200, 300-301)"
     )
 
     # Rendering options
@@ -76,6 +82,41 @@ class D2Options(T2DBaseModel):
 
     center: bool = Field(default=False, description="Center the diagram in the viewport")
 
+    # Class definitions for reusable styling
+    style_classes: dict[str, dict[str, Any]] | None = Field(
+        default=None,
+        description="D2 class definitions for reusable styling patterns"
+    )
+
+    # SQL table specific options
+    sql_tables: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="SQL table definitions with columns and types"
+    )
+
+    # OOP class diagram support
+    class_shapes: list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Class shapes with visibility modifiers (+public, -private, #protected)"
+    )
+
+    # Markdown/code block support
+    enable_markdown: bool = Field(
+        default=True,
+        description="Enable markdown text blocks in descriptions"
+    )
+
+    enable_code_blocks: bool = Field(
+        default=True,
+        description="Enable code blocks with syntax highlighting"
+    )
+
+    # Connection style patterns
+    connection_styles: dict[str, dict[str, Any]] | None = Field(
+        default=None,
+        description="Named connection style patterns (sync, async, etc.)"
+    )
+
     @model_validator(mode="after")
     def auto_detect_layout_engine(self) -> "D2Options":
         """Auto-detect the best layout engine if not specified."""
@@ -94,28 +135,21 @@ class D2Options(T2DBaseModel):
     def to_cli_args(self) -> list[str]:
         """Convert options to D2 CLI arguments.
 
-        Note: Layout engine and theme are now set in the D2 file vars,
+        Note: Layout engine, theme, sketch, pad, and center are now set in the D2 file vars,
         not via CLI arguments.
         """
         args = []
 
-        # Layout and theme are handled in the D2 file vars configuration
-        # No need to add them to CLI args
+        # Most configuration is handled in the D2 file vars
+        # Only add CLI args for things not supported in vars
 
-        # Add sketch mode
-        if self.sketch:
-            args.append("--sketch")
-
-        # Add padding
-        args.extend(["--pad", str(self.pad)])
-
-        # Add dimensions if specified
+        # Add dimensions if specified (not in vars)
         if self.width:
             args.extend(["--width", str(self.width)])
         if self.height:
             args.extend(["--height", str(self.height)])
 
-        # Add scale
+        # Add scale (not in vars)
         if self.scale != 1.0:
             args.extend(["--scale", str(self.scale)])
 
@@ -134,11 +168,53 @@ class D2Options(T2DBaseModel):
         if self.force_appendix:
             args.append("--force-appendix")
 
+        return args
+
+    def to_vars_config(self) -> str:
+        """Generate D2 vars configuration string for the top of the D2 file."""
+        vars_config = {
+            "d2-config": {}
+        }
+
+        # Add layout engine
+        if self.layout_engine:
+            vars_config["d2-config"]["layout-engine"] = self.layout_engine
+
+        # Add theme IDs
+        if self.theme is not None:
+            vars_config["d2-config"]["theme-id"] = self.theme
+
+        if self.dark_theme is not None:
+            vars_config["d2-config"]["dark-theme-id"] = self.dark_theme
+
+        # Add sketch mode
+        if self.sketch:
+            vars_config["d2-config"]["sketch"] = True
+
+        # Add padding
+        if self.pad != 100:  # Only add if not default
+            vars_config["d2-config"]["pad"] = self.pad
+
         # Add center
         if self.center:
-            args.append("--center")
+            vars_config["d2-config"]["center"] = True
 
-        return args
+        # Format as D2 syntax
+        lines = ["vars: {", "  d2-config: {"]
+
+        config = vars_config["d2-config"]
+        for key, value in config.items():
+            if isinstance(value, bool):
+                lines.append(f"    {key}: {str(value).lower()}")
+            elif isinstance(value, str):
+                lines.append(f"    {key}: {value}")
+            else:
+                lines.append(f"    {key}: {value}")
+
+        lines.append("  }")
+        lines.append("}")
+
+        return "\n".join(lines)
 
     def to_style_string(self) -> str:
         """Generate D2 style configuration string."""
@@ -178,6 +254,7 @@ class D2Options(T2DBaseModel):
 
         return warnings
 
+
     @classmethod
     def for_architectural_diagram(cls, diagram_type: str) -> "D2Options":
         """Create D2Options optimized for architectural diagrams.
@@ -193,8 +270,24 @@ class D2Options(T2DBaseModel):
             # Layout will auto-detect to Tala if available
             layout_engine=None,
             # Good defaults for architectural diagrams
-            theme="neutral-default",
+            theme=0,  # neutral-default
             pad=120,  # More padding for complex diagrams
             direction="down",  # Top-down is typical for architecture
             center=True,  # Center in viewport
+            # Define common architectural classes
+            style_classes={
+                "service": {
+                    "shape": "rectangle",
+                    "style.border-radius": 8,
+                    "style.font-size": 14
+                },
+                "database": {
+                    "shape": "cylinder",
+                    "style.multiple": True
+                },
+                "external": {
+                    "shape": "cloud",
+                    "style.stroke-dash": 3
+                }
+            }
         )
