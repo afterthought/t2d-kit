@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/afterthought/t2d-kit/compare/v1.7.0...v1.8.0) (2025-09-30)
+
+### Features
+
+* add support for dark theme and enhanced diagram types in D2Options and UserRecipe models; update D2 diagram generator documentation ([0d79157](https://github.com/afterthought/t2d-kit/commit/0d791577de540c5f74c8a3be0697c337afa6e128))
+
 ## [1.7.0](https://github.com/afterthought/t2d-kit/compare/v1.6.0...v1.7.0) (2025-09-29)
 
 ### Features

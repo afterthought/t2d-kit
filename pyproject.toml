@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "t2d-kit"
-version = "1.7.0"
+version = "1.8.0"
 description = "Transform requirements into beautiful diagrams and documentation using self-organizing agents"
 readme = "README.md"
 requires-python = ">=3.11"
